@@ -1,0 +1,245 @@
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+android:id="@+id/fragment_registration_1"
+android:orientation="vertical"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+tools:context="com.adms.australianmobileadtoolkit.MainActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="15dp">
+    <LinearLayout
+        android:id="@+id/fragment_main_unregistered"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="15dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/barlow_bold"
+                    android:letterSpacing="0.1"
+                    android:paddingHorizontal="0dp"
+                    android:paddingVertical="10dp"
+                    android:text="PARTICIPANT CONSENT FORM"
+                    android:textColor="@color/yellow_primary"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:height="15dp"
+                    android:textAlignment="center" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:background="@color/yellow_primary" />
+
+
+                <ImageView
+                    android:id="@+id/ethicsVendorLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="58dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="10dp"
+                    android:scaleType="fitStart"
+                    app:srcCompat="@drawable/ethics_vendor_logo_dark" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/barlow_bold"
+                            android:letterSpacing="0.1"
+                            android:paddingHorizontal="0dp"
+                            android:paddingVertical="10dp"
+                            android:text="RESEARCH TITLE"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingBottom="15dp"
+                            android:text="Digital advertising and cultures of alcohol consumption on social media platforms" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/barlow_bold"
+                            android:letterSpacing="0.1"
+                            android:paddingHorizontal="0dp"
+                            android:paddingVertical="10dp"
+                            android:text="RESEARCHERS"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="\tAssociate Professor Nicholas Carah" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingBottom="15dp"
+                            android:text="\tThe University of Queensland (UQ)"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="\tLauren Hayden" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingBottom="15dp"
+                            android:text="\tThe University of Queensland (UQ)"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="\tDr Giselle Newton" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingBottom="15dp"
+                            android:text="\tThe University of Queensland (UQ)"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="\tProfessor Daniel Angus" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingBottom="15dp"
+                            android:text="\tQueensland University of Technology (QUT)"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="\tDr Abdul Obeid" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingBottom="15dp"
+                            android:text="\tQueensland University of Technology (QUT)"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="\tJane Tan" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingBottom="15dp"
+                            android:text="\tQueensland University of Technology (QUT)"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/barlow_bold"
+                            android:letterSpacing="0.1"
+                            android:paddingHorizontal="0dp"
+                            android:paddingVertical="10dp"
+                            android:text="ETHICS ID NUMBER"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="\t\t2023/HE002131" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="2dp"
+                            android:layout_marginTop="25dp"
+                            android:background="@color/yellow_primary" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/barlow_bold"
+                            android:letterSpacing="0.1"
+                            android:paddingHorizontal="0dp"
+                            android:layout_marginTop="10dp"
+                            android:paddingVertical="10dp"
+                            android:text="STATEMENT OF CONSENT"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingTop="15dp"
+                            android:paddingBottom="15dp"
+                            android:text="I consent to participate in this research project. It has been explained to me that the purpose of this research is to investigate alcohol advertising on social media platforms. I have also been provided with a written project information sheet in a language that I can understand.\n\nThe possible risks of participating in this research have been explained to my satisfaction. I understand that in this research I will be required to collect digital advertising in the form of images via a mobile app along with participating in an interview about the advertising I have collected and my social media practices.\n\nI understand that my interview will be audio recorded. I acknowledge that I will share my findings by directly communicating with the research team via an agreed-upon method (like chat or SMS). I also understand that the researchers will anonymise my contributions in any publications or presentations by removing names, locations and other potentially identifying information.\n\nI understand that my participation is voluntary and I am free to withdraw from this research anytime without needing to provide any explanation, and I would not receive any penalty or bias as a result of my withdrawal. Should I decide to withdraw, I understand that my data will be destroyed and will not be used in the research.\n\nI understand that data collected for this research will be stored behind a password protected data management system, with a pseudonym name assigned to me, and only the researchers named on this consent form will have access to the data.\n\nI understand that this research adheres to the Guidelines of the ethical review process of The University of Queensland and the National Statement on Ethical Conduct in Human Research. I have been provided with contact details of the researcher, as well as UQ Ethics Coordinator." />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/yellow_primary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:height="15dp" />
+
+        <Button
+            android:id="@+id/buttonIAgree"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="I Agree"
+            android:textColor="@color/black" />
+
+        <Button
+            android:id="@+id/buttonBackFromRegistration1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Go Back"
+            android:textColor="@color/black"
+            android:theme="@style/SecondaryButton" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:height="15dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/yellow_primary" />
+
+        <TextView
+            android:id="@+id/fragment_main_privacy_policy_unregistered"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="15dp"
+            android:text="@string/app_footer_privacy_policy"
+            android:textAlignment="center" />
+
+    </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
