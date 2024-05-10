@@ -49,7 +49,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
                 android:layout_height="wrap_content"
                 android:paddingTop="15dp"
                 android:paddingBottom="15dp"
-                android:text="Thank you for choosing to participate in the Australian Mobile Ad Toolkit data donation project. As part of the this process, we kindly request a few basic details about you. All demographic details will be de-identified; we do not request any information that could be used to personally identify you." />
+                android:text="Thank you for choosing to participate in the Australian Mobile Ad Toolkit data donation project. As part of the process, we kindly request a few basic details about you. All demographic details will be de-identified; we do not request any information that could be used to personally identify you." />
 
             <View
                 android:layout_width="match_parent"

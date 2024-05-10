@@ -163,4 +163,6 @@ public class Settings {
    }
 
    // if its instantiated, get the object associated with it, whereas if not, load in the value from shared preferences
+
+   // change added from repo 1
 }

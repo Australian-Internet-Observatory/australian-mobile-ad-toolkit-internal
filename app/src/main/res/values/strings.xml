@@ -8,6 +8,5 @@
     <string name="app_footer_privacy_policy"><a href="https://www.admscentre.org.au/wp-content/uploads/2021/05/ETH_Participant_Information-Sheet_V1.1_20210513.pdf">Read Our Privacy Policy</a></string>
     <string name="recording_status">Recording Status</string>
     <string name="recording_descr">When active, your screen is being recorded.</string>
-    <string name="eventlist_headline">List of Events</string>
 </resources>
 
