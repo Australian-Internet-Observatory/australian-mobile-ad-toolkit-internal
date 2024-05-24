@@ -26,7 +26,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:paddingHorizontal="15dp"
             android:paddingVertical="10dp"
             android:textColor="@color/red_primary"
-            android:text="APP STATUS: UNREGISTERED"
+            android:text="@string/fragment_main_app_status_unregistered"
             />
 
         <TextView
@@ -46,20 +46,20 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:textAlignment="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:text="@string/app_preface"
+            android:text="@string/fragment_main_app_preface"
             />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="15dp"
             android:textAlignment="center"
-            android:text="@string/app_preface_unregistered"
+            android:text="@string/fragment_main_app_preface_unregistered"
             />
         <Button
             android:id="@+id/buttonRegister"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Register"
+            android:text="@string/fragment_main_register_text"
             android:textColor="@color/black"/>
 
         <TextView
@@ -69,7 +69,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
             android:textAlignment="center"
-            android:text="@string/app_footer_learn_more"
+            android:text="@string/fragment_main_footer_learn_more"
             />
 
         <View
@@ -82,7 +82,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="15dp"
-            android:text="@string/app_footer_privacy_policy"
+            android:text="@string/fragment_main_footer_privacy_policy"
             android:textAlignment="center" />
 
     </LinearLayout>
@@ -106,7 +106,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:paddingHorizontal="15dp"
             android:paddingVertical="10dp"
             android:textColor="@color/yellow_primary"
-            android:text="APP STATUS: REGISTERED"
+            android:text="@string/fragment_main_app_status_registered"
             />
 
         <TextView
@@ -126,7 +126,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:textAlignment="center"
             android:paddingTop="15dp"
             android:paddingBottom="20dp"
-            android:text="@string/app_preface"
+            android:text="@string/fragment_main_app_preface"
             />
 
         <Switch
@@ -160,13 +160,13 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:paddingTop="15dp"
             android:paddingBottom="5dp"
             android:textAlignment="center"
-            android:text="Advertisements that you have already observed can be viewed at your personal dashboard."
+            android:text="@string/fragment_main_app_dashboard_tooltip"
             />
         <Button
             android:id="@+id/buttonDashboard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Go To My Dashboard"
+            android:text="@string/fragment_main_app_dashboard_text"
             android:layout_marginBottom="15dp"
             android:textColor="@color/black"/>
 
@@ -182,7 +182,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
             android:textAlignment="center"
-            android:text="@string/app_footer_learn_more"
+            android:text="@string/fragment_main_footer_learn_more"
             />
 
         <View
@@ -195,7 +195,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="15dp"
-            android:text="@string/app_footer_privacy_policy"
+            android:text="@string/fragment_main_footer_privacy_policy"
             android:textAlignment="center" />
 
 

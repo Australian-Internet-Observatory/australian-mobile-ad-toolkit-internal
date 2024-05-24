@@ -87,6 +87,29 @@ public class Common {
       }
       return output;
    }
+   public static HashMap<Integer, Double> weightedHashMap(List<Integer> input, List<List<Integer>> inputIndices, HashMap<Integer, Integer> propensity) {
+      HashMap<Integer, Double> output = new HashMap<>();
+      for (int i = 0; i < input.size(); i ++) {
+
+         Integer z = input.get(i);
+
+         List<Integer> thisInputListIndex = inputIndices.get(i);
+
+         int divisorA = propensity.get(thisInputListIndex.get(0));
+         int divisorB = propensity.get(thisInputListIndex.get(1));
+
+         double thisPropensity = (1 / (double) divisorA / (double) divisorB);
+
+         // If the entry is not already in the HashMap, add it
+         if (!in(output, z)) {
+            output.put(z, 0.0);
+         }
+
+         // Add one frequency point
+         output.put(z, Objects.requireNonNull(output.get(z))+thisPropensity);
+      }
+      return output;
+   }
 
    /*
    *
@@ -129,7 +152,7 @@ public class Common {
          // Find all candidate lists, where the average of the given list is within
          // 'likeness' distance of the entry
          List<List<Double>> candidates = intermediate.stream().filter(y ->
-                                          (x - average(y)) < likeness).collect(Collectors.toList());
+                                          Math.abs(x - average(y)) < likeness).collect(Collectors.toList());
          // If there are no candidate lists, create one and insert the entry
          if (candidates.isEmpty()) {
             intermediate.add(new ArrayList<>(Collections.singletonList(x)));

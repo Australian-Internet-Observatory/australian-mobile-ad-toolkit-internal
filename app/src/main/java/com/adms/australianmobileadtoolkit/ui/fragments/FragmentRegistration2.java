@@ -23,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.adms.australianmobileadtoolkit.ui.AsyncResponse;
@@ -67,6 +68,8 @@ public class FragmentRegistration2 extends Fragment implements AsyncResponse {
       } else {
          failedRegistration(loadRegistration);
       }
+      FragmentManager fm = getActivity().getSupportFragmentManager();
+      for(int i = 0; i < fm.getBackStackEntryCount(); ++i) { fm.popBackStack(); }
    }
 
    private static final String TAG = "FragmentRegistration2";

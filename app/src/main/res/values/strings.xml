@@ -1,12 +1,33 @@
 <resources>
     <string name="app_name">Australian Mobile Ad Toolkit</string>
     <string name="app_descr">This app records you phone\'s screen to detect advertisement content served to you within your Meta Facebook app.</string>
-    <string name="app_preface">This app records you device\'s screen to detect advertisement content served to you within your Meta Facebook app.</string>
-    <string name="app_preface_unregistered">To begin detecting advertisements, you will need to register. This can be done below:</string>
     <string name="app_preface_registered">When the switch above is flipped on, this app will detect advertisements.</string>
-    <string name="app_footer_learn_more">To learn more about our research project, you can visit the official ADM+S website, by clicking <a href="https://www.admscentre.org.au/adobservatory/">here</a></string>
-    <string name="app_footer_privacy_policy"><a href="https://www.admscentre.org.au/wp-content/uploads/2021/05/ETH_Participant_Information-Sheet_V1.1_20210513.pdf">Read Our Privacy Policy</a></string>
     <string name="recording_status">Recording Status</string>
     <string name="recording_descr">When active, your screen is being recorded.</string>
+    <string name="dialog_loading">Loading...</string>
+
+    <string name="dialog_registration_error_title">REGISTRATION FAILED</string>
+    <string name="dialog_registration_error_description">Unfortunately, there was an error with the registration process. Please check that you are connected to the internet, and then try again.</string>
+    <string name="dialog_registration_error_back_text">BACK</string>
+
+    <string name="dialog_registration_success_title">REGISTRATION COMPLETE</string>
+    <string name="dialog_registration_success_description">Thank you for choosing to participate. The registration process is now complete.</string>
+    <string name="dialog_registration_success_back_text">CONTINUE</string>
+
+    <string name="fragment_dashboard_title">My Personal Dashboard</string>
+    <string name="fragment_dashboard_activation_code_text">My Activation Code: Loading...</string>
+    <string name="fragment_dashboard_back_text">BACK TO MAIN</string>
+
+    <string name="fragment_main_app_status_unregistered">APP STATUS: UNREGISTERED</string>
+    <string name="fragment_main_app_preface">This app records you device\'s screen to detect advertisement content served to you within your Meta Facebook app.</string>
+    <string name="fragment_main_app_preface_unregistered">To begin detecting advertisements, you will need to register. This can be done below:</string>
+    <string name="fragment_main_register_text">Register</string>
+    <string name="fragment_main_footer_learn_more">To learn more about our research project, you can visit the official ADM+S website, by clicking <a href="https://www.admscentre.org.au/adobservatory/">here</a></string>
+    <string name="fragment_main_footer_privacy_policy"><a href="https://www.admscentre.org.au/wp-content/uploads/2021/05/ETH_Participant_Information-Sheet_V1.1_20210513.pdf">Read Our Privacy Policy</a></string>
+
+    <string name="fragment_main_app_status_registered">APP STATUS: REGISTERED</string>
+    <string name="fragment_main_app_dashboard_tooltip">Advertisements that you have already observed can be viewed at your personal dashboard.</string>
+    <string name="fragment_main_app_dashboard_text">GO TO MY DASHBOARD</string>
+
 </resources>
 

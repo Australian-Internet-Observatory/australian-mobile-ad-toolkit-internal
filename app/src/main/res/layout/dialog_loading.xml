@@ -29,7 +29,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Loading..."
+        android:text="@string/dialog_loading"
         android:textColor="@color/yellow_primary"
         android:textAlignment="center"
         app:layout_constraintBottom_toBottomOf="parent"

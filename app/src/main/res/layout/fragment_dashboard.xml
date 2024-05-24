@@ -21,7 +21,7 @@
             android:paddingVertical="15dp"
             android:paddingBottom="15dp"
             android:textColor="@color/yellow_primary"
-            android:text="My Personal Dashboard"
+            android:text="@string/fragment_dashboard_title"
             />
         <View
             android:layout_width="match_parent"
@@ -39,7 +39,7 @@
             android:paddingVertical="10dp"
             android:textColor="@color/yellow_primary"
             android:textStyle="italic"
-            android:text="My Activation Code: Loading..."
+            android:text="@string/fragment_dashboard_activation_code_text"
             />
         <View
             android:layout_marginTop="10dp"
@@ -95,7 +95,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Loading..."
+                        android:text="@string/dialog_loading"
                         android:textColor="@color/yellow_primary"
                         android:textAlignment="center"
                         app:layout_constraintBottom_toBottomOf="parent"
@@ -121,7 +121,7 @@
             android:id="@+id/buttonBackToMain"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Back To Main"
+            android:text="@string/fragment_dashboard_back_text"
             android:theme="@style/SecondaryButton"
             android:textColor="@color/black"
             android:layout_marginHorizontal="15dp"

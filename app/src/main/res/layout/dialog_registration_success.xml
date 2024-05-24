@@ -29,12 +29,12 @@
         android:paddingVertical="10dp"
         android:textAlignment="center"
         android:textColor="@color/yellow_primary"
-        android:text="REGISTRATION COMPLETE"
+        android:text="@string/dialog_registration_success_title"
         />
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Thank you for choosing to participate. The registration process is now complete."
+        android:text="@string/dialog_registration_success_description"
         android:textColor="@color/yellow_primary"
         android:textAlignment="center"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -47,7 +47,7 @@
             android:id="@+id/buttonBackFromCompleteRegistration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Continue"
+            android:text="@string/dialog_registration_success_back_text"
             android:gravity="center"
             android:textColor="@color/black"/>
     </LinearLayout>

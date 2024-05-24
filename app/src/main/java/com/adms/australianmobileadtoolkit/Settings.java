@@ -18,6 +18,8 @@ public class Settings {
    // (the value has no actual bearing on the functionality, although don't set it to zero:
    // https://developer.android.com/guide/components/foreground-services#:~:text=startForeground(ONGOING_NOTIFICATION_ID%2C%20notification)%3B)
    public static final int RECORD_SERVICE_ONGOING_NOTIFICATION_ID = 1;
+
+   public static boolean USING_DEMOGRAPHIC_QUESTIONS = false;
    // Maximum file size for video recordings (5MB)
    public static int videoRecordingMaximumFileSize = 2000000;
    // Video recording encoding bit rate
@@ -47,7 +49,7 @@ public class Settings {
    public static String IDENTIFIER_REGISTRATION = "REGISTRATION";
    public static String IDENTIFIER_AD_LEADS = "AD_LEADS";
 
-   public static String DEBUG_TARGET_VIDEO = "demonstration_test.mp4";//"debug_new_2.mp4";//"debug2.mp4"; //"debug3.mp4";//"debug_new_3.mp4";//
+   public static String DEBUG_TARGET_VIDEO = "light_5_long.mp4";//"debug_new_2.mp4";//"debug2.mp4"; //"debug3.mp4";//"debug_new_3.mp4";//
 
    public static int AWS_LAMBDA_ENDPOINT_CONNECTION_TIMEOUT = 30000;
    public static int AWS_LAMBDA_ENDPOINT_READ_TIMEOUT = 30000;

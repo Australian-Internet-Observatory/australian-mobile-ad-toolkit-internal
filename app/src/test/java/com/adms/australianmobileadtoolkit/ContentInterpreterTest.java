@@ -2,24 +2,37 @@ package com.adms.australianmobileadtoolkit;
 
 import static com.adms.australianmobileadtoolkit.Arguments.A;
 import static com.adms.australianmobileadtoolkit.Arguments.Args;
+import static com.adms.australianmobileadtoolkit.Common.binAsAverages;
 import static com.adms.australianmobileadtoolkit.Common.filePath;
 import static com.adms.australianmobileadtoolkit.Common.getFilesInDirectory;
+import static com.adms.australianmobileadtoolkit.Common.optionalGetDouble;
 import static com.adms.australianmobileadtoolkit.Logger.DEFAULT_LOG_OUTPUT;
 import static com.adms.australianmobileadtoolkit.Logger.LOG_OUTPUT_MACHINE;
+import static com.adms.australianmobileadtoolkit.interpreter.Depreciated.combineRanges;
+import static com.adms.australianmobileadtoolkit.interpreter.Depreciated.rangesOverlap;
+import static com.adms.australianmobileadtoolkit.interpreter.Depreciated.verySimpleDividers;
+import static com.adms.australianmobileadtoolkit.interpreter.Depreciated.determineImageRegions;
+
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Facebook.retrieveReferenceStencilsPictograms;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Facebook.DEFAULT_RETRIEVE_REFERENCE_STENCILS_PICTOGRAMS_INDEX;
+import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourPalette;
+import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourPaletteDiff;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourQuantizeBitmap;
+import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourToHex;
+import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.dominantColourInImage;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.getWhitespacePixel;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.imageToPictogram;
-import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.pictogramSimilarity;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.pictogramSimilarityV2;
-import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.stencilToString;
-
+import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.pixelDifference;
+import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.pixelDifferencePercentage;
+import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.pixelsAtAxisI;
 import static java.util.Arrays.asList;
+import java.util.stream.IntStream;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.os.Build;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -27,20 +40,26 @@ import com.adms.australianmobileadtoolkit.interpreter.platform.FacebookScreensho
 import com.adms.australianmobileadtoolkit.interpreter.visual.DividerSet;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RunWith(RobolectricTestRunner.class)
+@Config(sdk = {33})
 public class ContentInterpreterTest {
    private static final String TAG = "Interpreter";
    public final Context testContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -56,8 +75,185 @@ public class ContentInterpreterTest {
 
    public static File retrieveLocalScreenshotImage(String thisSimulatedTest, String thisFilename) {
       return (new File(filePath(asList(((new File(".")).getAbsolutePath()),
-            "src", "debug", "assets", "local", "contentInterpreterSimulations", thisSimulatedTest, thisFilename)).getAbsolutePath()));
+              "src", "debug", "assets", "local", "contentInterpreterSimulations", thisSimulatedTest, thisFilename)).getAbsolutePath()));
    }
+
+   @Test
+   public void testDetermineImageRegions() {
+      Bitmap thisScreenshot = (Bitmap) BitmapFactory.decodeFile(
+              retrieveLocalScreenshotImage("test_nonimage_regions", "screenshot.png").getAbsolutePath());
+
+      // take sample size of N pixels across width vs full y
+
+      // if for any row, pixels are dominantly whitespace, then row is definitely non-image
+
+      // TODO in future, adapt to run quicker by not doing full y on first run, but full y on extremes of boundaries only
+      int thisColor = Color.parseColor("#262626");
+      List<List<Integer>> rowSamples = new ArrayList<>();
+      Boolean on = false;
+      List<Integer> currentEntry = new ArrayList<>();
+      for (int i = 0; i < thisScreenshot.getHeight(); i ++) {
+         int finalI = i;
+         int sample_n = 30;
+         List<Integer> rowSample = IntStream.range(0, sample_n).boxed().collect(Collectors.toList()).stream().map(x -> thisScreenshot.getPixel((int) Math.floor(x*((double) thisScreenshot.getWidth() /sample_n)), finalI)).collect(Collectors.toList());
+         Double pixelDiffAvg = optionalGetDouble(rowSample.stream().map(x -> pixelDifferencePercentage(thisColor, x)).collect(Collectors.toList()).stream().mapToDouble(x->x).average());
+         if (pixelDiffAvg > 0.25) {
+            if (!on) {
+               on = true;
+               currentEntry = new ArrayList<>();
+               currentEntry.add(i);
+            }
+         } else {
+            if (on) {
+               on = false;
+
+               if (Math.abs(currentEntry.get(0)-i) > 1) {
+                  currentEntry.add(i);
+                  rowSamples.add(currentEntry);
+               }
+
+
+            }
+         }
+      }
+
+      System.out.println(rowSamples);
+   }
+
+
+   public void determineIfScreenshotsAreVisuallyLinked(Bitmap a, Bitmap b) throws JSONException {
+      int thisColor = Color.parseColor("#262626");
+      int reducingInterval = 50;
+
+      // step the images across each other at 'reducing intervals'
+      // so go over first time - determine where greatest overlaps were
+      // turn strong overlapping intervals into regions
+      // merge regions if necessary
+      // then start next interval, and only evaluate for permissible region(s)
+
+      int heightA = a.getHeight();
+      int heightB = b.getHeight();
+      int boundStart = (int) Math.floor(heightB*0.5); // max of 50% offset within quarter second
+      int boundEnd = heightA;
+
+      JSONObject regionsA = determineImageRegions(thisColor, a);
+      JSONObject regionsB = determineImageRegions(thisColor, b);
+
+      // Begin by permitting the entire region
+      List<List<Integer>> permissibleRegions = Collections.singletonList(asList(boundStart, boundEnd));
+
+      for (int i = boundStart; i < boundEnd; i += reducingInterval) {
+         // check if current interval is within permissibleRegions
+         boolean isWithinPermissionRegions = false;
+         for (List<Integer> r : permissibleRegions) {
+            if ((r.get(0) <= i) && (r.get(1) >= i)) {
+               isWithinPermissionRegions = true;
+               break;
+            }
+         }
+         /*
+         if (isWithinPermissionRegions) {
+            // check overlap
+            // get offset of a
+            int offsetOfA = heightB;
+            int offsetOfB = i;
+            // create offsets
+            List<List<Integer>> regionsAAdjusted = new ArrayList<>();
+            List<List<Integer>> regionsBAdjusted = new ArrayList<>();
+            for (List<Integer> r : regionsA) {
+               regionsAAdjusted.add(Arrays.asList(r.get(0)+offsetOfA, r.get(1)+offsetOfA));
+            }
+            for (List<Integer> r : regionsB) {
+               regionsBAdjusted.add(Arrays.asList(r.get(0)+offsetOfB, r.get(1)+offsetOfB));
+            }
+
+
+            // set a requirement that the offset can only be feasibly half A height within a quarter second
+
+
+
+            // determine overlapping regions
+
+            // this function has the assumption that in either screenshot, there is always imagery
+
+            // for whatever part b image regions that are withijn viewport
+            // it should overlap cleanly with part a
+
+            // for part b regions that are
+
+            // overlaps are ratio'd to smaller of two comparators
+
+            List<Double> overlapRatios = new ArrayList<>();
+            for (List<Integer> rA : regionsAAdjusted) {
+               for (List<Integer> rB : regionsBAdjusted) {
+                  int minRange = Math.max(Math.abs(rA.get(0)-rA.get(1)), Math.abs(rB.get(0)-rB.get(1)));
+                  double overlapRatio = (rangesOverlap(rA.get(0), rA.get(1), rB.get(0), rB.get(1))/ ((double) minRange));
+                  overlapRatios.add(overlapRatio);
+               }
+            }
+
+
+
+
+
+         }*/
+      }
+   }
+
+   @Test
+   public void testDivideUp() {
+      Bitmap thisBitmap = (Bitmap) BitmapFactory.decodeFile(
+              retrieveLocalScreenshotImage("test_divide_up", "divider.png").getAbsolutePath());
+
+
+      List<Bitmap> thisDividerImages = verySimpleDividers(thisBitmap);
+
+      System.out.println("N "+thisDividerImages.size());
+
+      for (Bitmap b : thisDividerImages) {
+
+
+
+         String fpath = (new File(filePath(asList(((new File(".")).getAbsolutePath()),
+                 "src", "debug", "assets", "local", "contentInterpreterSimulations", "test_divide_up", UUID.randomUUID().toString() + ".png")).getAbsolutePath())).getAbsolutePath();
+
+         try (FileOutputStream out = new FileOutputStream(fpath)) {
+            b.compress(Bitmap.CompressFormat.PNG, 100, out); } catch (IOException e) {}
+      }
+
+   }
+
+   @Test
+   public void binAsAveragesTest() {
+      List<Double> inputList = Arrays.asList(256.0, -98.0, 66.0, 258.0, 260.0, 1062.0, -585.0, -586.0, 173.0, -334.0, 334.0, 470.0, 278.0, 250.0, 252.0, -638.0, 253.0, 254.0, 1054.0, 862.0, 255.0);
+
+      HashMap<Double, List<Double>> groups = binAsAverages(Args(
+              A("input", inputList), A("likeness", (double) 5)));
+
+      System.out.println(groups);
+   }
+
+   @Test
+   public void testCombineRanges() {
+      List<List<Integer>> toCombine = Arrays.asList(
+              Arrays.asList(11,836),
+              Arrays.asList(11,837),
+              Arrays.asList(11,838),
+              Arrays.asList(11,839));
+
+      System.out.println(combineRanges(toCombine));
+
+   }
+
+   @Test
+   public void testDominantColour() {
+      Bitmap thisBitmap = (Bitmap) BitmapFactory.decodeFile(
+              retrieveLocalScreenshotImage("test_dominant_colour", "test_element.png").getAbsolutePath());
+      int adHeaderWSColor = Color.parseColor("#272727");
+      int postDividerWSColor = Color.parseColor("#181818");
+      System.out.println(colourToHex(dominantColourInImage(thisBitmap)));
+   }
+
 
    @Test
    public void testPostEngagementPictogramSimilarity() {

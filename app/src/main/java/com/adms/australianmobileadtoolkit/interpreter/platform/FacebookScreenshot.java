@@ -80,6 +80,7 @@ public class FacebookScreenshot {
    public static String DEFAULT_FACEBOOK_SCREENSHOT_POTENTIAL_NAVBAR_BUTTON_STENCIL_TARGET_STATE = "Active";
    public static int DEFAULT_FACEBOOK_SCREENSHOT_REFERENCE_COLOUR_BLUE_LIGHT = Color.rgb(96,96,224);
    public static int DEFAULT_FACEBOOK_SCREENSHOT_REFERENCE_COLOUR_BLUE_DARK = Color.rgb(44,100,245);
+   Integer retainedIndexMidpoint = 0;
 
    public FacebookScreenshot(Arguments args) throws JSONException {
       long elapsedTime = System.currentTimeMillis();
@@ -103,6 +104,7 @@ public class FacebookScreenshot {
 
       int cumulativeH = 0;
       List<Bitmap> dVerticalsTT = new ArrayList<>();
+      List<Integer> dVerticalsTTIndices = new ArrayList<>();
       for (int i = 0; i < dividers.size(); i ++) {
          int thisHeight = dividers.get(i).getHeight();
          cumulativeH += thisHeight;
@@ -110,7 +112,10 @@ public class FacebookScreenshot {
             break;
          }
          dVerticalsTT.add(dividers.get(i));
+         dVerticalsTTIndices.add(i);
       }
+
+      Log.i(TAG, "navbar_index dVerticalsTTIndices:" + dVerticalsTTIndices);
 
       Log.i(TAG, "There are "+dVerticalsTT.size()+" components in the top-third of the image");
 
@@ -148,10 +153,12 @@ public class FacebookScreenshot {
       }
 
       List<Integer> retainedIndices = new ArrayList<>();
+      List<Integer> retainedIndicesIndices = new ArrayList<>();
       List<List<Bitmap>> dHorizontalsTTCorrectN = new ArrayList<>();
       for (int i = 0; i < dHorizontalsTT.size(); i ++) {
          if (anticipatedNavbarButtonOffsets.contains(dHorizontalsTT.get(i).size())) {
             retainedIndices.add(i);
+            retainedIndicesIndices.add(dVerticalsTTIndices.get(i));
             dHorizontalsTTCorrectN.add(dHorizontalsTT.get(i));
          }
       }
@@ -183,10 +190,12 @@ public class FacebookScreenshot {
       Log.i(TAG, "\t\t"+wsAlternationData);
 
       List<Integer> retainedIndices2 = new ArrayList<>();
+      List<Integer> retainedIndices2Indices = new ArrayList<>();
       List<JSONObject> dHorizontalsTTCorrectNwsAlts = new ArrayList<>();
       for (int i = 0; i < retainedIndices.size(); i ++) {
          if (dividerWhitespaceAlternationsWellFormed(wsAlternationData.get(i))) {
             retainedIndices2.add(retainedIndices.get(i));
+            retainedIndices2Indices.add(retainedIndicesIndices.get(i));
             JSONObject thisPair = new JSONObject();
             thisPair.put("dHorizontalsTTCorrectN", dHorizontalsTTCorrectN.get(i));
             thisPair.put("wsAlternationData", wsAlternationData.get(i));
@@ -197,6 +206,7 @@ public class FacebookScreenshot {
       Log.i(TAG, "There are "+dHorizontalsTTCorrectNwsAlts.size()+" components therein that alternate from/to whitespace correctly");
 
       List<Integer> retainedIndices3 = new ArrayList<>();
+      List<Integer> retainedIndices3Indices = new ArrayList<>();
       List<JSONObject> dHorizontalsTTCorrectNwsAltsEncased = new ArrayList<>();
       for (int i = 0; i < retainedIndices2.size(); i ++) {
          List<Boolean> thisAlternationData = ((List<Boolean>) dHorizontalsTTCorrectNwsAlts.get(i).get("wsAlternationData"));
@@ -204,6 +214,7 @@ public class FacebookScreenshot {
          if ((thisAlternationData.get(0))
                && (thisAlternationData.get(thisSize-1))) {
             retainedIndices3.add(retainedIndices2.get(i));
+            retainedIndices3Indices.add(retainedIndices2Indices.get(i));
             dHorizontalsTTCorrectNwsAltsEncased.add(dHorizontalsTTCorrectNwsAlts.get(i));
          }
       }
@@ -219,10 +230,12 @@ public class FacebookScreenshot {
       }
 
       List<Integer> retainedIndices4 = new ArrayList<>();
+      List<Integer> retainedIndices4Indices = new ArrayList<>();
       List<JSONObject> dHorizontalsTTCorrectNwsAltsEncasedEqSpaced = new ArrayList<>();
       for (int i = 0; i < retainedIndices3.size(); i ++) {
          if (equallySpacedBooleans.get(i)) {
             retainedIndices4.add(retainedIndices3.get(i));
+            retainedIndices4Indices.add(retainedIndices3Indices.get(i));
             dHorizontalsTTCorrectNwsAltsEncasedEqSpaced.add(dHorizontalsTTCorrectNwsAltsEncased.get(i));
             Log.i(TAG, "\t Prefacing equal spacing: "+retainedIndices3.get(i));
          }
@@ -236,7 +249,10 @@ public class FacebookScreenshot {
       if (dHorizontalsTTCorrectNwsAltsEncasedEqSpaced.size() != 1) {
          // do nothing
       } else {
-         int retainedIndex = retainedIndices4.get(0);
+         int retainedIndex = retainedIndices4Indices.get(0);
+         for (int i = 0; i <= retainedIndex; i ++) {
+            retainedIndexMidpoint += (dividers.get(i).getHeight() / ((i == retainedIndex) ? 2 : 1));
+         }
 
          List<Bitmap> thisDividers = (List<Bitmap>) dHorizontalsTTCorrectNwsAltsEncasedEqSpaced.get(0).get("dHorizontalsTTCorrectN");
          List<Boolean> thisAlternations = (List<Boolean>) dHorizontalsTTCorrectNwsAltsEncasedEqSpaced.get(0).get("wsAlternationData");
@@ -276,7 +292,7 @@ public class FacebookScreenshot {
          for (int i = 0; i < nominatedExposureStates.size(); i ++) {
             String thisPictogramName = nominatedExposureStates.get(i);
             int cursor = 0;
-            while (cursor < potentialNavbarButtonPictograms.size()) {
+            while (cursor < Math.min(potentialNavbarButtonPictograms.size(), 2)) { // TODO = remove the lock on 2
                for (int j = 0; j < buttonStates.size(); j ++) {
                   String thisPictogramNameAugmented = thisPictogramName+buttonStates.get(j);
                   Stencil thisStencil = (Stencil) referenceStencilsPictograms.get(thisPictogramNameAugmented);
@@ -337,6 +353,7 @@ public class FacebookScreenshot {
                for (Integer key : navbarHits.keySet()) { navbarHits.put(key, navbarHits.get(key).replace("Active", "").replace("Inactive","")); }
                statistics.put("tabsIdentified", navbarHits);
                statistics.put("tabsN", nTabs);
+               statistics.put("retainedIndexMidpoint", retainedIndexMidpoint);
                statistics.put("navbarDividerIndex", retainedIndex);
             }
          }
@@ -612,6 +629,7 @@ public class FacebookScreenshot {
                statistics.put("tabsIdentified", navbarHits);
                statistics.put("tabsN", nTabs);
                statistics.put("navbarDividerIndex", retainedIndex);
+               statistics.put("retainedIndexMidpoint", retainedIndexMidpoint);
                statistics.put("screenshotIsInDarkMode", screenshotIsInDarkMode);
 
             }

@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -113,6 +114,14 @@ public class Visual {
                            bitmap.getPixel(zz, i) : bitmap.getPixel(i, zz)).toArray();
    }
 
+   public static boolean isRowWhitespace(int[] row) {
+      List<Double> diffs = new ArrayList<>();
+      for (int i = 0; i < row.length-1; i ++) {
+         diffs.add(pixelDifferencePercentage(row[i], row[i+1]));
+      }
+      return (optionalGetDouble(diffs.stream().mapToDouble(x->x).max()) < 0.02);
+   }
+
    /*
    *
    * This function generates a scaled-down version of a bitmap
@@ -171,6 +180,8 @@ public class Visual {
    * */
    public static Double DEFAULT_COLOUR_PALETTE_FROM_IMAGE_LINKING_THRESHOLD
                                                          = DEFAULT_COLOUR_PALETTE_LINKING_THRESHOLD;
+
+   // TODO - threshold is too weak in some cases
    public static HashMap<String, Integer> colourPaletteFromImage(Arguments args) {
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
       Double linkingThreshold = (Double) args.get("threshold",
@@ -219,6 +230,18 @@ public class Visual {
          case "avg" : return optionalGetDouble(results.stream().mapToDouble(x->x).average());
          default :  return Collections.max(results);
       }
+   }
+
+
+   public static Double colourListUniformity(List<Integer> thisList) {
+      double maxDiff = 0.0;
+      for (int i = 0; i < thisList.size()-1; i ++) {
+         double thisPixelDiff = pixelDifferencePercentage(thisList.get(i), thisList.get(i+1));
+         if (thisPixelDiff > maxDiff) {
+            maxDiff = thisPixelDiff;
+         }
+      }
+      return maxDiff;
    }
 
    /*
@@ -797,6 +820,13 @@ public class Visual {
                   x -> (Objects.equals(thisPalette.get(x), Collections.max(thisPalette.values())))
             ).collect(Collectors.toList()).get(0);
       return Color.parseColor(hexColorString);
+   }
+
+   public static int dominantColourInImage(Bitmap bitmap) {
+      HashMap<String, Integer> colourPalette = colourPaletteFromImage(Args(A("bitmap", bitmap),
+              A("threshold", 0.01)));
+      System.out.println(colourPalette);
+      return Color.parseColor(Collections.max(colourPalette.entrySet(), Map.Entry.comparingByValue()).getKey());
    }
 
    /*

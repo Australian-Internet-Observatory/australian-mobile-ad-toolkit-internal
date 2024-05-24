@@ -134,7 +134,12 @@ public final class RecorderService extends Service {
             switch(intent.getAction()) {
                 case Intent.ACTION_SCREEN_ON:
                     System.out.println( "The device's screen is on: start recording");
-                    mMediaRecorder.resume();
+                    mMediaRecorder.resume();/*
+                    try {
+                        mMediaRecorder.resume();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }*/
                     //startRecording(resultCode, data); // TODO - edited
                     screenOff = false;
                     sendBroadcast(new Intent(context, InactivityReceiver.class)
@@ -146,7 +151,12 @@ public final class RecorderService extends Service {
                     sendBroadcast(new Intent(context, InactivityReceiver.class)
                           .putExtra("INTENT_ACTION", "SCREEN_IS_OFF"));  // TODO - checked for API migration
                     //stopRecording(); // TODO - edited
-                    mMediaRecorder.pause();
+                    mMediaRecorder.pause();/*
+                    try {
+                        mMediaRecorder.pause();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }*/
                     break;
                 case Intent.ACTION_CONFIGURATION_CHANGED:
                     System.out.println( "The device's configuration has changed: restarting recording");
@@ -277,6 +287,8 @@ public final class RecorderService extends Service {
         mServiceHandler.sendMessage(msg);
         return START_REDELIVER_INTENT;
     }
+
+    private Handler mHandler;
     
     /*
     * 
@@ -372,6 +384,11 @@ public final class RecorderService extends Service {
                 try {
                     mMediaProjection = mProjectionManager.getMediaProjection(resultCode, data); // Data is intent
                     Surface surface = mMediaRecorder.getSurface();
+
+                    // TODO - fix hander to do something when stopped : https://github.com/mtsahakis/MediaProjectionDemo/blob/3a98fc8e5e86da4dc75c3c048d27ddcd4f2925e9/app/src/main/java/com/mtsahakis/mediaprojectiondemo/ScreenCaptureService.java#L49
+                    mMediaProjection.registerCallback(new MediaProjection.Callback() {
+                        // Implement callback methods here
+                    }, mHandler);
                     mVirtualDisplay = mMediaProjection.createVirtualDisplay("MainActivity",
                           displayWidth, displayHeight, mScreenDensity,
                           VIRTUAL_DISPLAY_FLAG_PRESENTATION,
