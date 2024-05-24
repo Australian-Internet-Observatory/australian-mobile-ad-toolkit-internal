@@ -22,7 +22,7 @@
         <item name="colorAccent">@color/black</item>
         <item name="backgroundColor">@color/white</item>
     </style>
-    <style name="Switch" parent="Theme.AppCompat.Light">
+    <style name="Switch" parent="Theme.AppCompat.DayNight">
         <!-- active thumb & track color (30% transparency) -->
         <item name="colorControlActivated">@color/yellow_primary_night</item>
 
@@ -33,12 +33,21 @@
         <!-- inactive track color (30% transparency) -->
         <item name="android:colorForeground">@color/black</item>
     </style>
-    <style name="SecondaryButton" parent="Theme.AppCompat.Light">
+    <style name="PrimaryButton" parent="Theme.AppCompat.DayNight">
+        <item name="android:fontFamily">@font/barlow_semi_bold</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:backgroundTint">@color/yellow_primary</item>
+        <item name="android:textColor">@color/black2</item>
+    </style>
+    <style name="SecondaryButton" parent="Theme.AppCompat.DayNight">
         <item name="android:fontFamily">@font/barlow_semi_bold</item>
         <item name="android:textSize">14sp</item>
         <item name="android:letterSpacing">0.1</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:backgroundTint">@color/gray_light</item>
+        <item name="android:textColor">@color/black2</item>
     </style>
 
 </resources>

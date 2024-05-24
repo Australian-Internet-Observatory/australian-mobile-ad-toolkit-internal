@@ -123,7 +123,6 @@
             android:layout_height="wrap_content"
             android:text="@string/fragment_dashboard_back_text"
             android:theme="@style/SecondaryButton"
-            android:textColor="@color/black"
             android:layout_marginHorizontal="15dp"
             android:layout_marginBottom="15dp"/>
     </LinearLayout>

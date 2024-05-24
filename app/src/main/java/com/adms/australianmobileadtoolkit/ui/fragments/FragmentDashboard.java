@@ -3,10 +3,11 @@ package com.adms.australianmobileadtoolkit.ui.fragments;
 import static android.view.View.TEXT_ALIGNMENT_CENTER;
 import static android.widget.LinearLayout.VERTICAL;
 import static com.adms.australianmobileadtoolkit.MainActivity.THIS_OBSERVER_ID;
-import static com.adms.australianmobileadtoolkit.Settings.ACTIVATION_CODE_NOT_APPLICABLE_STRING;
-import static com.adms.australianmobileadtoolkit.Settings.ACTIVATION_CODE_PREFIX_STRING;
+import static com.adms.australianmobileadtoolkit.Settings.get_ACTIVATION_CODE_NOT_APPLICABLE_STRING;
+import static com.adms.australianmobileadtoolkit.Settings.get_ACTIVATION_CODE_PREFIX_STRING;
 import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
@@ -47,6 +48,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class FragmentDashboard extends Fragment {
@@ -88,11 +90,11 @@ public class FragmentDashboard extends Fragment {
       View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
       thisView = view;
 
-      String activationCodeNotApplicableString = ACTIVATION_CODE_NOT_APPLICABLE_STRING;
+      String activationCodeNotApplicableString = get_ACTIVATION_CODE_NOT_APPLICABLE_STRING(getContext());
       String myActivationCodeUUIDString = sharedPreferenceGet(getActivity(),
             "SHARED_PREFERENCE_OBSERVER_ID", activationCodeNotApplicableString);
       TextView myActivationCode = ((TextView) view.findViewById(R.id.myActivationCode));
-      myActivationCode.setText(ACTIVATION_CODE_PREFIX_STRING + myActivationCodeUUIDString);
+      myActivationCode.setText(get_ACTIVATION_CODE_PREFIX_STRING(getContext()) + myActivationCodeUUIDString);
 
       Button mbuttonBackToMain = (Button) view.findViewById(R.id.buttonBackToMain);
       mbuttonBackToMain.setOnClickListener(v ->{
@@ -146,6 +148,7 @@ public class FragmentDashboard extends Fragment {
 
    static int id = 1;
 
+   @SuppressLint("SetTextI18n")
    private void adDivider(String headerURL, String bannerURL, long observedAt) {
       LinearLayout fdo = thisView.findViewById(R.id.fragment_dashboard_overview);
       LinearLayout.MarginLayoutParams x = new LinearLayout.MarginLayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
@@ -189,7 +192,7 @@ public class FragmentDashboard extends Fragment {
       TextView thisDateText = new TextView(getActivity());
       thisDateText.setTextColor(getResources().getColor(R.color.yellow_primary));
       thisDateText.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 5, getResources().getDisplayMetrics()));
-      thisDateText.setText("Observed "+date);
+      thisDateText.setText(getString(R.string.dashboard_observed_prefix)+date);
       thisDateText.setTypeface(null, Typeface.BOLD_ITALIC);
       thisDateText.setTextAlignment(TEXT_ALIGNMENT_CENTER);
       thisDateText.setPadding(

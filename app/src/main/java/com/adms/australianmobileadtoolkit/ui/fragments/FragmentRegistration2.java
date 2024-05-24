@@ -1,7 +1,7 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
-import static com.adms.australianmobileadtoolkit.Settings.DEMOGRAPHIC_FAILSAFE_COUNTRY;
-import static com.adms.australianmobileadtoolkit.Settings.DEMOGRAPHIC_FAILSAFE_STRING;
+import static com.adms.australianmobileadtoolkit.Settings.get_DEMOGRAPHIC_FAILSAFE_COUNTRY;
+import static com.adms.australianmobileadtoolkit.Settings.get_DEMOGRAPHIC_FAILSAFE_STRING;
 import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
 import static com.adms.australianmobileadtoolkit.Settings.sharedPreferencePut;
 
@@ -213,7 +213,7 @@ public class FragmentRegistration2 extends Fragment implements AsyncResponse {
 
 
          if (fieldsEmpty) {
-            Toast.makeText(getContext(), DEMOGRAPHIC_FAILSAFE_STRING, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), get_DEMOGRAPHIC_FAILSAFE_STRING(getContext()), Toast.LENGTH_SHORT).show();
          } else {
             loadRegistration = new DialogLoading(requireContext());
             loadRegistration.show();
@@ -253,7 +253,7 @@ public class FragmentRegistration2 extends Fragment implements AsyncResponse {
       mswitchResidingInAustralia.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
          public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if (!isChecked) {
-               Toast.makeText(getContext(), DEMOGRAPHIC_FAILSAFE_COUNTRY, Toast.LENGTH_SHORT).show();
+               Toast.makeText(getContext(), get_DEMOGRAPHIC_FAILSAFE_COUNTRY(getContext()), Toast.LENGTH_SHORT).show();
                ((LinearLayout) view.findViewById(R.id.fragmentMainUnregisteredAustralian)).setVisibility(View.GONE);
                ((Button) view.findViewById(R.id.buttonCompleteRegistration)).setVisibility(View.GONE);
                ((TextView) view.findViewById(R.id.textViewAustralianCondition)).setVisibility(View.VISIBLE);

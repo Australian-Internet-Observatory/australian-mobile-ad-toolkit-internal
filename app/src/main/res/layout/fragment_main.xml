@@ -60,7 +60,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/fragment_main_register_text"
-            android:textColor="@color/black"/>
+            android:theme="@style/PrimaryButton"/>
 
         <TextView
             android:id="@+id/fragment_main_learn_more_unregistered"
@@ -168,7 +168,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_height="wrap_content"
             android:text="@string/fragment_main_app_dashboard_text"
             android:layout_marginBottom="15dp"
-            android:textColor="@color/black"/>
+            android:theme="@style/SecondaryButton"/>
 
         <View
             android:layout_width="match_parent"

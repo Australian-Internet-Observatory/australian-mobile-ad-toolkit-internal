@@ -1,15 +1,20 @@
 package com.adms.australianmobileadtoolkit;
 import static com.adms.australianmobileadtoolkit.MainActivity.mProjectionManager;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_PERIODIC_CHANNEL_ID;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_PERIODIC_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_REBOOT_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_REBOOT_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.Settings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED;
 import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_TITLE;
 import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_TITLE_UNREGISTERED;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_REBOOT_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_REBOOT_TITLE;
 import static com.adms.australianmobileadtoolkit.Settings.intervalMillisecondsBetweenPeriodicNotifications;
 import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
@@ -243,15 +248,15 @@ public class InactivityReceiver extends BroadcastReceiver {
       // Send the periodic notification to inform the user that the app is not observing ads
       if (THIS_REGISTRATION_STATUS) {
          builderPeriodicNotification = constructNotification(context,
-                 NOTIFICATION_PERIODIC_CHANNEL_ID,
+                 get_NOTIFICATION_PERIODIC_CHANNEL_ID(context),
                  get_NOTIFICATION_PERIODIC_TITLE(context),
-                 NOTIFICATION_PERIODIC_DESCRIPTION,null)
+                 get_NOTIFICATION_PERIODIC_DESCRIPTION(context),null)
                  .setContentIntent(constructNotificationScreenRecorderPendingIntent(context, "TURN_ON_SCREEN_RECORDER"));
       } else {
          builderPeriodicNotification = constructNotification(context,
-                 NOTIFICATION_PERIODIC_CHANNEL_ID,
+                 get_NOTIFICATION_PERIODIC_CHANNEL_ID(context),
                  get_NOTIFICATION_PERIODIC_TITLE_UNREGISTERED(context),
-                 NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED,null)
+                 get_NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED(context),null)
                  .setContentIntent(constructNotificationScreenRecorderPendingIntent(context, "REGISTER"));
 
       }
@@ -260,9 +265,9 @@ public class InactivityReceiver extends BroadcastReceiver {
 
    public static void sendRebootNotification(Context context) {
       NotificationCompat.Builder builderRebootNotification = constructNotification(context,
-              NOTIFICATION_PERIODIC_CHANNEL_ID,
+              get_NOTIFICATION_PERIODIC_CHANNEL_ID(context),
               get_NOTIFICATION_REBOOT_TITLE(context),
-              NOTIFICATION_REBOOT_DESCRIPTION, null)
+              get_NOTIFICATION_REBOOT_DESCRIPTION(context), null)
               .setContentIntent(constructNotificationScreenRecorderPendingIntent(context, "TURN_ON_SCREEN_RECORDER"));
       sendNotification(context, builderRebootNotification, "NOTIFICATION_REBOOT_ID_CASE");
    }
@@ -293,8 +298,8 @@ public class InactivityReceiver extends BroadcastReceiver {
       setPeriodicNotifications(context);
       try {
          // Attempt to generate the notification channel
-         generateNotificationChannel(context, NOTIFICATION_PERIODIC_CHANNEL_ID,
-               NOTIFICATION_PERIODIC_CHANNEL_ID_NAME, NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION);
+         generateNotificationChannel(context, get_NOTIFICATION_PERIODIC_CHANNEL_ID(context),
+               get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME(context), get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION(context));
          // If the device has rebooted:
          if ((intent != null) && (intent.getAction() != null) && (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED))) {
             System.out.println( "'SCREEN_OFF_DURING_RECORDING' and 'RECORDING_STATUS' variables have been set back to 'false'");

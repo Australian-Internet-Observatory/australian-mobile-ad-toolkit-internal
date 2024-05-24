@@ -49,6 +49,6 @@
             android:layout_height="wrap_content"
             android:text="@string/dialog_registration_success_back_text"
             android:gravity="center"
-            android:textColor="@color/black"/>
+            android:theme="@style/PrimaryButton"/>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

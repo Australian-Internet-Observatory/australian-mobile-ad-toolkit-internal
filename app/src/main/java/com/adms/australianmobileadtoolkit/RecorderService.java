@@ -18,11 +18,12 @@ import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNot
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
 import static com.adms.australianmobileadtoolkit.MainActivity.SCREEN_RECORDING_PERMISSION_CODE;
 import static com.adms.australianmobileadtoolkit.MainActivity.mProjectionManager;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_RECORDING_CHANNEL_ID;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_RECORDING_CHANNEL_ID_NAME;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_RECORDING_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_CHANNEL_ID;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_CHANNEL_ID_NAME;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_TITLE;
+import static com.adms.australianmobileadtoolkit.Settings.get_RECORD_SERVICE_EXTRA_RESULT_CODE;
 import static com.adms.australianmobileadtoolkit.Settings.maxNumberOfVideos;
 import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
 import static com.adms.australianmobileadtoolkit.Settings.sharedPreferencePut;
@@ -79,7 +80,6 @@ public final class RecorderService extends Service {
     private int resultCode;
     private static final String TAG = "RecorderService";
     // The extra result code associated with the intent of the recording service
-    private static final String EXTRA_RESULT_CODE = Settings.RECORD_SERVICE_EXTRA_RESULT_CODE;
     private static final String EXTRA_DATA = Settings.RECORD_SERVICE_EXTRA_DATA;
     // The ID of the notification associated with the recording service
     // (the value has no actual bearing on the functionality, although don't set it to zero:
@@ -100,7 +100,7 @@ public final class RecorderService extends Service {
     * */
     static Intent newIntent(Context context, int resultCode, Intent data) {
         Intent intent = new Intent(context, RecorderService.class);  // TODO - checked for API migration
-        intent.putExtra(EXTRA_RESULT_CODE, resultCode);
+        intent.putExtra(get_RECORD_SERVICE_EXTRA_RESULT_CODE(context), resultCode);
         intent.putExtra(EXTRA_DATA, data);
         return intent;
     }
@@ -228,13 +228,13 @@ public final class RecorderService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(
               this, 0, notificationIntent, PendingIntent.FLAG_MUTABLE);
         // Attempt to generate the notification channel
-        generateNotificationChannel(this, NOTIFICATION_RECORDING_CHANNEL_ID,
-              NOTIFICATION_RECORDING_CHANNEL_ID_NAME, NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION);
+        generateNotificationChannel(this, get_NOTIFICATION_RECORDING_CHANNEL_ID(this),
+              get_NOTIFICATION_RECORDING_CHANNEL_ID_NAME(this), get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION(this));
         // Send the notification
         NotificationCompat.Builder builderPeriodicNotification = constructNotification(this,
-              NOTIFICATION_RECORDING_CHANNEL_ID,
+              get_NOTIFICATION_RECORDING_CHANNEL_ID(this),
               get_NOTIFICATION_RECORDING_TITLE(this),
-              NOTIFICATION_RECORDING_DESCRIPTION, null)
+              get_NOTIFICATION_RECORDING_DESCRIPTION(this), null)
               .setContentIntent(pendingIntent);
         Notification notification = constructNotificationForward(this, builderPeriodicNotification);
         // Configure and start the service
@@ -275,7 +275,7 @@ public final class RecorderService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Get the intent
-        resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0);
+        resultCode = intent.getIntExtra(get_RECORD_SERVICE_EXTRA_RESULT_CODE(this), 0);
         data = intent.getParcelableExtra(EXTRA_DATA);
         // If the intent is malformed, throw an error
         if (resultCode == 0 || data == null) {

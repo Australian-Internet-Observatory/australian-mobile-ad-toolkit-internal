@@ -211,14 +211,13 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="I Agree"
-            android:textColor="@color/black" />
+            android:theme="@style/PrimaryButton" />
 
         <Button
             android:id="@+id/buttonBackFromRegistration1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Go Back"
-            android:textColor="@color/black"
             android:theme="@style/SecondaryButton" />
 
         <TextView
@@ -236,7 +235,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="15dp"
-            android:text="@string/app_footer_privacy_policy"
+            android:text="@string/fragment_main_footer_privacy_policy"
             android:textAlignment="center" />
 
     </LinearLayout>

@@ -12,11 +12,14 @@ import static com.adms.australianmobileadtoolkit.InactivityReceiver.cancelAllIna
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.setPeriodicNotifications;
 import static com.adms.australianmobileadtoolkit.Settings.DEBUG;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_PERIODIC_CHANNEL_ID;
-import static com.adms.australianmobileadtoolkit.Settings.NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
+import static com.adms.australianmobileadtoolkit.Settings.get_APP_CHILD_DIRECTORY;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
 import static com.adms.australianmobileadtoolkit.Settings.SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE;
 import static com.adms.australianmobileadtoolkit.Settings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
 import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
 import static com.adms.australianmobileadtoolkit.Settings.sharedPreferencePut;
 
@@ -145,8 +148,8 @@ public class MainActivity extends BaseActivity {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{POST_NOTIFICATIONS},101);
         }
         // Generate the notification channel
-        generateNotificationChannel(this, NOTIFICATION_PERIODIC_CHANNEL_ID,
-              NOTIFICATION_PERIODIC_CHANNEL_ID_NAME, NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION);
+        generateNotificationChannel(this, get_NOTIFICATION_PERIODIC_CHANNEL_ID(this),
+              get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME(this), get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION(this));
         // Attempt to set the periodic notifications
         setPeriodicNotifications(this);
 
@@ -203,7 +206,7 @@ public class MainActivity extends BaseActivity {
      * */
     public static File getMainDir(Context context) {
         // The child directory to instantiate
-        String childDirectory = Settings.APP_CHILD_DIRECTORY;
+        String childDirectory = get_APP_CHILD_DIRECTORY(context);
         // Determine the external files directories
         File[] externalFilesDirs = ContextCompat.getExternalFilesDirs(context, null);
         // If an SD card is detected, use it; otherwise use the internal storage

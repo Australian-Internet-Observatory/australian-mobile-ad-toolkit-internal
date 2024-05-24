@@ -28,6 +28,26 @@
     <string name="fragment_main_app_status_registered">APP STATUS: REGISTERED</string>
     <string name="fragment_main_app_dashboard_tooltip">Advertisements that you have already observed can be viewed at your personal dashboard.</string>
     <string name="fragment_main_app_dashboard_text">GO TO MY DASHBOARD</string>
+    <string name="dashboard_observed_prefix">Observed </string>
+    <string name="notification_reboot_title">Ad observations stop after a reboot</string>
+    <string name="notification_reboot_description">Tap to start observing ads again</string>
+    <string name="notification_periodic_title">Ads are not being observed</string>
+    <string name="notification_periodic_title_unregistered">The app is not registered</string>
+    <string name="notification_periodic_description">Tap to start observing ads</string>
+    <string name="notification_periodic_description_unregistered">Tap to register the app</string>
+    <string name="demographic_failsafe_string">One or more fields need to be entered before you can continue</string>
+    <string name="demographic_failsafe_country">Research participation is not available to users outside Australia at this point.</string>
+    <string name="activation_code_not_applicable">N/A</string>
+    <string name="activation_code_prefix">My Activation Code: </string>
+    <string name="notification_periodic_channel_id_name">Inactivity Reminders</string>
+    <string name="notification_periodic_channel_description">This app is designed to stop collecting ads whenever your device restarts. When this happens, we\'ll need your permission to re-enable it</string>
+    <string name="notification_recording_channel_id_name">Recording Reminders</string>
+    <string name="notification_recording_channel_description">Be informed of when our app has started collecting Facebook ads</string>
+    <string name="notification_recording_title">Ads are being observed</string>
+    <string name="notification_recording_description">The app is now collecting Facebook ads that have been served to you</string>
+    <string name="app_underscore_code">adms_mobile_ad_observatory</string>
+    <string name="app_child_directory_name">australianmobileadobservatory</string>
+    <string name="app_titled_code">AustralianMobileAdObservatory</string>
 
 </resources>
 

@@ -12,7 +12,9 @@ import java.util.List;
 
 public class Settings {
    // The extra result code associated with the intent of the recording service
-   public static final String RECORD_SERVICE_EXTRA_RESULT_CODE = "AustralianMobileAdObservatoryExtraResultCode";
+   public static final String get_RECORD_SERVICE_EXTRA_RESULT_CODE(Context context) {
+      return context.getString(R.string.app_titled_code)+"ExtraResultCode";
+   }
    public static final String RECORD_SERVICE_EXTRA_DATA = "data";
    // The ID of the notification associated with the recording service
    // (the value has no actual bearing on the functionality, although don't set it to zero:
@@ -38,7 +40,9 @@ public class Settings {
    public static List<String> DIRECTORIES_TO_CREATE = (DEBUG) ? Arrays.asList("videos", "debug", "ffmpeg_cache") : Arrays.asList("videos", "ffmpeg_cache");
 
    // The child directory to instantiate for the app
-   public static String APP_CHILD_DIRECTORY = "australianmobileadobservatory";
+   public static String get_APP_CHILD_DIRECTORY(Context context) {
+      return context.getString(R.string.app_child_directory_name);
+   }
    // The source folder of the training data files
    public static String DEBUG_DATA_FILES_SOURCE_DIRECTORY = "raw";
    public static String AWS_LAMBDA_ENDPOINT = "https://nmzoodzqpiuok4adbqvldcog4y0mlumv.lambda-url.us-east-2.on.aws/";
@@ -78,12 +82,13 @@ public class Settings {
    *
    * */
    public static String get_NOTIFICATION_REBOOT_TITLE(Context context) {
-      return "Ad observations stop after a reboot";
+      return context.getString(R.string.notification_reboot_title);
    }
 
    // The description of the notification that is sent off whenever a reboot of the device takes place
-   public static String NOTIFICATION_REBOOT_DESCRIPTION =
-         "Tap to start observing ads again";
+   public static String get_NOTIFICATION_REBOOT_DESCRIPTION(Context context) {
+      return context.getString(R.string.notification_reboot_description);
+   }
 
    /*
     *
@@ -92,30 +97,46 @@ public class Settings {
     *
     * */
    public static String get_NOTIFICATION_PERIODIC_TITLE(Context context) {
-      return "Ads are not being observed";
+      return context.getString(R.string.notification_periodic_title);
    }
 
    public static String get_NOTIFICATION_PERIODIC_TITLE_UNREGISTERED(Context context) {
-      return "The app is not registered";
+      return context.getString(R.string.notification_periodic_title_unregistered);
    }
 
    // The description of the notification that is sent off periodically, when the device is not observing ads
-   public static String NOTIFICATION_PERIODIC_DESCRIPTION =
-           "Tap to start observing ads";
+   public static String get_NOTIFICATION_PERIODIC_DESCRIPTION(Context context) {
+      return context.getString(R.string.notification_periodic_description);
+   }
 
-   public static String DEMOGRAPHIC_FAILSAFE_STRING = "One or more fields need to be entered before you can continue";
-   public static String DEMOGRAPHIC_FAILSAFE_COUNTRY = "Research participation is not available to users outside Australia at this point.";
+   public static String get_DEMOGRAPHIC_FAILSAFE_STRING(Context context) {
+      return context.getString(R.string.demographic_failsafe_string);
+   };
+   public static String get_DEMOGRAPHIC_FAILSAFE_COUNTRY(Context context) {
+      return context.getString(R.string.demographic_failsafe_country);
+   };
 
-   public static String ACTIVATION_CODE_NOT_APPLICABLE_STRING = "N/A";
-   public static String ACTIVATION_CODE_PREFIX_STRING = " My Activation Code: ";
-   public static String NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED =
-           "Tap to register the app";
+   public static String get_ACTIVATION_CODE_NOT_APPLICABLE_STRING(Context context) {
+      return context.getString(R.string.activation_code_not_applicable);
+   }
+   public static String get_ACTIVATION_CODE_PREFIX_STRING(Context context) {
+      return context.getString(R.string.activation_code_prefix);
+   }
+   public static String get_NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED(Context context) {
+      return context.getString(R.string.notification_periodic_description_unregistered);
+   }
    // The unique ID associated with the periodic notification channel
-   public static String NOTIFICATION_PERIODIC_CHANNEL_ID = "adms_mobile_ad_observatory_notification_periodic_channel";
+   public static String get_NOTIFICATION_PERIODIC_CHANNEL_ID(Context context) {
+      return context.getString(R.string.app_underscore_code)+"_notification_periodic_channel";
+   }
    // The front-facing name associated with the periodic notification channel
-   public static String NOTIFICATION_PERIODIC_CHANNEL_ID_NAME = "Inactivity Reminders";
+   public static String get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME(Context context) {
+      return context.getString(R.string.notification_periodic_channel_id_name);
+   }
    // The front-facing description associated with the periodic notification channel
-   public static String NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION = "This app is designed to stop collecting ads whenever your device restarts. When this happens, we'll need your permission to re-enable it";
+   public static String get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION(Context context) {
+      return context.getString(R.string.notification_periodic_channel_description);
+   }
    // The interval (in milliseconds) between periodic notifications
    public static int intervalMillisecondsBetweenPeriodicNotifications = 1000*60*60*8; // TODO adjust - make it start after given amount of time // 1000*60*60*8;
    // The default value of the observer ID
@@ -124,11 +145,17 @@ public class Settings {
    public static String SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE = "undefined";
 
    // The unique ID associated with the periodic notification channel
-   public static String NOTIFICATION_RECORDING_CHANNEL_ID = "adms_mobile_ad_observatory_notification_recording_channel";
+   public static String get_NOTIFICATION_RECORDING_CHANNEL_ID(Context context) {
+      return context.getString(R.string.app_underscore_code)+"_notification_recording_channel";
+   }
    // The front-facing name associated with the periodic notification channel
-   public static String NOTIFICATION_RECORDING_CHANNEL_ID_NAME = "Recording Reminders";
+   public static String get_NOTIFICATION_RECORDING_CHANNEL_ID_NAME(Context context) {
+      return context.getString(R.string.notification_recording_channel_id_name);
+   }
    // The front-facing description associated with the periodic notification channel
-   public static String NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION = "Be informed of when our app has started collecting Facebook ads";
+   public static String get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION(Context context) {
+      return context.getString(R.string.notification_recording_channel_description);
+   }
 
    /*
     *
@@ -136,11 +163,12 @@ public class Settings {
     *
     * */
    public static String get_NOTIFICATION_RECORDING_TITLE(Context context) {
-      return "Ads are being observed";
+      return context.getString(R.string.notification_recording_title);
    }
 
-   public static String NOTIFICATION_RECORDING_DESCRIPTION =
-         "The app is now collecting Facebook ads that have been served to you";
+   public static String get_NOTIFICATION_RECORDING_DESCRIPTION(Context context) {
+      return context.getString(R.string.notification_recording_description);
+   }
 
    /*
    *
