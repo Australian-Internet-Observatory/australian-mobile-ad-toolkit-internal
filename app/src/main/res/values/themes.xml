@@ -39,7 +39,7 @@
         <item name="android:letterSpacing">0.1</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:backgroundTint">@color/yellow_primary</item>
-        <item name="android:textColor">@color/black2</item>
+        <item name="android:textColor">@color/black</item>
     </style>
     <style name="SecondaryButton" parent="Theme.AppCompat.DayNight">
         <item name="android:fontFamily">@font/barlow_semi_bold</item>
@@ -47,7 +47,7 @@
         <item name="android:letterSpacing">0.1</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:backgroundTint">@color/gray_light</item>
-        <item name="android:textColor">@color/black2</item>
+        <item name="android:textColor">@color/black</item>
     </style>
 
 </resources>
