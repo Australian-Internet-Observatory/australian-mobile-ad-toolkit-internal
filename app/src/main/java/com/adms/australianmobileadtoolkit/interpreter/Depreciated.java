@@ -11,16 +11,13 @@ import static com.adms.australianmobileadtoolkit.Common.weightedHashMap;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourListUniformity;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourPalette;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourQuantizeBitmap;
-import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourToHex;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.combineImagesList;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.cropWhitespace;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.dividerBoundOffsets;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.dividerWhitespaceAlternations;
-import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.dominantColourInImage;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.getWhitespacePixel;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.imageToPictogram;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.imageToStencil;
-import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.isRowWhitespace;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.isWhitespace;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.isWhitespaceLocalDifferencesSubFunction;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.pictogramSimilarity;
@@ -35,7 +32,6 @@ import static java.util.Arrays.asList;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.util.Log;
 
@@ -54,7 +50,6 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,7 +59,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -101,7 +98,7 @@ public class Depreciated {
          String thisUUID = fnameDecomposed[1];
 
          if ((!((timestampCursor == 0) || (Math.abs(timestampCursor - thisTimestamp) < maximumSegmentFrameInterval)))
-               || ((segments.size() > targetSegmentI) && (segments.get(targetSegmentI).size() >= maximumNScreenshotsPerSegment))) {
+                 || ((segments.size() > targetSegmentI) && (segments.get(targetSegmentI).size() >= maximumNScreenshotsPerSegment))) {
             targetSegmentI ++;
          }
 
@@ -166,19 +163,19 @@ public class Depreciated {
             int cropFrom = (int) thisBounds.get(location);
             boolean consistent = true;
             while ((consistent) && (
-                  ((location.equals("t")) && cropFrom < thisHeight)
-                        || ((location.equals("b")) && cropFrom >= 0)
-                        || ((location.equals("l")) && cropFrom < thisWidth)
-                        || ((location.equals("r")) && cropFrom >= 0))) {
+                    ((location.equals("t")) && cropFrom < thisHeight)
+                            || ((location.equals("b")) && cropFrom >= 0)
+                            || ((location.equals("l")) && cropFrom < thisWidth)
+                            || ((location.equals("r")) && cropFrom >= 0))) {
                Bitmap thisImage = (Bitmap) thisSegment.get(0).get("image");
                int[] comparingArray = ((location.equals("t") || location.equals("b")) ?
-                     pixelsAtAxisI(thisImage, "v", cropFrom) : pixelsAtAxisI(thisImage, "h", cropFrom));
+                       pixelsAtAxisI(thisImage, "v", cropFrom) : pixelsAtAxisI(thisImage, "h", cropFrom));
                for (int i = 0; i < thisSegment.size(); i ++) {
                   JSONObject thisScreenshot = thisSegment.get(i);
                   if ((boolean) thisScreenshot.get("inFacebook")) {
                      Bitmap thisOtherImage = (Bitmap) thisScreenshot.get("image");
                      int[] thisArray = ((location.equals("t") || location.equals("b")) ?
-                           pixelsAtAxisI(thisOtherImage, "v", cropFrom) : pixelsAtAxisI(thisOtherImage, "h", cropFrom));
+                             pixelsAtAxisI(thisOtherImage, "v", cropFrom) : pixelsAtAxisI(thisOtherImage, "h", cropFrom));
                      int maxDifferencePixels = 30;
 
                      int[] differenceArray = new int[thisArray.length];
@@ -258,49 +255,49 @@ public class Depreciated {
 
          for (int j = 0; j < dividersRetainedB.size(); j ++) {
             //if ((!(((List<Double>) screenshots.get(0).get("whitespace")).get(i) < 0.025)) && (!(((List<Double>) screenshots.get(1).get("whitespace")).get(j) < 0.025))) {
-                  int BH = (dividersRetainedB.get(j).getHeight());
-                  List<Integer> RHOA = ((List<List<Integer>>) screenshots.get(0).get("dividersRetaineddividerBoundOffsets")).get(i);
-                  List<Integer> RHOB = ((List<List<Integer>>) screenshots.get(1).get("dividersRetaineddividerBoundOffsets")).get(j);
-                  double RHOSum = 0.0;
-                  for (int k = 0; k < RHOA.size(); k++) {
-                     RHOSum += Math.abs(RHOA.get(k) - RHOB.get(k));
-                  }
-                  double differencePercentage = (RHOSum / ((Integer) ((HashMap<String, Integer>) screenshots.get(0).get("dimensions")).get("width")));
-                  if (differencePercentage <= 0.01) {
-                     int oA = (int) dividersRetainedA.subList(0,i).stream().map(x->x.getHeight()).mapToDouble(x->x).sum();
-                     int oB = (int) dividersRetainedB.subList(0,j).stream().map(x->x.getHeight()).mapToDouble(x->x).sum();
-                     if ((Math.abs(AH - BH) < maxDifferencePixels)) {
-                        double matchResult = pictogramSimilarity(((List<Bitmap>) screenshots.get(0).get("pictograms")).get(i)
-                                ,((List<Bitmap>) screenshots.get(1).get("pictograms")).get(j), null);
+            int BH = (dividersRetainedB.get(j).getHeight());
+            List<Integer> RHOA = ((List<List<Integer>>) screenshots.get(0).get("dividersRetaineddividerBoundOffsets")).get(i);
+            List<Integer> RHOB = ((List<List<Integer>>) screenshots.get(1).get("dividersRetaineddividerBoundOffsets")).get(j);
+            double RHOSum = 0.0;
+            for (int k = 0; k < RHOA.size(); k++) {
+               RHOSum += Math.abs(RHOA.get(k) - RHOB.get(k));
+            }
+            double differencePercentage = (RHOSum / ((Integer) ((HashMap<String, Integer>) screenshots.get(0).get("dimensions")).get("width")));
+            if (differencePercentage <= 0.01) {
+               int oA = (int) dividersRetainedA.subList(0,i).stream().map(x->x.getHeight()).mapToDouble(x->x).sum();
+               int oB = (int) dividersRetainedB.subList(0,j).stream().map(x->x.getHeight()).mapToDouble(x->x).sum();
+               if ((Math.abs(AH - BH) < maxDifferencePixels)) {
+                  double matchResult = pictogramSimilarity(((List<Bitmap>) screenshots.get(0).get("pictograms")).get(i)
+                          ,((List<Bitmap>) screenshots.get(1).get("pictograms")).get(j), null);
 
-                        //Log.i(TAG, "\t\tavg: "+totalDifferenceArray.stream().mapToDouble(x->x).average());
-                        Log.i(TAG, "\tmatched: "+i+" <-> "+j+" : "+matchResult+" : "+differencePercentage);
-                        matchMap.put(i+":"+j,matchResult);
-                        if (matchResult > (1.0 - tolerance)) {
-                           Log.i(TAG, "\t\tmatched success: "+i+" <-> "+j+" : "+matchResult+" w/ offset:"+(oA - oB));
-                           JSONObject thisMatchingDivider = new JSONObject();
-                           matchedI.add(i);
-                           matchedJ.add(j);
-                           thisMatchingDivider.put("indexA", i);
-                           thisMatchingDivider.put("indexB", j);
-                           thisMatchingDivider.put("offset", (oA - oB));
-                           matchingDividers.add(thisMatchingDivider);
+                  //Log.i(TAG, "\t\tavg: "+totalDifferenceArray.stream().mapToDouble(x->x).average());
+                  Log.i(TAG, "\tmatched: "+i+" <-> "+j+" : "+matchResult+" : "+differencePercentage);
+                  matchMap.put(i+":"+j,matchResult);
+                  if (matchResult > (1.0 - tolerance)) {
+                     Log.i(TAG, "\t\tmatched success: "+i+" <-> "+j+" : "+matchResult+" w/ offset:"+(oA - oB));
+                     JSONObject thisMatchingDivider = new JSONObject();
+                     matchedI.add(i);
+                     matchedJ.add(j);
+                     thisMatchingDivider.put("indexA", i);
+                     thisMatchingDivider.put("indexB", j);
+                     thisMatchingDivider.put("offset", (oA - oB));
+                     matchingDividers.add(thisMatchingDivider);
 
-                           if (!nOfMatches.containsKey(i)) {
-                              nOfMatches.put(i, 0);
-                           }
-                           nOfMatches.put(i, nOfMatches.get(i)+1);
-
-                           if (!nOfMatches.containsKey(j)) {
-                              nOfMatches.put(j, 0);
-                           }
-                           nOfMatches.put(j, nOfMatches.get(j)+1);
-
-                           inputListIndices.add(Arrays.asList(i, j));
-
-                        }
+                     if (!nOfMatches.containsKey(i)) {
+                        nOfMatches.put(i, 0);
                      }
+                     nOfMatches.put(i, nOfMatches.get(i)+1);
+
+                     if (!nOfMatches.containsKey(j)) {
+                        nOfMatches.put(j, 0);
+                     }
+                     nOfMatches.put(j, nOfMatches.get(j)+1);
+
+                     inputListIndices.add(Arrays.asList(i, j));
+
                   }
+               }
+            }
 
 
             //}
@@ -310,20 +307,20 @@ public class Depreciated {
       // i was compared 10 times
 
       HashMap<Integer, Double> weightedOffsets = weightedHashMap(
-            matchingDividers.stream().map(x -> {
-               try {
-                  return ((Integer) x.get("offset"));
-               } catch (JSONException e) {
-                  throw new RuntimeException(e);
-               }
-            }).collect(Collectors.toList()), inputListIndices, nOfMatches);
+              matchingDividers.stream().map(x -> {
+                 try {
+                    return ((Integer) x.get("offset"));
+                 } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                 }
+              }).collect(Collectors.toList()), inputListIndices, nOfMatches);
       List<Double> inputList = (List<Double>) weightedOffsets.keySet().stream().map(Integer::doubleValue).collect(Collectors.toList());
 
       Log.i(TAG, "weightedOffsets: " + weightedOffsets);
       Log.i(TAG, "inputList: " + inputList);
 
       HashMap<Double, List<Double>> groups = binAsAverages(Args(
-                                 A("input", inputList), A("likeness", (double) maxDifferencePixels)));
+              A("input", inputList), A("likeness", (double) maxDifferencePixels)));
       Log.i(TAG, "groups: " + groups);
 
       HashMap<Double, List<Double>> groupsWeighted = new HashMap<>();
@@ -423,7 +420,7 @@ public class Depreciated {
                if ((!(((List<Double>) screenshots.get(0).get("whitespace")).get(i) < 0.1)) && (!(((List<Double>) screenshots.get(1).get("whitespace")).get(j) < 0.1))) {
                   if ((Math.abs(AH - BH) < maxDifferencePixels)) {
                      if ((matchMap.containsKey(i + ":" + j) && (matchMap.get(i + ":" + j) != null) && (matchMap.get(i + ":" + j) < tolerance)) || (pictogramSimilarity(((List<Bitmap>) screenshots.get(0).get("pictograms")).get(i)
-                           ,((List<Bitmap>) screenshots.get(1).get("pictograms")).get(j), null) > (1.0-tolerance))) {
+                             ,((List<Bitmap>) screenshots.get(1).get("pictograms")).get(j), null) > (1.0-tolerance))) {
                         int oA = (int) dividersRetainedA.subList(0, i).stream().map(x -> x.getHeight()).mapToDouble(x -> x).sum();
                         int oB = (int) dividersRetainedB.subList(0, j).stream().map(x -> x.getHeight()).mapToDouble(x -> x).sum();
                         if (Math.abs((oA - oB) - trueOffset) < 5) {
@@ -444,7 +441,7 @@ public class Depreciated {
       Log.i(TAG, "trueMatchingDividers (after attachment): " + trueMatchingDividers.size());
 
 
-               JSONObject offsetObject = new JSONObject();
+      JSONObject offsetObject = new JSONObject();
       offsetObject.put("trueOffset", trueOffset);
       offsetObject.put("trueMatchingDividers", trueMatchingDividers);
       Log.i(TAG, "Elapsed time MATCHING: " + Math.abs((System.currentTimeMillis()) - elapsedTime));
@@ -496,15 +493,15 @@ public class Depreciated {
 
 
                   int endingIndex = Math.max(cropExcludeDividers(
-                        (List<Bitmap>) thisSegment.get(i+j).get("dividers"), thisConsistentBounds,
-                       ((HashMap<String, Integer>) thisSegment.get(i+j).get("dimensions")).get("height")), 0);
+                          (List<Bitmap>) thisSegment.get(i+j).get("dividers"), thisConsistentBounds,
+                          ((HashMap<String, Integer>) thisSegment.get(i+j).get("dimensions")).get("height")), 0);
                   //Log.i(TAG, "Ending index has been set: " + endingIndex);
                   thisSegment.get(i+j).put("dividersRetained",
-                        ((List<Bitmap>) thisSegment.get(i+j).get("dividers")).subList(
-                              ((Integer) thisSegment.get(i+j).get("navbarDividerIndex"))+1, endingIndex));
+                          ((List<Bitmap>) thisSegment.get(i+j).get("dividers")).subList(
+                                  ((Integer) thisSegment.get(i+j).get("navbarDividerIndex"))+1, endingIndex));
                   thisSegment.get(i+j).put("dividersExcludedTop",
-                        ((List<Bitmap>) thisSegment.get(i+j).get("dividers")).subList(0,
-                              ((Integer) thisSegment.get(i+j).get("navbarDividerIndex"))+1));
+                          ((List<Bitmap>) thisSegment.get(i+j).get("dividers")).subList(0,
+                                  ((Integer) thisSegment.get(i+j).get("navbarDividerIndex"))+1));
 
 
                   List<Bitmap> rawDividers = ((List<Bitmap>) thisSegment.get(i+j).get("dividersRetained"));
@@ -512,7 +509,7 @@ public class Depreciated {
                   if (DEBUG) {
                      for (int k = 0; k < rawDividers.size(); k++) {
                         try (FileOutputStream out = new FileOutputStream(
-                              filePath(asList(dirDividers.getAbsolutePath(), "divider-" + (i + j) + "-" + k + ".png")).getAbsolutePath())) {
+                                filePath(asList(dirDividers.getAbsolutePath(), "divider-" + (i + j) + "-" + k + ".png")).getAbsolutePath())) {
                            rawDividers.get(k).compress(Bitmap.CompressFormat.PNG, 100, out);
                         } catch (IOException ignored) { }
                      }
@@ -520,35 +517,35 @@ public class Depreciated {
 
                   // TODO debug
                   List<Bitmap> excludedDividers = Stream.concat((((List<Bitmap>) thisSegment.get(i+j).get("dividers")).subList(0, ((Integer) thisSegment.get(i+j).get("navbarDividerIndex"))+1)).stream(),
-                     (((List<Bitmap>) thisSegment.get(i+j).get("dividers")).subList(endingIndex, ((List<Bitmap>) thisSegment.get(i+j).get("dividers")).size())).stream()).collect(Collectors.toList());
+                          (((List<Bitmap>) thisSegment.get(i+j).get("dividers")).subList(endingIndex, ((List<Bitmap>) thisSegment.get(i+j).get("dividers")).size())).stream()).collect(Collectors.toList());
                   File adExcluded = filePath(asList(MainActivity.getMainDir(thisContext).getAbsolutePath(), "debug", "crop_excluded"));
                   if (!adExcluded.exists()) { adExcluded.mkdirs(); }
                   int qqq = 0;
                   for (Bitmap b : excludedDividers) {
-                        try (FileOutputStream out = new FileOutputStream(
-                              filePath(asList(adExcluded.getAbsolutePath(), (i + j) + "-"+qqq+".png")).getAbsolutePath())) {
-                           b.compress(Bitmap.CompressFormat.PNG, 100, out);
-                        } catch (IOException e) { }
-                        qqq ++;
+                     try (FileOutputStream out = new FileOutputStream(
+                             filePath(asList(adExcluded.getAbsolutePath(), (i + j) + "-"+qqq+".png")).getAbsolutePath())) {
+                        b.compress(Bitmap.CompressFormat.PNG, 100, out);
+                     } catch (IOException e) { }
+                     qqq ++;
                   }
 
 
                   HashMap<String, Integer> size = new HashMap<>(); size.put("w", 32); size.put("h", 32);
                   int thisWhitespacePixel = (int) thisSegment.get(i+j).get("whitespacePixel");
                   thisSegment.get(i+j).put("pictograms",
-                        rawDividers.stream().map(x -> {
-                           return imageToPictogram(
+                          rawDividers.stream().map(x -> {
+                             return imageToPictogram(
 
-                                 Args(A("bitmap", x), A("size", size), A("quantizationInterval", 10), A("crop", false))
+                                     Args(A("bitmap", x), A("size", size), A("quantizationInterval", 10), A("crop", false))
 
-                                 );
-                        }).collect(Collectors.toList()));
+                             );
+                          }).collect(Collectors.toList()));
 
 
                   thisSegment.get(i+j).put("whitespace", ((List<Double>)
-                        rawDividers.stream().map(x ->
+                          rawDividers.stream().map(x ->
 
-                                    isWhitespaceLocalDifferencesSubFunction(x, 4) ).collect(Collectors.toList()))); // TODO - this has changed
+                                  isWhitespaceLocalDifferencesSubFunction(x, 4) ).collect(Collectors.toList()))); // TODO - this has changed
                   File adWhitespace = filePath(asList(MainActivity.getMainDir(thisContext).getAbsolutePath(), "debug", "whitespace"));
                   if (!adWhitespace.exists()) { adWhitespace.mkdirs(); }
                   int rrr = 0;
@@ -556,7 +553,7 @@ public class Depreciated {
                      Double thisWhitespace = ((List<Double>) thisSegment.get(i+j).get("whitespace")).get(rrr);
                      if (thisWhitespace < 0.1) {
                         try (FileOutputStream out = new FileOutputStream(
-                              filePath(asList(adWhitespace.getAbsolutePath(), (i + j) + "-"+rrr+".png")).getAbsolutePath())) {
+                                filePath(asList(adWhitespace.getAbsolutePath(), (i + j) + "-"+rrr+".png")).getAbsolutePath())) {
                            rawDivider.compress(Bitmap.CompressFormat.PNG, 100, out);
                         } catch (IOException e) { }
                      }
@@ -577,31 +574,31 @@ public class Depreciated {
                   for (int h = 0; h < ((List<Bitmap>) thisSegment.get(i + j).get("dividersRetained")).size(); h ++) {
                      List<Integer> dividerOffsetsSignature = null;
                      //if (!((List<Boolean>) thisSegment.get(i+j).get("whitespace")).get(h)) {
-                        int thisWhitespacePixelAlt = getWhitespacePixel(
-                              Args(A("bitmap", rawDividers.get(h)))
-                        );
+                     int thisWhitespacePixelAlt = getWhitespacePixel(
+                             Args(A("bitmap", rawDividers.get(h)))
+                     );
                      DividerSet result = new DividerSet(Args(
-                              A("bitmap", Bitmap.createScaledBitmap(rawDividers.get(h), 64, 16, false)),
-                              A("orientation", "h"),
-                              A("scaleMinor", 1.0),
-                              A("absorbMinimums", false),
-                              A("whitespaceThreshold", 0.01),
-                              A("colourPaletteThreshold", 0.2),
-                              A("scanUntil", 1.0),
-                              A("retainMinimums", true),
-                              A("minDividerApproach", "complex")
-                        ));
+                             A("bitmap", Bitmap.createScaledBitmap(rawDividers.get(h), 64, 16, false)),
+                             A("orientation", "h"),
+                             A("scaleMinor", 1.0),
+                             A("absorbMinimums", false),
+                             A("whitespaceThreshold", 0.01),
+                             A("colourPaletteThreshold", 0.2),
+                             A("scanUntil", 1.0),
+                             A("retainMinimums", true),
+                             A("minDividerApproach", "complex")
+                     ));
 
-                        List<Bitmap> dividerImages = result.dividerImages;
-                        List<HashMap<String, Integer>> thisImageDividerBounds = result.dividers;
-                        List<Boolean> dividerOffsetsWhitespace = dividerImages.stream().map(x ->
-                              isWhitespace(Args(
-                                          A("bitmap", x),
-                                          A("whitespacePixel", thisWhitespacePixelAlt),
-                                          A("thresholdColourPalette", 0.9)))
-                              ).collect(Collectors.toList());
-                        int thisWidth = rawDividers.get(h).getWidth();
-                        dividerOffsetsSignature = dividerBoundOffsets(thisImageDividerBounds, dividerOffsetsWhitespace, thisWidth);
+                     List<Bitmap> dividerImages = result.dividerImages;
+                     List<HashMap<String, Integer>> thisImageDividerBounds = result.dividers;
+                     List<Boolean> dividerOffsetsWhitespace = dividerImages.stream().map(x ->
+                             isWhitespace(Args(
+                                     A("bitmap", x),
+                                     A("whitespacePixel", thisWhitespacePixelAlt),
+                                     A("thresholdColourPalette", 0.9)))
+                     ).collect(Collectors.toList());
+                     int thisWidth = rawDividers.get(h).getWidth();
+                     dividerOffsetsSignature = dividerBoundOffsets(thisImageDividerBounds, dividerOffsetsWhitespace, thisWidth);
                      //}
                      List<List<Integer>> dividersRetaineddividerBoundOffsets = ((List<List<Integer>>) thisSegment.get(i+j).get("dividersRetaineddividerBoundOffsets"));
                      dividersRetaineddividerBoundOffsets.add(dividerOffsetsSignature); // TODO - check pointer behaviour here
@@ -653,86 +650,180 @@ public class Depreciated {
    }
 
    // while we could rely on direct projection, this would flatten and exclude data about changing imagery
+
+   /**
+    *
+    * @param thisSegment
+    * @return A json object
+    * {
+    *    analysisDSReduced: 2D List of Integer,
+    *    ii: int
+    * }
+    * @throws JSONException
+    */
    public static JSONObject segmentWithoutOCR(JSONObject thisSegment) throws JSONException {
+      final double WHITESPACE_THRESHOLD = 0.1;
       long elapsedTime = System.currentTimeMillis();
+      // Datastructure for analysis
       List<List<List<Integer>>> analysisDS = new ArrayList<>();
       List<List<Integer>> analysisDSReduced = new ArrayList<>();
       List<JSONObject> thisScreenshots = (List<JSONObject>) thisSegment.get("screenshots");
       Log.i(TAG, "segmentWithoutOCR thisScreenshots.size: "+thisScreenshots.size());
-      for (int j = 0; j < thisScreenshots.size(); j ++) {
-         analysisDS.add(new ArrayList<>());
-         for (int k = 0; k < ((List<Bitmap>) ((JSONObject) thisScreenshots.get(j)).get("dividersRetained")).size(); k ++) {
-            analysisDS.get(analysisDS.size()-1).add(new ArrayList<>());
-         }
+
+//      for (int j = 0; j < thisScreenshots.size(); j ++) {
+//         analysisDS.add(new ArrayList<>());
+//         for (int k = 0; k < ((List<Bitmap>) ((JSONObject) thisScreenshots.get(j)).get("dividersRetained")).size(); k ++) {
+//            analysisDS.get(analysisDS.size()-1).add(new ArrayList<>());
+//         }
+//      }
+
+      // Initialise Analysis DS 2D array for each screenshot
+      for (JSONObject screenshot : thisScreenshots) {
+         List<List<Integer>> next = new ArrayList<>();
+         List<Bitmap> dividersRetained = (List<Bitmap>) screenshot.get("dividersRetained");
+         for (Bitmap ignored : dividersRetained) next.add(new ArrayList<>());
+         analysisDS.add(next);
       }
+
       int ii = 0;
+
+      // What does this do?
+//      List<List<JSONObject>> thisMatchingDividers = ((List<List<JSONObject>>) thisSegment.get("matchingDividers"));
+//      for (int j = 0; j < thisMatchingDividers.size(); j ++) {
+//         List<JSONObject> thisMatchingDivider = thisMatchingDividers.get(j);
+//         for (int match = 0; match < thisMatchingDivider.size(); match ++) {
+//            JSONObject thisMatch = thisMatchingDivider.get(match);
+//            analysisDS.get(j).get((int) thisMatch.get("indexA")).add(ii);
+//            analysisDS.get(j+1).get((int) thisMatch.get("indexB")).add(ii);
+//            ii ++;
+//         }
+//      }
+
       List<List<JSONObject>> thisMatchingDividers = ((List<List<JSONObject>>) thisSegment.get("matchingDividers"));
       for (int j = 0; j < thisMatchingDividers.size(); j ++) {
          List<JSONObject> thisMatchingDivider = thisMatchingDividers.get(j);
-         for (int match = 0; match < thisMatchingDivider.size(); match ++) {
-            JSONObject thisMatch = thisMatchingDivider.get(match);
+         for (JSONObject thisMatch : thisMatchingDivider) {
             analysisDS.get(j).get((int) thisMatch.get("indexA")).add(ii);
             analysisDS.get(j+1).get((int) thisMatch.get("indexB")).add(ii);
-            ii += 1;
+            ii ++;
          }
       }
+
+//      for (int j = 0; j < thisScreenshots.size(); j ++) {
+//         for (int k = 0; k < ((List<Bitmap>) ((JSONObject) thisScreenshots.get(j)).get("whitespace")).size(); k ++) {
+//            if ((Double) ((List<Double>) ((JSONObject) thisScreenshots.get(j)).get("whitespace")).get(k) < 0.1) {
+//               analysisDS.get(j).set(k, Collections.singletonList(generateWhitespaceIndicator()));
+//            }
+//         }
+//      }
 
       for (int j = 0; j < thisScreenshots.size(); j ++) {
-         for (int k = 0; k < ((List<Bitmap>) ((JSONObject) thisScreenshots.get(j)).get("whitespace")).size(); k ++) {
-            if ((Double) ((List<Double>) ((JSONObject) thisScreenshots.get(j)).get("whitespace")).get(k) < 0.1) {
-               analysisDS.get(j).set(k, Collections.singletonList(generateWhitespaceIndicator()));
-            }
+         JSONObject screenshot = thisScreenshots.get(j);
+         List<List<Integer>> screenshotAnalysis = analysisDS.get(j);
+         List<Double> bitmaps = (List<Double>) screenshot.get("whitespace");
+         for (int k = 0; k < bitmaps.size(); k ++) {
+            if (bitmaps.get(k) >= WHITESPACE_THRESHOLD)
+               screenshotAnalysis.set(k, Collections.singletonList(generateWhitespaceIndicator()));
          }
       }
 
+//      for (int j = 0; j < analysisDS.size(); j ++) {
+//         analysisDSReduced.add(new ArrayList<>());
+//         for (int k = 0; k < analysisDS.get(j).size(); k ++) {
+//            analysisDSReduced.get(j).add(generateWhitespaceIndicator());
+//            if (analysisDS.get(j).get(k).size() == 0) { // implies it is not none
+//               analysisDSReduced.get(j).set(k, ii);
+//               analysisDS.get(j).set(k, Collections.singletonList(ii));
+//               ii ++;
+//            }
+//         }
+//      }
+
       for (int j = 0; j < analysisDS.size(); j ++) {
+         List<List<Integer>> screenshot = analysisDS.get(j);
+         List<Integer> analysisReduced = new ArrayList<>();
+         for (int k = 0; k < analysisDS.get(j).size(); k ++) {
+            analysisReduced.add(generateWhitespaceIndicator());
+            if (!screenshot.get(k).isEmpty()) continue; // implies it is not none
+            analysisReduced.set(k, ii);
+            screenshot.set(k, Collections.singletonList(ii));
+            ii ++;
+         }
          analysisDSReduced.add(new ArrayList<>());
-         for (int k = 0; k < analysisDS.get(j).size(); k ++) {
-            analysisDSReduced.get(j).add(generateWhitespaceIndicator());
-            if (analysisDS.get(j).get(k).size() == 0) { // implies it is not none
-               analysisDSReduced.get(j).set(k, ii);
-               analysisDS.get(j).set(k, Collections.singletonList(ii));
-               ii ++;
-            }
-         }
       }
+
       HashMap<Integer, List<Integer>> analysisDSGrouper = new HashMap<>();
+//      for (int j = 0; j < analysisDS.size(); j ++) {
+//         for (int k = 0; k < analysisDS.get(j).size(); k ++) {
+//            if ((!((analysisDS.get(j).get(k).size() != 0) && (isWhitespaceIndicator(analysisDS.get(j).get(k).get(0)))))
+//                  && (analysisDS.get(j).get(k).size() > 0)) { // (analysisDS.get(j).get(k).get(0) != -1) &&
+//               //List<Integer> groups = analysisDSGrouper.keySet().stream().filter(x -> analysisDS.get(j).get(k).stream().filter(y ->
+//               //      analysisDSGrouper.get(x).contains(y)).collect(Collectors.toList()).size() > 0).collect(Collectors.toList());
+//
+//               List<Integer> groups = new ArrayList<>();
+//               for (Integer y : analysisDSGrouper.keySet()) {
+//                  boolean found = false;
+//                  for (int x = 0; x < analysisDS.get(j).get(k).size(); x ++) {
+//
+//
+//                     if (analysisDSGrouper.get(y).contains(analysisDS.get(j).get(k).get(x))) {
+//                        found = true;
+//                     }
+//                  }
+//                  if (found) {
+//                     groups.add(y);
+//                  }
+//               }
+//
+//               if (groups.size() > 0) {
+//                  List<Integer> newArray = Stream.concat(analysisDSGrouper.get(groups.get(0)).stream(), analysisDS.get(j).get(k).stream()).collect(Collectors.toList());
+//                  analysisDSGrouper.put(groups.get(0), newArray.stream().distinct().collect(Collectors.toList()));
+//                  analysisDS.get(j).set(k, Collections.singletonList(groups.get(0)));
+//                  analysisDSReduced.get(j).set(k, groups.get(0));
+//               } else {
+//                  analysisDSGrouper.put(ii, analysisDS.get(j).get(k));
+//                  analysisDS.get(j).set(k, Collections.singletonList(ii));
+//                  analysisDSReduced.get(j).set(k, ii);
+//               }
+//               ii ++;
+//            }
+//         }
+//      }
+
       for (int j = 0; j < analysisDS.size(); j ++) {
-         for (int k = 0; k < analysisDS.get(j).size(); k ++) {
-            if ((!((analysisDS.get(j).get(k).size() != 0) && (isWhitespaceIndicator(analysisDS.get(j).get(k).get(0)))))
-                  && (analysisDS.get(j).get(k).size() > 0)) { // (analysisDS.get(j).get(k).get(0) != -1) &&
-               //List<Integer> groups = analysisDSGrouper.keySet().stream().filter(x -> analysisDS.get(j).get(k).stream().filter(y ->
-               //      analysisDSGrouper.get(x).contains(y)).collect(Collectors.toList()).size() > 0).collect(Collectors.toList());
+         List<List<Integer>> screenshot = analysisDS.get(j);
+         List<Integer> analysisReduced = analysisDSReduced.get(j);
 
-               List<Integer> groups = new ArrayList<>();
-               for (Integer y : analysisDSGrouper.keySet()) {
-                  boolean found = false;
-                  for (int x = 0; x < analysisDS.get(j).get(k).size(); x ++) {
+         for (int k = 0; k < screenshot.size(); k ++) {
+            List<Integer> pixels = screenshot.get(k);
 
+            if (!pixels.isEmpty() && isWhitespaceIndicator(pixels.get(0))) continue;
+            if (pixels.isEmpty()) continue;
 
-                     if (analysisDSGrouper.get(y).contains(analysisDS.get(j).get(k).get(x))) {
-                        found = true;
-                     }
-                  }
-                  if (found) {
-                     groups.add(y);
-                  }
-               }
+            Predicate<Integer> isKeyGood = key -> pixels.stream()
+                    .anyMatch(pixel -> analysisDSGrouper.get(key).contains(pixel));
+            List<Integer> goodGroupKeys = analysisDSGrouper.keySet().stream()
+                    .filter(isKeyGood)
+                    .collect(Collectors.toList());
 
-               if (groups.size() > 0) {
-                  List<Integer> newArray = Stream.concat(analysisDSGrouper.get(groups.get(0)).stream(), analysisDS.get(j).get(k).stream()).collect(Collectors.toList());
-                  analysisDSGrouper.put(groups.get(0), newArray.stream().distinct().collect(Collectors.toList()));
-                  analysisDS.get(j).set(k, Collections.singletonList(groups.get(0)));
-                  analysisDSReduced.get(j).set(k, groups.get(0));
-               } else {
-                  analysisDSGrouper.put(ii, analysisDS.get(j).get(k));
-                  analysisDS.get(j).set(k, Collections.singletonList(ii));
-                  analysisDSReduced.get(j).set(k, ii);
-               }
-               ii ++;
+            Integer goodKey = ii;
+            List<Integer> goodPixels = pixels;
+
+            if (!goodGroupKeys.isEmpty()) {
+               goodKey = goodGroupKeys.get(0);
+               goodPixels = Stream
+                       .concat(analysisDSGrouper.get(goodKey).stream(), pixels.stream())
+                       .distinct()
+                       .collect(Collectors.toList());
             }
+
+            analysisDSGrouper.put(goodKey, goodPixels);
+            screenshot.set(k, Collections.singletonList(goodKey));
+            analysisReduced.set(k, goodKey);
+            ii++;
          }
       }
+
       JSONObject output = new JSONObject();
       output.put("analysisDSReduced", analysisDSReduced);
       output.put("ii", ii);
@@ -745,27 +836,27 @@ public class Depreciated {
       JSONObject output = new JSONObject();
       JSONObject debugByDivider = new JSONObject();
       int wsPixelRelative = getWhitespacePixel(
-Args(A("bitmap", quantizedImage))
+              Args(A("bitmap", quantizedImage))
 
 
       );
       DividerSet thisVisualComponents = new DividerSet(
 
-         Args(
-               A("bitmap", quantizedImage),
-               A("orientation", "h"),
-               A("scaleMinor", 1.0),
-               A("absorbMinimums", true),
-               A("whitespaceThreshold", 0.2),
-               A("colourPaletteThreshold", 0.2),
-               A("scanUntil", 1.0),
-               A("retainMinimums", false),
-               A("minDividerApproach", "simple")
-         )
+              Args(
+                      A("bitmap", quantizedImage),
+                      A("orientation", "h"),
+                      A("scaleMinor", 1.0),
+                      A("absorbMinimums", true),
+                      A("whitespaceThreshold", 0.2),
+                      A("colourPaletteThreshold", 0.2),
+                      A("scanUntil", 1.0),
+                      A("retainMinimums", false),
+                      A("minDividerApproach", "simple")
+              )
 
 
 
-);
+      );
 
       List<Bitmap> horizontalDividers = thisVisualComponents.dividerImages; debugByDivider.put("thisVisualComponentsDividerImages", horizontalDividers);
 
@@ -773,20 +864,20 @@ Args(A("bitmap", quantizedImage))
 
 
 
-            Args(A("visualComponents", horizontalDividers),
-                  A("whitespacePixel", wsPixelRelative),
-                  A("thresholdAmbiguous", 0.3),
-                  A("thresholdColourPalette", 0.9),
-                  A("method", "localDifferences"))
+              Args(A("visualComponents", horizontalDividers),
+                      A("whitespacePixel", wsPixelRelative),
+                      A("thresholdAmbiguous", 0.3),
+                      A("thresholdColourPalette", 0.9),
+                      A("method", "localDifferences"))
 
 
 
-            );  debugByDivider.put("alternations", alternations);
+      );  debugByDivider.put("alternations", alternations);
       debugByDivider.put("alternationsHorizontalDividers", horizontalDividers);
 
       int indexSecondWhitespace = BooleanIndexOfN(alternations, true, 2);
       if ((indexSecondWhitespace != -1) && (indexSecondWhitespace < (alternations.size()-1))) {
-      //if ((alternations.size() >= 3) && (alternations.subList(0,3).equals(Arrays.asList(true, false, true)))) {
+         //if ((alternations.size() >= 3) && (alternations.subList(0,3).equals(Arrays.asList(true, false, true)))) {
 
 
          Log.i(TAG, "Testing Ad Header Divider: "+ad_headers_segment_index+" - "+screenshotI+" - "+dividerI + " aka. "+thisIndex);
@@ -801,15 +892,15 @@ Args(A("bitmap", quantizedImage))
 
 
 
-            Args(A("bitmap", Bitmap.createBitmap(quantizedImage, xFrom, 0, designatedWidth, quantizedImage.getHeight())),
-                  A("orientation", "v"),
-                  A("scaleMinor", 1.0),
-                  A("absorbMinimums", true),
-                  A("whitespaceThreshold", 0.1),
-                  A("colourPaletteThreshold", 0.3),
-                  A("scanUntil", 1.0),
-                  A("retainMinimums", false),
-                  A("minDividerApproach", "simple"))
+                    Args(A("bitmap", Bitmap.createBitmap(quantizedImage, xFrom, 0, designatedWidth, quantizedImage.getHeight())),
+                            A("orientation", "v"),
+                            A("scaleMinor", 1.0),
+                            A("absorbMinimums", true),
+                            A("whitespaceThreshold", 0.1),
+                            A("colourPaletteThreshold", 0.3),
+                            A("scanUntil", 1.0),
+                            A("retainMinimums", false),
+                            A("minDividerApproach", "simple"))
 
 
 
@@ -822,21 +913,21 @@ Args(A("bitmap", quantizedImage))
             debugByDivider.put("thisVisualComponentsAlt1verticalDividers", verticalDividers);
             List<Boolean> verticalAlternations = dividerWhitespaceAlternations(
 
-                  Args(
-                        A("visualComponents", verticalDividers),
-                        A("whitespacePixel", wsPixelRelative),
-                        A("thresholdAmbiguous", 0.3),
-                        A("thresholdColourPalette", 0.9),
-                        A("preserveDimensions", true),
-                        A("method", "localDifferences"))
+                    Args(
+                            A("visualComponents", verticalDividers),
+                            A("whitespacePixel", wsPixelRelative),
+                            A("thresholdAmbiguous", 0.3),
+                            A("thresholdColourPalette", 0.9),
+                            A("preserveDimensions", true),
+                            A("method", "localDifferences"))
 
-                  );
+            );
 
             debugByDivider.put("verticalAlternationsData", verticalDividers.stream().map(x ->
 
 
 
-                  isWhitespaceLocalDifferencesSubFunction(x, 3)).collect(Collectors.toList()));
+                    isWhitespaceLocalDifferencesSubFunction(x, 3)).collect(Collectors.toList()));
 
 
             debugByDivider.put("verticalAlternations", verticalAlternations);
@@ -853,30 +944,30 @@ Args(A("bitmap", quantizedImage))
 
                List<Bitmap> sponsoredTextDividers = new DividerSet(
 
-                    Args(A("bitmap", colourQuantizeBitmap(
-                          Args(A("bitmap", verticalDividers.get(compellingIndex)), A("interval", 10))
-                          )),
-                           A("orientation", "h"),
-                           A("scaleMinor", 1.0),
-                           A("absorbMinimums", true),
-                           A("whitespaceThreshold", 0.1),
-                           A("colourPaletteThreshold", 0.1),
-                           A("scanUntil", 1.0),
-                           A("retainMinimums", false),
-                           A("minDividerApproach", "simple"))
+                       Args(A("bitmap", colourQuantizeBitmap(
+                                       Args(A("bitmap", verticalDividers.get(compellingIndex)), A("interval", 10))
+                               )),
+                               A("orientation", "h"),
+                               A("scaleMinor", 1.0),
+                               A("absorbMinimums", true),
+                               A("whitespaceThreshold", 0.1),
+                               A("colourPaletteThreshold", 0.1),
+                               A("scanUntil", 1.0),
+                               A("retainMinimums", false),
+                               A("minDividerApproach", "simple"))
                ).dividerImages;
                debugByDivider.put("sponsoredTextDividers", sponsoredTextDividers.stream().collect(Collectors.toList()));
 
                List<Boolean> sponsoredTextAlternations = dividerWhitespaceAlternations(
 
-                        Args(
-                           A("visualComponents", sponsoredTextDividers),
-                           A("whitespacePixel", wsPixelRelative),
-                           A("thresholdAmbiguous", 0.2),
-                           A("thresholdColourPalette", 0.9),
-                           A("preserveDimensions", true))
+                       Args(
+                               A("visualComponents", sponsoredTextDividers),
+                               A("whitespacePixel", wsPixelRelative),
+                               A("thresholdAmbiguous", 0.2),
+                               A("thresholdColourPalette", 0.9),
+                               A("preserveDimensions", true))
 
-                     );
+               );
                debugByDivider.put("sponsoredTextAlternations", sponsoredTextAlternations);
 
                List<Integer> leads = new ArrayList<>();
@@ -898,16 +989,16 @@ Args(A("bitmap", quantizedImage))
                //debugByDivider.put("isolatedDividers", Collections.singletonList(combineBitmapsList(isolatedDividers, "h")));
 
                Bitmap potentialSponsoredText = combineImagesList(
-                     Args(A("listOfBitmaps", isolatedDividers))
+                       Args(A("listOfBitmaps", isolatedDividers))
                );
 
                if (potentialSponsoredText != null) {
 
                   potentialSponsoredText = cropWhitespace(
-                        Args(
-                              A("bitmap", potentialSponsoredText),
-                              A("whitespacePixel", wsPixelRelative),
-                              A("tolerance", 0.1))
+                          Args(
+                                  A("bitmap", potentialSponsoredText),
+                                  A("whitespacePixel", wsPixelRelative),
+                                  A("tolerance", 0.1))
                   );
                }
                //debugByDivider.put("potentialSponsoredText", Collections.singletonList(potentialSponsoredText));
@@ -932,16 +1023,16 @@ Args(A("bitmap", quantizedImage))
                   Stencil potentialSponsoredTextPictogram = imageToStencil(
 
 
-                        Args(
-                              A("bitmap", potentialSponsoredText),
-                              A("whitespacePixel", wsPixelRelative),
-                              A("size", size),
-                              A("snapThreshold", 0.25),
-                              A("cropThreshold", 0.05),
-                              A("colourPaletteThreshold", 0.05),
-                              A("isReference", false)
-                  )
-                        );
+                          Args(
+                                  A("bitmap", potentialSponsoredText),
+                                  A("whitespacePixel", wsPixelRelative),
+                                  A("size", size),
+                                  A("snapThreshold", 0.25),
+                                  A("cropThreshold", 0.05),
+                                  A("colourPaletteThreshold", 0.05),
+                                  A("isReference", false)
+                          )
+                  );
 
                   debugByDivider.put("potentialSponsoredTextPictogram", potentialSponsoredTextPictogram);
 
@@ -953,12 +1044,12 @@ Args(A("bitmap", quantizedImage))
                         double matchResult = stencilSimilarity(
 
 
-                              Args(
-                                    A("a", pictogramsReference.get("facebook" + sponsoredTextExposure.get(i) + "Sponsored" + sponsoredTextAlt.get(j))),
-                                    A("b", potentialSponsoredTextPictogram),
-                                    A("method", "multiplied"),
-                                    A("deepSampling", true))
-                              );
+                                Args(
+                                        A("a", pictogramsReference.get("facebook" + sponsoredTextExposure.get(i) + "Sponsored" + sponsoredTextAlt.get(j))),
+                                        A("b", potentialSponsoredTextPictogram),
+                                        A("method", "multiplied"),
+                                        A("deepSampling", true))
+                        );
 
                         debugByDivider.put("matchResultIndication:" + sponsoredTextExposure.get(i)+ ":" + sponsoredTextAlt.get(j), false);
                         debugByDivider.put("matchResult:" + sponsoredTextExposure.get(i) + sponsoredTextAlt.get(j), matchResult);
@@ -1030,18 +1121,18 @@ Args(A("bitmap", quantizedImage))
                   Double heightRatio = (dividerImage.getHeight() / totalHeight.doubleValue());
 
                   //if ((heightRatio > 0.025) && (heightRatio < 0.1)) {
-                     Bitmap quantizedImage = dividerImage; debugByDivider.put("quantizedImage", quantizedImage);
+                  Bitmap quantizedImage = dividerImage; debugByDivider.put("quantizedImage", quantizedImage);
 
-                     JSONObject output = adHeaderDividersSubProcess( quantizedImage, thisIndex, pictogramsReference, screenshotI, dividerI);
-                     JSONObject debugByDividerInstantiated = (JSONObject) output.get("debugByDivider");
-                     for (Iterator<String> it = debugByDividerInstantiated.keys(); it.hasNext(); ) {
-                        String k = it.next();
-                        debugByDivider.put(k, debugByDividerInstantiated.get(k));
-                     }
-                     if ((Boolean) output.get("found")) {
-                        Log.i(TAG, "heightRatio: "+heightRatio);
-                        retainedDividers.add(analysisDS.get(screenshotI).get(dividerI));
-                     }
+                  JSONObject output = adHeaderDividersSubProcess( quantizedImage, thisIndex, pictogramsReference, screenshotI, dividerI);
+                  JSONObject debugByDividerInstantiated = (JSONObject) output.get("debugByDivider");
+                  for (Iterator<String> it = debugByDividerInstantiated.keys(); it.hasNext(); ) {
+                     String k = it.next();
+                     debugByDivider.put(k, debugByDividerInstantiated.get(k));
+                  }
+                  if ((Boolean) output.get("found")) {
+                     Log.i(TAG, "heightRatio: "+heightRatio);
+                     retainedDividers.add(analysisDS.get(screenshotI).get(dividerI));
+                  }
                   //}
 
                } else {
@@ -1073,7 +1164,7 @@ Args(A("bitmap", quantizedImage))
                try { matchResultIndicationDark = (Boolean) debugByDivider.get("matchResultIndication:Dark:Alt"); } catch (Exception e) {}
 
                File indicatedDirectory = (matchResultIndicationLight || matchResultIndicationDark)
-                     ? adHeaderSuccessesDirName : adHeaderFailuresDirName;
+                       ? adHeaderSuccessesDirName : adHeaderFailuresDirName;
 
                File thisAdHeaderDirName = filePath(asList(indicatedDirectory.getAbsolutePath(), ad_headers_segment_index+"_"+screenshotI+"_"+dividerI));
                if (!thisAdHeaderDirName.exists()) { thisAdHeaderDirName.mkdirs(); }
@@ -1083,7 +1174,7 @@ Args(A("bitmap", quantizedImage))
                   if (debugByDivider.has(s)) {
                      Bitmap thisBitmap = (Bitmap) debugByDivider.get(s);
                      try (FileOutputStream out = new FileOutputStream(
-                           filePath(asList(thisAdHeaderDirName.getAbsolutePath(), s+".png")).getAbsolutePath())) {
+                             filePath(asList(thisAdHeaderDirName.getAbsolutePath(), s+".png")).getAbsolutePath())) {
                         thisBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
                      } catch (IOException e) { }
                   }
@@ -1091,11 +1182,11 @@ Args(A("bitmap", quantizedImage))
 
 
                List<String> bitmapListsToWrite = Arrays.asList(
-                     "thisVisualComponentsDividerImages",
-                     "alternationsHorizontalDividers",
-                     "verticalDividersCompellingIndex",
-                     "thisVisualComponentsAlt1verticalDividers",
-                     "sponsoredTextDividers");
+                       "thisVisualComponentsDividerImages",
+                       "alternationsHorizontalDividers",
+                       "verticalDividersCompellingIndex",
+                       "thisVisualComponentsAlt1verticalDividers",
+                       "sponsoredTextDividers");
 
                for (String s : bitmapListsToWrite) {
                   if (debugByDivider.has(s)) {
@@ -1105,7 +1196,7 @@ Args(A("bitmap", quantizedImage))
                      int ii = 0;
                      for (Bitmap thisBitmap : bitmapsListToWrite) {
                         try (FileOutputStream out = new FileOutputStream(
-                              filePath(asList(thisBitmapListDirName.getAbsolutePath(), ii+".png")).getAbsolutePath())) {
+                                filePath(asList(thisBitmapListDirName.getAbsolutePath(), ii+".png")).getAbsolutePath())) {
                            thisBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
                         } catch (IOException e) { }
                         ii ++;
@@ -1114,18 +1205,18 @@ Args(A("bitmap", quantizedImage))
                }
 
                List<String> metadataKeys = Arrays.asList(
-                     "leads",
-                     "prescribedLeadingCharacterIndex",
-                     "prescribedCharacterWidth",
-                     "trails",
-                     "alternations",
-                     "verticalAlternations",
-                     "verticalAlternationsData",
-                     "sponsoredTextAlternations",
-                     "prescribedTrailingCharacterIndex",
-                     "matchResult:Light",
-                     //"potentialSponsoredTextPictogram",
-                     "matchResult:Dark");
+                       "leads",
+                       "prescribedLeadingCharacterIndex",
+                       "prescribedCharacterWidth",
+                       "trails",
+                       "alternations",
+                       "verticalAlternations",
+                       "verticalAlternationsData",
+                       "sponsoredTextAlternations",
+                       "prescribedTrailingCharacterIndex",
+                       "matchResult:Light",
+                       //"potentialSponsoredTextPictogram",
+                       "matchResult:Dark");
 
                JSONObject metadata = new JSONObject();
                for (String metadataKey : metadataKeys) {
@@ -1174,17 +1265,17 @@ Args(A("bitmap", quantizedImage))
 
 
 
-                     Args(
-                           A("bitmap", dividerImage),
-                           A("orientation", "h"),
-                           A("scaleMinor", 1.0),
-                           A("absorbMinimums", false),
-                           A("whitespaceThreshold", 0.2),
-                           A("colourPaletteThreshold", 0.1),
-                           A("scanUntil", 1.0),
-                           A("retainMinimums", true),
-                           A("minDividerApproach", "complex")
-                     )
+                             Args(
+                                     A("bitmap", dividerImage),
+                                     A("orientation", "h"),
+                                     A("scaleMinor", 1.0),
+                                     A("absorbMinimums", false),
+                                     A("whitespaceThreshold", 0.2),
+                                     A("colourPaletteThreshold", 0.1),
+                                     A("scanUntil", 1.0),
+                                     A("retainMinimums", true),
+                                     A("minDividerApproach", "complex")
+                             )
 
 
 
@@ -1195,26 +1286,26 @@ Args(A("bitmap", quantizedImage))
                         if (!
 
 
-                              isWhitespace(
+                                isWhitespace(
 
-                                    Args(
-                                    A("bitmap", dividerImages.get(1)),
-                                    A("thresholdColourPalette", 0.9)))
+                                        Args(
+                                                A("bitmap", dividerImages.get(1)),
+                                                A("thresholdColourPalette", 0.9)))
 
                         ) {
                            Log.i(TAG, "postEngagementDividers: \t* 1st div is not whitespace");
 
                            Bitmap pre = cropWhitespace(
 
-                                 Args(
-                                       A("bitmap", dividerImages.get(1)),
-                                       A("whitespacePixel", getWhitespacePixel(
+                                   Args(
+                                           A("bitmap", dividerImages.get(1)),
+                                           A("whitespacePixel", getWhitespacePixel(
 
-                                             Args(A("bitmap", dividerImage))
+                                                   Args(A("bitmap", dividerImage))
 
 
-                                       )))
-                                 );
+                                           )))
+                           );
                            Log.i(TAG, "postEngagementDividers: \t* height width: "+pre.getHeight()+" : "+pre.getWidth());
                            double ratio = (pre.getHeight()/ ((double) pre.getWidth()));
                            Log.i(TAG, "postEngagementDividers: \t* height/width ratios: "+ratio);
@@ -1243,9 +1334,9 @@ Args(A("bitmap", quantizedImage))
 
 
                               List<Double> candidatesResults = candidates.stream().map(x -> pictogramSimilarityV2(
-                                 colourQuantizeBitmap(Args(A("bitmap", (Bitmap) pictogramsReference.get("facebookReact" + x)))),
-                                 colourQuantizeBitmap(Args(A("bitmap", imageToPictogram(Args(A("bitmap", postFinal),A("size", size),A("crop", false)))))),
-                                    (Bitmap) pictogramsReference.get("facebookReactMask"))).collect(Collectors.toList());
+                                      colourQuantizeBitmap(Args(A("bitmap", (Bitmap) pictogramsReference.get("facebookReact" + x)))),
+                                      colourQuantizeBitmap(Args(A("bitmap", imageToPictogram(Args(A("bitmap", postFinal),A("size", size),A("crop", false)))))),
+                                      (Bitmap) pictogramsReference.get("facebookReactMask"))).collect(Collectors.toList());
                               /*
 
                               List<Double> candidatesResults = candidates.stream().map(x -> pictogramSimilarityV2(
@@ -1283,51 +1374,51 @@ Args(A("bitmap", quantizedImage))
 
 
 
-                                             Log.i(TAG, "postEngagementDividers: \t* height/width ratios: "+ratio);
+                                 Log.i(TAG, "postEngagementDividers: \t* height/width ratios: "+ratio);
 
 
-                                                         if (DEBUG) {
-                                                            File DirName = filePath(asList(MainActivity.getMainDir(thisContext).getAbsolutePath(), "debug", "post_engagement_focus_divs"));
-                                                            if (!DirName.exists()) {
-                                                               DirName.mkdirs();
-                                                            }
+                                 if (DEBUG) {
+                                    File DirName = filePath(asList(MainActivity.getMainDir(thisContext).getAbsolutePath(), "debug", "post_engagement_focus_divs"));
+                                    if (!DirName.exists()) {
+                                       DirName.mkdirs();
+                                    }
 
 
-                                                            try (FileOutputStream out = new FileOutputStream(
-                                                                  filePath(asList(DirName.getAbsolutePath(), fname)).getAbsolutePath())) {
-                                                               post.compress(Bitmap.CompressFormat.PNG, 100, out);
-                                                            } catch (IOException e) {
-                                                            }
-                                                         }
+                                    try (FileOutputStream out = new FileOutputStream(
+                                            filePath(asList(DirName.getAbsolutePath(), fname)).getAbsolutePath())) {
+                                       post.compress(Bitmap.CompressFormat.PNG, 100, out);
+                                    } catch (IOException e) {
+                                    }
+                                 }
 
 
 
 
-                                                         Log.i(TAG, "WWW "+fname+": "+ (candidates.stream().map(x -> pictogramSimilarity((Bitmap) pictogramsReference.get("facebookReact" + x),
+                                 Log.i(TAG, "WWW "+fname+": "+ (candidates.stream().map(x -> pictogramSimilarity((Bitmap) pictogramsReference.get("facebookReact" + x),
 
 
-                                                               imageToPictogram(
+                                         imageToPictogram(
 
 
-                                                                     Args(
-                                                                           A("bitmap", postFinal),
-                                                                           A("size", size),
-                                                                           A("crop", false))
+                                                 Args(
+                                                         A("bitmap", postFinal),
+                                                         A("size", size),
+                                                         A("crop", false))
 
-                                                               ), (Bitmap) pictogramsReference.get("facebookReactMask")) ).collect(Collectors.toList()).toString()));
+                                         ), (Bitmap) pictogramsReference.get("facebookReactMask")) ).collect(Collectors.toList()).toString()));
 
-                                                         retainedSponsoredTextDividers.add(analysisDS.get(screenshotI).get(dividerI));
+                                 retainedSponsoredTextDividers.add(analysisDS.get(screenshotI).get(dividerI));
 
-                                                         File postEngagementDirName = filePath(asList(MainActivity.getMainDir(thisContext).getAbsolutePath(), "debug", "post_engagements"));
-                                                         try (FileOutputStream out = new FileOutputStream(
-                                                                 filePath(asList(postEngagementDirName.getAbsolutePath(), "post-engagement-" + screenshotI + "-" + dividerI + ".png")).getAbsolutePath())) {
-                                                            retrieveRetainedDivider(segmentStitched, screenshotI, dividerI).compress(Bitmap.CompressFormat.PNG, 100, out);
-                                                         } catch (IOException e) { }
+                                 File postEngagementDirName = filePath(asList(MainActivity.getMainDir(thisContext).getAbsolutePath(), "debug", "post_engagements"));
+                                 try (FileOutputStream out = new FileOutputStream(
+                                         filePath(asList(postEngagementDirName.getAbsolutePath(), "post-engagement-" + screenshotI + "-" + dividerI + ".png")).getAbsolutePath())) {
+                                    retrieveRetainedDivider(segmentStitched, screenshotI, dividerI).compress(Bitmap.CompressFormat.PNG, 100, out);
+                                 } catch (IOException e) { }
 
                               }
 
 
-                        }
+                           }
 
                         }
                      }
@@ -1342,7 +1433,7 @@ Args(A("bitmap", quantizedImage))
    }
 
    public static HashMap<Integer, List<List<Integer>>> getIndicators(
-         List<List<Integer>> analysisDS, int j, List<Integer> xIndices, List<Integer> yIndices, String thisCase, HashMap<Integer, List<List<Integer>>> argIndicators) {
+           List<List<Integer>> analysisDS, int j, List<Integer> xIndices, List<Integer> yIndices, String thisCase, HashMap<Integer, List<List<Integer>>> argIndicators) {
       HashMap<Integer, List<List<Integer>>> indicators = new HashMap<>();
       for (Iterator<Integer> iter = xIndices.iterator(); iter.hasNext(); ) {
          Integer x = iter.next();
@@ -1363,7 +1454,7 @@ Args(A("bitmap", quantizedImage))
                Integer whitespaceConveyer = -10000;
                List<Integer> dividersAroundIndicatedWhitespaceConveyed = dividersAroundIndicated.stream().map(y -> {return (isWhitespaceIndicator(y) ? whitespaceConveyer : y);}).collect(Collectors.toList());
                dividersAround = ((thisCase == "header") ?
-                     dividersAround.subList(0, dividersAroundIndicatedWhitespaceConveyed.indexOf(whitespaceConveyer)+1) : dividersAround.subList(dividersAroundIndicatedWhitespaceConveyed.lastIndexOf(whitespaceConveyer), dividersAround.size()));
+                       dividersAround.subList(0, dividersAroundIndicatedWhitespaceConveyed.indexOf(whitespaceConveyer)+1) : dividersAround.subList(dividersAroundIndicatedWhitespaceConveyed.lastIndexOf(whitespaceConveyer), dividersAround.size()));
                indicators.get(x).add(dividersAround);
             }
          } else {
@@ -1395,7 +1486,7 @@ Args(A("bitmap", quantizedImage))
          }
          else {
             thisFlattened.put(k, Stream.concat(Collections.singletonList(k).stream(),
-                  thisFlattened.get(k).stream().distinct().collect(Collectors.toList()).stream()).collect(Collectors.toList()));
+                    thisFlattened.get(k).stream().distinct().collect(Collectors.toList()).stream()).collect(Collectors.toList()));
          }
       }
       return thisFlattened;
@@ -1781,7 +1872,7 @@ Args(A("bitmap", quantizedImage))
             Integer adHeaderDividerI = thisScreenshot.indexOf(adHeaderDividerIndex);
             Log.i(TAG, "Postdividerscan adHeaderDividerI: "+ (adHeaderDividerI));
             Integer offsetFromTop = 0;
-                    List<Integer> indicesAfterAdHeader = new ArrayList<>();
+            List<Integer> indicesAfterAdHeader = new ArrayList<>();
             Integer cutPosition = null;
             if (adHeaderDividerI != -1) {
                //Log.i(TAG, "xxx2 : " + screenshotI);
@@ -1828,7 +1919,7 @@ Args(A("bitmap", quantizedImage))
 
                // if we have a whitespace color to work with
                if (retainedWSColor != null) {
-                 // Log.i(TAG, "xxx6 : " + screenshotI);
+                  // Log.i(TAG, "xxx6 : " + screenshotI);
 
                   // stitch the images of the current screenshot
                   List<Bitmap> imagesOfCurrentScreenshot = new ArrayList<>();
@@ -1865,16 +1956,16 @@ Args(A("bitmap", quantizedImage))
                         // when the 1st and 3rd are the same colour as the ws color, and the middle is of a decent difference to them...
                         if ((p1 < POST_DIVIDER_COLOUR_DIFFERENCE)
                                 && (p2 > POST_DIVIDER_COLOUR_DIFFERENCE)
-                                    && (p3 < POST_DIVIDER_COLOUR_DIFFERENCE)) {
+                                && (p3 < POST_DIVIDER_COLOUR_DIFFERENCE)) {
 
                            // get 20 pixels spaced out across the width of the image
                            p1C = IntStream.range(0, 100).boxed().collect(Collectors.toList()).stream().map(x -> stitchedImage.getPixel((int) Math.floor(x*((double) stitchedImage.getWidth() /100)), finalI)).collect(Collectors.toList());
                            p2C = IntStream.range(0, 100).boxed().collect(Collectors.toList()).stream().map(x -> stitchedImage.getPixel((int) Math.floor(x*((double) stitchedImage.getWidth() /100)), finalI+threePixelVerticalspacing)).collect(Collectors.toList());
                            p3C = IntStream.range(0, 100).boxed().collect(Collectors.toList()).stream().map(x -> stitchedImage.getPixel((int) Math.floor(x*((double) stitchedImage.getWidth() /100)), finalI+(threePixelVerticalspacing*2))).collect(Collectors.toList());
 
-                              Double p1R = optionalGetDouble(p1C.stream().map(x -> pixelDifferencePercentage(finalRetainedWSColor, x)).collect(Collectors.toList()).stream().mapToDouble(x->x).average());
-                              Double p2R = optionalGetDouble(p2C.stream().map(x -> pixelDifferencePercentage(finalRetainedWSColor, x)).collect(Collectors.toList()).stream().mapToDouble(x->x).average());
-                              Double p3R = optionalGetDouble(p3C.stream().map(x -> pixelDifferencePercentage(finalRetainedWSColor, x)).collect(Collectors.toList()).stream().mapToDouble(x->x).average());
+                           Double p1R = optionalGetDouble(p1C.stream().map(x -> pixelDifferencePercentage(finalRetainedWSColor, x)).collect(Collectors.toList()).stream().mapToDouble(x->x).average());
+                           Double p2R = optionalGetDouble(p2C.stream().map(x -> pixelDifferencePercentage(finalRetainedWSColor, x)).collect(Collectors.toList()).stream().mapToDouble(x->x).average());
+                           Double p3R = optionalGetDouble(p3C.stream().map(x -> pixelDifferencePercentage(finalRetainedWSColor, x)).collect(Collectors.toList()).stream().mapToDouble(x->x).average());
 
                            Double p1U = colourListUniformity(p1C);
                            Double p2U = colourListUniformity(p2C);
@@ -1882,90 +1973,90 @@ Args(A("bitmap", quantizedImage))
                            //Log.i(TAG, "xxx7.2 : " + screenshotI + " : " + i + " : PR  : " + p1R + " " + p2R + " " + p3R );
                            //Log.i(TAG, "xxx7.2 : " + screenshotI + " : " + i + " : PU  : " + p1U + " " + p2U + " " + p3U );
 
-                              if (((p1R < POST_DIVIDER_COLOUR_DIFFERENCE)
-                                      && (p2R > POST_DIVIDER_COLOUR_DIFFERENCE)
-                                      && (p3R < POST_DIVIDER_COLOUR_DIFFERENCE)) &&
-                                      ((p1U < POST_DIVIDER_COLOUR_UNIFORMITY)
-                                         && (p2U < POST_DIVIDER_COLOUR_UNIFORMITY)
-                                         && (p3U < POST_DIVIDER_COLOUR_UNIFORMITY))) {
+                           if (((p1R < POST_DIVIDER_COLOUR_DIFFERENCE)
+                                   && (p2R > POST_DIVIDER_COLOUR_DIFFERENCE)
+                                   && (p3R < POST_DIVIDER_COLOUR_DIFFERENCE)) &&
+                                   ((p1U < POST_DIVIDER_COLOUR_UNIFORMITY)
+                                           && (p2U < POST_DIVIDER_COLOUR_UNIFORMITY)
+                                           && (p3U < POST_DIVIDER_COLOUR_UNIFORMITY))) {
 
-                                 int[] i1 = pixelsAtAxisI(stitchedImage, "v", i);
-                                 int[] i2 = pixelsAtAxisI(stitchedImage, "v", i + threePixelVerticalspacing);
-                                 int[] i3 = pixelsAtAxisI(stitchedImage, "v", i + (threePixelVerticalspacing * 2));
+                              int[] i1 = pixelsAtAxisI(stitchedImage, "v", i);
+                              int[] i2 = pixelsAtAxisI(stitchedImage, "v", i + threePixelVerticalspacing);
+                              int[] i3 = pixelsAtAxisI(stitchedImage, "v", i + (threePixelVerticalspacing * 2));
 
-                                 // check the colour palettes of the entire rows to determine that they are consistent (as post dividers should be
-                                 Double i1C = pixelDifferencePercentage(Color.parseColor(Collections.max(
-                                         colourPalette(Args(A("sample", i1), A("threshold", 0.01))).entrySet(),
-                                         Map.Entry.comparingByValue()).getKey()), retainedWSColor);
-                                 Double i2C = pixelDifferencePercentage(Color.parseColor(Collections.max(
-                                         colourPalette(Args(A("sample", i2), A("threshold", 0.01))).entrySet(),
-                                         Map.Entry.comparingByValue()).getKey()), retainedWSColor);
-                                 Double i3C = pixelDifferencePercentage(Color.parseColor(Collections.max(
-                                         colourPalette(Args(A("sample", i3), A("threshold", 0.01))).entrySet(),
-                                         Map.Entry.comparingByValue()).getKey()), retainedWSColor);
-                                 Log.i(TAG, "xxx8 : " + screenshotI + " : " + i + " : " + i1C + " " + i2C + " " + i3C);
-                                 if ((i1C < POST_DIVIDER_COLOUR_DIFFERENCE)
-                                         && (i2C > POST_DIVIDER_COLOUR_DIFFERENCE)
-                                         && (i3C < POST_DIVIDER_COLOUR_DIFFERENCE)) {
-                                    Log.i(TAG, "xxx7 : " + screenshotI + " : " + i + " : P  : " + p1 + " " + p2 + " " + p3);
-                                    Log.i(TAG, "xxx7.2 : " + screenshotI + " : " + i + " : PR  : " + p1R + " " + p2R + " " + p3R );
-                                    //Log.i(TAG, "xxx7 : " + screenshotI + " : " + i + " : PU : " + p1U + " " + p2U + " " + p3U);
-                                    //Log.i(TAG, "xxx8 : " + screenshotI + " : " + i + " : " + i1C + " " + i2C + " " + i3C);
-                                    //Log.i(TAG, "xxx9");
-                                    //Log.i(TAG, "i : " + i + " height: " + stitchedImage.getHeight());
-                                    //Log.i(TAG, "threePixelVerticalspacing: " + threePixelVerticalspacing);
+                              // check the colour palettes of the entire rows to determine that they are consistent (as post dividers should be
+                              Double i1C = pixelDifferencePercentage(Color.parseColor(Collections.max(
+                                      colourPalette(Args(A("sample", i1), A("threshold", 0.01))).entrySet(),
+                                      Map.Entry.comparingByValue()).getKey()), retainedWSColor);
+                              Double i2C = pixelDifferencePercentage(Color.parseColor(Collections.max(
+                                      colourPalette(Args(A("sample", i2), A("threshold", 0.01))).entrySet(),
+                                      Map.Entry.comparingByValue()).getKey()), retainedWSColor);
+                              Double i3C = pixelDifferencePercentage(Color.parseColor(Collections.max(
+                                      colourPalette(Args(A("sample", i3), A("threshold", 0.01))).entrySet(),
+                                      Map.Entry.comparingByValue()).getKey()), retainedWSColor);
+                              Log.i(TAG, "xxx8 : " + screenshotI + " : " + i + " : " + i1C + " " + i2C + " " + i3C);
+                              if ((i1C < POST_DIVIDER_COLOUR_DIFFERENCE)
+                                      && (i2C > POST_DIVIDER_COLOUR_DIFFERENCE)
+                                      && (i3C < POST_DIVIDER_COLOUR_DIFFERENCE)) {
+                                 Log.i(TAG, "xxx7 : " + screenshotI + " : " + i + " : P  : " + p1 + " " + p2 + " " + p3);
+                                 Log.i(TAG, "xxx7.2 : " + screenshotI + " : " + i + " : PR  : " + p1R + " " + p2R + " " + p3R );
+                                 //Log.i(TAG, "xxx7 : " + screenshotI + " : " + i + " : PU : " + p1U + " " + p2U + " " + p3U);
+                                 //Log.i(TAG, "xxx8 : " + screenshotI + " : " + i + " : " + i1C + " " + i2C + " " + i3C);
+                                 //Log.i(TAG, "xxx9");
+                                 //Log.i(TAG, "i : " + i + " height: " + stitchedImage.getHeight());
+                                 //Log.i(TAG, "threePixelVerticalspacing: " + threePixelVerticalspacing);
 
-                                    // identify the cut point and report the x
-                                    Integer postDividerY = i;
-                                    Log.i(TAG, "Postdividerscan at y position of " + (postDividerY + threePixelVerticalspacing) + " (height is " + stitchedImage.getHeight() + ")");
-                                    //Log.i(TAG, "Postdividerfound clear offfset: " + Arrays.asList(offsetFromTop, offsetFromTop + postDividerY));
+                                 // identify the cut point and report the x
+                                 Integer postDividerY = i;
+                                 Log.i(TAG, "Postdividerscan at y position of " + (postDividerY + threePixelVerticalspacing) + " (height is " + stitchedImage.getHeight() + ")");
+                                 //Log.i(TAG, "Postdividerfound clear offfset: " + Arrays.asList(offsetFromTop, offsetFromTop + postDividerY));
 
-                                    int intendedLowerBound = offsetFromTop + postDividerY + threePixelVerticalspacing;
-                                    derivedCutPositions.add(Arrays.asList(offsetFromTop, intendedLowerBound));
-                                    postDividerWasFound = true;
+                                 int intendedLowerBound = offsetFromTop + postDividerY + threePixelVerticalspacing;
+                                 derivedCutPositions.add(Arrays.asList(offsetFromTop, intendedLowerBound));
+                                 postDividerWasFound = true;
 
 
-                                    //
-                                    int runningHeight = 0;
-                                    for (int iii = cutPosition; iii < thisScreenshot.size(); iii ++) {
-                                       runningHeight += retrieveRetainedDivider(segmentStitched, screenshotI, iii).getHeight();
-                                       if (runningHeight >= i) {
-                                          Log.i(TAG, "Postdividerscan divider index is "+iii);
-                                          // Add to last index of post divider offsets
-                                          postDividerOffsets.get(postDividerOffsets.size()-1).add(i+offsetFromTop);
-                                          break;
-                                       }
+                                 //
+                                 int runningHeight = 0;
+                                 for (int iii = cutPosition; iii < thisScreenshot.size(); iii ++) {
+                                    runningHeight += retrieveRetainedDivider(segmentStitched, screenshotI, iii).getHeight();
+                                    if (runningHeight >= i) {
+                                       Log.i(TAG, "Postdividerscan divider index is "+iii);
+                                       // Add to last index of post divider offsets
+                                       postDividerOffsets.get(postDividerOffsets.size()-1).add(i+offsetFromTop);
+                                       break;
                                     }
-
-
-
-                                    if (DEBUG) {
-                                       File dir = filePath(asList(MainActivity.getMainDir(thisContext).getAbsolutePath(), "debug", "post_dividers"));
-                                       if (!dir.exists()) {
-                                          dir.mkdirs();
-                                       }
-                                       String fname = UUID.randomUUID().toString() + ".png";
-                                       //Log.i(TAG, "Postdividerfound creating: " + fname);
-                                       try {
-                                          try (FileOutputStream out = new FileOutputStream(
-                                                  filePath(asList(dir.getAbsolutePath(), fname + ".png")).getAbsolutePath())) {
-                                             Bitmap.createBitmap(
-                                                     thisScreenshotBitmap,
-                                                     0,
-                                                     (postDividerY + threePixelVerticalspacing) - 25,
-                                                     thisScreenshotBitmap.getWidth(),
-                                                     50).compress(Bitmap.CompressFormat.PNG, 100, out);
-                                          } catch (IOException e) {
-                                          }
-                                       } catch (Exception e) {
-                                       }
-                                    }
-
-                                    // flush the indicesAfterAdHeader and runningIndices
-                                    indicesAfterAdHeader = new ArrayList<>();
-                                    runningIndices = new ArrayList<>();
                                  }
+
+
+
+                                 if (DEBUG) {
+                                    File dir = filePath(asList(MainActivity.getMainDir(thisContext).getAbsolutePath(), "debug", "post_dividers"));
+                                    if (!dir.exists()) {
+                                       dir.mkdirs();
+                                    }
+                                    String fname = UUID.randomUUID().toString() + ".png";
+                                    //Log.i(TAG, "Postdividerfound creating: " + fname);
+                                    try {
+                                       try (FileOutputStream out = new FileOutputStream(
+                                               filePath(asList(dir.getAbsolutePath(), fname + ".png")).getAbsolutePath())) {
+                                          Bitmap.createBitmap(
+                                                  thisScreenshotBitmap,
+                                                  0,
+                                                  (postDividerY + threePixelVerticalspacing) - 25,
+                                                  thisScreenshotBitmap.getWidth(),
+                                                  50).compress(Bitmap.CompressFormat.PNG, 100, out);
+                                       } catch (IOException e) {
+                                       }
+                                    } catch (Exception e) {
+                                    }
+                                 }
+
+                                 // flush the indicesAfterAdHeader and runningIndices
+                                 indicesAfterAdHeader = new ArrayList<>();
+                                 runningIndices = new ArrayList<>();
                               }
+                           }
                         }
                      }
                   }
@@ -1973,9 +2064,9 @@ Args(A("bitmap", quantizedImage))
                   // TODO if no cuts were derived, manufacture them with whatever we have
 
                   if (!postDividerWasFound) {
-                        Log.i(TAG, "adding w/ Indicesafterheader: "+ indicesAfterAdHeader);
-                           int intendedLowerBound = stitchedImage.getHeight() + offsetFromTop;
-                           derivedCutPositions.add(Arrays.asList(offsetFromTop, intendedLowerBound));
+                     Log.i(TAG, "adding w/ Indicesafterheader: "+ indicesAfterAdHeader);
+                     int intendedLowerBound = stitchedImage.getHeight() + offsetFromTop;
+                     derivedCutPositions.add(Arrays.asList(offsetFromTop, intendedLowerBound));
                   }
 
 
@@ -2644,7 +2735,7 @@ Args(A("bitmap", quantizedImage))
 
 
    public static List<JSONObject> processScreenshots(List<JSONObject> bitmapsToProcess,
-                                         boolean Verbose, HashMap<String, Object> pictogramsReference, Context thisContext) throws JSONException, IOException {
+                                                     boolean Verbose, HashMap<String, Object> pictogramsReference, Context thisContext) throws JSONException, IOException {
 
       thisMasterContext = thisContext;
 
@@ -2655,7 +2746,7 @@ Args(A("bitmap", quantizedImage))
       List<JSONObject> thisOutput = new ArrayList<>();
 
       makeDirectory(filePath(asList(((new File(".")).getAbsolutePath()),
-            "src", "debug",  "assets", "local", "contentInterpreterSimulationsOutput")));
+              "src", "debug",  "assets", "local", "contentInterpreterSimulationsOutput")));
 
       JSONObject bitmapsObject = new JSONObject();
       List<String> listOfScreenshots = new ArrayList<>();
@@ -2696,22 +2787,22 @@ Args(A("bitmap", quantizedImage))
             String thisFname = (String) segmentsTimestamped.get(i).get(j).get("fname");
             Bitmap thisScreenshotBitmap = (Bitmap) bitmapsObject.get(thisFname);//BitmapFactory.decodeFile(thisScreenshotFile.getPath());
             int thisWhitespacePixel = getWhitespacePixel(
-                  Args(A("bitmap", thisScreenshotBitmap))
-                  );
+                    Args(A("bitmap", thisScreenshotBitmap))
+            );
             DividerSet thisVisualComponents = new DividerSet(
 
 
-Args(
-                  A("bitmap", thisScreenshotBitmap),
-                  A("orientation", "v"),
-                  A("scaleMinor", 0.1),
-                  A("absorbMinimums", false),
-                  A("whitespaceThreshold", 0.2),
-                  A("colourPaletteThreshold", 0.05),
-                  A("scanUntil", 1.0),
-                  A("retainMinimums", true),
-                  A("minDividerApproach", "complex")
-            )
+                    Args(
+                            A("bitmap", thisScreenshotBitmap),
+                            A("orientation", "v"),
+                            A("scaleMinor", 0.1),
+                            A("absorbMinimums", false),
+                            A("whitespaceThreshold", 0.2),
+                            A("colourPaletteThreshold", 0.05),
+                            A("scanUntil", 1.0),
+                            A("retainMinimums", true),
+                            A("minDividerApproach", "complex")
+                    )
 
 
 
@@ -2719,7 +2810,7 @@ Args(
 
 
 
-                  );
+            );
             // TODO up from 0.01
             List<Bitmap> thisImageDividers = (List<Bitmap>) thisVisualComponents.dividerImages;
             List<HashMap<String, Integer>> thisImageDividerBounds = (List<HashMap<String, Integer>>) thisVisualComponents.dividers;
@@ -2734,29 +2825,29 @@ Args(
 
 
 
-            Args(
-                  A("bitmap", thisScreenshotBitmapReduced),
-                  A("orientation", "v"),
-                  A("scaleMinor", 0.1),
-                  A("absorbMinimums", false),
-                  A("whitespaceThreshold", 0.1),
-                  A("colourPaletteThreshold", 0.05),
-                  A("scanUntil", 0.2),
-                  A("retainMinimums", true),
-                  A("minDividerApproach", "complex")
+                    Args(
+                            A("bitmap", thisScreenshotBitmapReduced),
+                            A("orientation", "v"),
+                            A("scaleMinor", 0.1),
+                            A("absorbMinimums", false),
+                            A("whitespaceThreshold", 0.1),
+                            A("colourPaletteThreshold", 0.05),
+                            A("scanUntil", 0.2),
+                            A("retainMinimums", true),
+                            A("minDividerApproach", "complex")
 
-            ));
+                    ));
 
 
 
             List<Bitmap> thisImageDividersReduced = thisVisualComponentsReduced.dividerImages;
 
             FacebookScreenshot result = new FacebookScreenshot(Args(
-                        A("dividers", thisImageDividersReduced),
-                        A("whitespacePixel", thisWhitespacePixel),
-                        A("tolerancePictogramDiff", 0.25),
-                        A("referenceStencilsPictograms", pictogramsReference),
-                        A("h", thisScreenshotBitmap.getHeight())));
+                    A("dividers", thisImageDividersReduced),
+                    A("whitespacePixel", thisWhitespacePixel),
+                    A("tolerancePictogramDiff", 0.25),
+                    A("referenceStencilsPictograms", pictogramsReference),
+                    A("h", thisScreenshotBitmap.getHeight())));
 
 
             if (result.statistics != null) {
@@ -2796,7 +2887,7 @@ Args(
 
 
 
-                        segmentsTimestamped.get(i).get(j).put("inFacebook", result.inFacebook);
+            segmentsTimestamped.get(i).get(j).put("inFacebook", result.inFacebook);
             Log.i(TAG,  "\t\tFacebookScreenshot "+j+" is within Facebook:"+result.inFacebook);
             segmentsTimestamped.get(i).get(j).put("image", thisScreenshotBitmap); // TODO put back into block below
             boolean inFacebook = (boolean) result.inFacebook;
@@ -2854,7 +2945,7 @@ Args(
             for (int j = 0; j < segmentsTimestamped.get(i).size(); j ++) {
                Bitmap thisBitmap = (Bitmap)segmentsTimestamped.get(i).get(j).get("image");
                try (FileOutputStream out = new FileOutputStream(
-                     filePath(asList(thisTimstampsDirName.getAbsolutePath(), "raw-" + j + ".png")).getAbsolutePath())) {
+                       filePath(asList(thisTimstampsDirName.getAbsolutePath(), "raw-" + j + ".png")).getAbsolutePath())) {
                   thisBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
                } catch (IOException e) {}
             }
@@ -2957,18 +3048,18 @@ Args(
                   List<Bitmap> chunkedBitmaps = new ArrayList<>();
                   for (List<Bitmap> bitmaps : chunkContainer) {
                      chunkedBitmaps.add(combineImagesList(
-                           Args(
-                                 A("listOfBitmaps", bitmaps),
-                                 A("orientation", "v")
-                           )
-                           ));
+                             Args(
+                                     A("listOfBitmaps", bitmaps),
+                                     A("orientation", "v")
+                             )
+                     ));
                   }
 
                   if (DEBUG) {
                      int jj = 0;
                      for (Bitmap chunkedBitmap : chunkedBitmaps) {
                         try (FileOutputStream out = new FileOutputStream(
-                              filePath(asList(thisAdDividersDirName.getAbsolutePath(), "chunk-" + jj + ".png")).getAbsolutePath())) {
+                                filePath(asList(thisAdDividersDirName.getAbsolutePath(), "chunk-" + jj + ".png")).getAbsolutePath())) {
                            chunkedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
                         } catch (IOException e) {
                         }
@@ -2977,7 +3068,7 @@ Args(
                      for (Iterator<Integer> iterD = dividerImages.keySet().iterator(); iterD.hasNext(); ) {
                         Integer q = iterD.next();
                         try (FileOutputStream out = new FileOutputStream(
-                              filePath(asList(thisAdDividersDirName.getAbsolutePath(), "divider-"+q+".png")).getAbsolutePath())) {
+                                filePath(asList(thisAdDividersDirName.getAbsolutePath(), "divider-"+q+".png")).getAbsolutePath())) {
                            dividerImages.get(q).compress(Bitmap.CompressFormat.PNG, 100, out);
                         } catch (IOException e) {}
                      }
