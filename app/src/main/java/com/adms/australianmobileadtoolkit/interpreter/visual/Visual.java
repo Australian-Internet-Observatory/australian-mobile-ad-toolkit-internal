@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -29,32 +32,38 @@ public class Visual {
 
    private static String TAG = "Visual";
 
-   /*
-   *
-   * This function converts a colour to a hex string
-   *
-   * */
+   /**
+    * This function converts a colour to a hex string
+    * @param colour The colour as an integer
+    * @return The colour as a hex string
+    */
    public static String colourToHex(Integer colour) {
       return String.format("#%06X", (0xFFFFFF & colour));
    }
 
-   /*
-   *
-   * This function assists the colourQuantizeBitmap function in snapping a colour channel to a given
-   * interval
-   *
-   * */
+   /**
+    * This function assists the colourQuantizeBitmap function in snapping a colour channel to a given
+    * interval
+    * @param colourChannel
+    * @param interval
+    * @return
+    */
    private static int colourQuantizeBitmapSnap(int colourChannel, int interval) {
       return Math.min(((Math.floorDiv(colourChannel, interval) * interval) + (interval / 2)), 255);
    }
 
-   /*
-    *
+
+   public static int DEFAULT_COLOUR_QUANTIZE_BITMAP_INTERVAL = 64;
+
+   /**
     * This function performs colour quantization on a bitmap, by snapping the RGB values of all
     * comprising pixels to a supplied interval
-    *
-    * */
-   public static int DEFAULT_COLOUR_QUANTIZE_BITMAP_INTERVAL = 64;
+    * @param args {
+    *             (Bitmap) bitmap:
+    *             (int) interval:
+    * }
+    * @return The quantized bitmap
+    */
    public static Bitmap colourQuantizeBitmap(Arguments args) {
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
       int interval = (int) args.get("interval", DEFAULT_COLOUR_QUANTIZE_BITMAP_INTERVAL);
@@ -75,35 +84,39 @@ public class Visual {
       return newBitmap;
    }
 
-   /*
-    *
+   /**
     * This function retrieves the colour-based difference difference between two pixels,
     * as the sum of the difference of the respective colour channels
-    *
-    * */
+    * @param a An integer representing the first pixel
+    * @param b An integer representing the second pixel
+    * @return The difference between two pixels
+    */
    public static Integer pixelDifference(int a, int b) {
       return (Math.abs(Color.red(a) - Color.red(b))
             + Math.abs(Color.green(a) - Color.green(b))
             + Math.abs(Color.blue(a) - Color.blue(b)));
    }
 
-   /*
-    *
+   /**
     * This function converts the integer pixel difference obtained from the 'pixelDifference'
     * function to a percentage value
-    *
-    * */
+    * @param a An integer representing the first pixel
+    * @param b An integer representing the second pixel
+    * @return The difference between two pixels as a percentage
+    */
    public static Double pixelDifferencePercentage(int a, int b) {
       return Double.valueOf(pixelDifference(a, b)) / (255 * 3);
    }
 
 
-   /*
-    *
+   /**
     * This function returns a pixel array at a designated index of an axis (either
     * vertical or horizontal) of an image
-    *
-    * */
+    * @param bitmap
+    * @param orientation
+    * @param i
+    * @return
+    */
    public static int[] pixelsAtAxisI(Bitmap bitmap, String orientation, int i) {
       return IntStream.range(
                // The length of the pixel array is equivalent to the length of the alternative axis
@@ -114,6 +127,11 @@ public class Visual {
                            bitmap.getPixel(zz, i) : bitmap.getPixel(i, zz)).toArray();
    }
 
+   /**
+    *
+    * @param row
+    * @return
+    */
    public static boolean isRowWhitespace(int[] row) {
       List<Double> diffs = new ArrayList<>();
       for (int i = 0; i < row.length-1; i ++) {
@@ -122,12 +140,18 @@ public class Visual {
       return (optionalGetDouble(diffs.stream().mapToDouble(x->x).max()) < 0.02);
    }
 
-   /*
-   *
-   * This function generates a scaled-down version of a bitmap
-   *
-   * */
    public static Integer DEFAULT_THUMBNAIL_SIZE = 10;
+
+   /**
+    * This function generates a scaled-down version of a bitmap to a desired size
+    * @param args {
+    *             (Bitmap) bitmap: The bitmap to scale down
+    *             (int) s: The default desired size if width and height are not supplied
+    *             (int) w: The desired width
+    *             (int) h: The desired height
+    * }
+    * @return The scaled down version of the given bitmap
+    */
    public static Bitmap thumbnail(Arguments args) {
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
       Integer s = (Integer) args.get("s", DEFAULT_THUMBNAIL_SIZE);
@@ -136,44 +160,67 @@ public class Visual {
       return Bitmap.createScaledBitmap(bitmap, w, h, true);
    }
 
-   /*
-   *
-   * This function generates a colour palette from an array of colours
-   *
-   * TODO - implement sub-sampling for speed?
-   *
-   * */
    public static Double DEFAULT_COLOUR_PALETTE_LINKING_THRESHOLD = 0.3;
+
+   // TODO - implement sub-sampling for speed?
+   /**
+    * This function generates a colour palette from an array of colours
+    * @param args {
+    *             (int[]) sample: An array containing the colours as integers
+    *             (double) threshold: The percentage threshold where two colours occupies the same
+    *             entry in the palette
+    * }
+    * @return A hashmap with hex colours as keys and the values are the number of occurrences of
+    * each colour (or those similar to the colour by a certain threshold percentage)
+    */
    public static HashMap<String, Integer> colourPalette(Arguments args) {
       int[] sample = (int[]) args.get("sample", new int[0]);
       Double linkingThreshold = (Double) args.get("threshold",
                                                       DEFAULT_COLOUR_PALETTE_LINKING_THRESHOLD);
       HashMap<String, Integer> palette = new HashMap<>();
-      // For each pixel within the sample
+
+       // Returns the nearest colour in the palette, or the given colour if none found
+      Function<String, String> getNearestColourInPalette =
+              (colour) -> palette.keySet()
+                                 .stream()
+                                 .filter(paletteKey ->
+                                         pixelDifferencePercentage(
+                                                 Color.parseColor(paletteKey),
+                                                 Color.parseColor(colour)
+                                         ) < linkingThreshold
+                                 )
+                                 .findFirst()
+                                 .orElse(colour);
+
+      // For each pixel within the sample, add 1 to the palette key containing the colour
+      // closest to it
       for (Integer thisPixel : sample) {
-         boolean found = false;
-         // For each existing colour within the palette
-         for (String hexColour : palette.keySet()) {
-            // If the pixel's colour differs less from the palette's colour than the threshold
-            if (pixelDifferencePercentage(Color.parseColor(hexColour), thisPixel)
-                                                                  < linkingThreshold) {
-               // Then apply it to the existing colour
-               palette.put(hexColour, Objects.requireNonNull(palette.get(hexColour)) + 1);
-               found = true;
-               break;
-            }
-         }
-         // Otherwise generate it within the palette
-         if (!found) {
-            palette.put(colourToHex(thisPixel), 1);
-         }
+//         boolean found = false;
+//         // For each existing colour within the palette
+//         for (String hexColour : palette.keySet()) {
+//            // If the pixel's colour differs less from the palette's colour than the threshold
+//            if (pixelDifferencePercentage(Color.parseColor(hexColour), thisPixel)
+//                                                                  < linkingThreshold) {
+//               // Then apply it to the existing colour
+//               palette.put(hexColour, Objects.requireNonNull(palette.get(hexColour)) + 1);
+//               found = true;
+//               break;
+//            }
+//         }
+//         // Otherwise generate it within the palette
+//         if (!found) {
+//            palette.put(colourToHex(thisPixel), 1);
+//         }
+         String nearestColour = getNearestColourInPalette.apply(colourToHex(thisPixel));
+         int currentCount = Objects.requireNonNull(palette.getOrDefault(nearestColour, 0));
+         palette.put(nearestColour, currentCount + 1);
       }
       return palette;
    }
 
    /*
    *
-   * This function adapts the 'colourPalette' function, to retrieve a colour palette from an image
+   *
    *
    * TODO - implement sub-sampling for speed?
    *
@@ -182,6 +229,17 @@ public class Visual {
                                                          = DEFAULT_COLOUR_PALETTE_LINKING_THRESHOLD;
 
    // TODO - threshold is too weak in some cases
+
+   /**
+    * This function adapts the 'colourPalette' function, to retrieve a colour palette from an image
+    * @param args {
+    *             (Bitmap) bitmap: The bitmap
+    *             (double) threshold: The threshold (percentage) to which two colours are considered
+    *             the same in the palette
+    * }
+    * @return A hashmap with hex colours as keys and the values are the number of occurrences of
+    * each colour in the image (or those similar to the colour by a certain threshold percentage)
+    */
    public static HashMap<String, Integer> colourPaletteFromImage(Arguments args) {
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
       Double linkingThreshold = (Double) args.get("threshold",
@@ -197,14 +255,19 @@ public class Visual {
       return colourPalette(Args(A("sample", pixels), A("threshold", linkingThreshold)));
    }
 
-   /*
-    *
-    * This function retrieves a statistic (min, max, or average) from the pair-wise comparisons of
-    * all differences of all colours within a colour palette
-    *
-    * */
    public static Integer DEFAULT_COLOUR_PALETTE_DIFF_COLOURS_N = 10;
    public static String DEFAULT_COLOUR_PALETTE_DIFF_APPROACH = "max";
+
+   /**
+    * This function retrieves a statistic (min, max, or average) from the pair-wise comparisons of
+    * all differences of all colours within a colour palette
+    * @param args {
+    *             (HashMap<String, Integer>) palette
+    *             (int) maxColours
+    *             (String) approach
+    * }
+    * @return
+    */
    @SuppressWarnings("all")
    public static Double colourPaletteDiff(Arguments args) {
       HashMap<String, Integer> palette = (HashMap<String, Integer>)
@@ -216,14 +279,21 @@ public class Visual {
       if (palette.keySet().size() >= maxColours) return 1.0;
       // Report no variance (zero) if there is only one colour in the palette
       if (palette.keySet().size() == 1) return 0.0;
-      List<Integer> colours = palette.keySet().stream().map(Color::parseColor)
-            .collect(Collectors.toList());
+      List<Integer> colours = palette
+              .keySet()
+              .stream()
+              .map(Color::parseColor)
+              .collect(Collectors.toList());
       // Assemble the results of all cross-compared differences among all colours
       // that constitute the palette
       List<Double> results = combinationPairs(
-            IntStream.range(0, colours.size()).boxed().collect(Collectors.toList()))
-            .stream().map(c -> pixelDifferencePercentage(
-                  colours.get(c.get(0)),colours.get(c.get(1)))).collect(Collectors.toList());
+            IntStream.range(0, colours.size())
+                     .boxed()
+                     .collect(Collectors.toList()))
+              .stream()
+              .map(c -> pixelDifferencePercentage(
+                  colours.get(c.get(0)),colours.get(c.get(1))))
+              .collect(Collectors.toList());
       // Route the output, depending on the approach
       switch (approach) {
          case "min" : return Collections.min(results);
@@ -233,6 +303,12 @@ public class Visual {
    }
 
 
+   /**
+    * Find the uniformity of a colour list by finding the maximum difference between pair of
+    * consecutive pixels
+    * @param thisList The colour list
+    * @return The maximum percentage difference between any pair of consecutive pixels
+    */
    public static Double colourListUniformity(List<Integer> thisList) {
       double maxDiff = 0.0;
       for (int i = 0; i < thisList.size()-1; i ++) {
@@ -244,21 +320,27 @@ public class Visual {
       return maxDiff;
    }
 
-   /*
-   *
-   * This function converts a colour palette's keys into a list of distinct colours
-   *
-   * */
+   /**
+    * This function converts a colour palette's keys into a list of distinct colours
+    * @param colourPalette
+    * @return
+    */
    public static List<Integer> colourPaletteKeysToList(HashMap<String, Integer> colourPalette) {
       return colourPalette.keySet().stream().map(Color::parseColor).collect(Collectors.toList());
    }
 
-   /*
-   *
-   * This function handles the process of assessing rows of pixels, as part of cropping whitespace
-   * from images
-   *
-   * */
+   /**
+    * This function handles the process of assessing rows of pixels, as part of cropping whitespace
+    * from images
+    * @param thisImage
+    * @param h
+    * @param w
+    * @param whitespacePixel
+    * @param threshold
+    * @param orientation
+    * @param bound
+    * @return
+    */
    public static int cropWhitespaceSubFunction(Bitmap thisImage, int h, int w,
                           int whitespacePixel, double threshold, String orientation, String bound) {
       int cursor = 0;
@@ -279,13 +361,14 @@ public class Visual {
       return cursor;
    }
 
-   /*
-    *
+   public static double DEFAULT_CROP_WHITESPACE_THRESHOLD = 0.2;
+
+    /**
     * Provided an image and the prescription of a whitespace pixel, this function
     * crops whitespace from an image
-    *
-    * */
-   public static double DEFAULT_CROP_WHITESPACE_THRESHOLD = 0.2;
+    * @param args
+    * @return
+    */
    @SuppressWarnings("all")
    public static Bitmap cropWhitespace(Arguments args) {
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
@@ -323,15 +406,6 @@ public class Visual {
       }
    }
 
-   /*
-    *
-    * This function converts an image into a stencil
-    *
-    * snapThreshold: The threshold that separates positive pixels from negative pixels
-    * cropThreshold: The threshold that determines how sensitive the image is to cropping
-    * colourPaletteThreshold: The threshold that separates/groups colours within the image
-    *
-    * */
    public static int DEFAULT_IMAGE_TO_STENCIL_SIZE_UNIT = 16;
    public static HashMap<String, Integer> DEFAULT_IMAGE_TO_STENCIL_SIZE =
          new HashMap<String, Integer>() {{ put("s", DEFAULT_IMAGE_TO_STENCIL_SIZE_UNIT); }};
@@ -339,6 +413,16 @@ public class Visual {
    public static double DEFAULT_IMAGE_TO_STENCIL_CROP_THRESHOLD = 0.1;
    public static double DEFAULT_IMAGE_TO_STENCIL_COLOUR_PALETTE_THRESHOLD = 0.1;
    public static boolean DEFAULT_IMAGE_TO_STENCIL_IS_REFERENCE = true;
+
+   /**
+    * This function converts an image into a stencil
+    *
+    * snapThreshold: The threshold that separates positive pixels from negative pixels
+    * cropThreshold: The threshold that determines how sensitive the image is to cropping
+    * colourPaletteThreshold: The threshold that separates/groups colours within the image
+    * @param args
+    * @return
+    */
    @SuppressWarnings("all")
    public static Stencil imageToStencil(Arguments args) {
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
@@ -407,11 +491,6 @@ public class Visual {
       return output;
    }
 
-   /*
-   *
-   * This function converts an image into a pictogram
-   *
-   * */
    public static int DEFAULT_IMAGE_TO_PICTOGRAM_SIZE_UNIT = 16;
 
 
@@ -422,6 +501,12 @@ public class Visual {
                                                 }};
    public static int DEFAULT_IMAGE_TO_PICTOGRAM_QUANTIZATION_INTERVAL = 5;
    public static boolean DEFAULT_IMAGE_TO_PICTOGRAM_CROP = true;
+
+   /**
+    * This function converts an image into a pictogram
+    * @param args
+    * @return
+    */
    @SuppressWarnings("all")
    public static Bitmap imageToPictogram(Arguments args) {
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
@@ -441,17 +526,18 @@ public class Visual {
    }
 
 
-   /*
-    *
-    * This function checks the similarity between two stencils. In areas that aren't an exclusion,
-    * the values between both stencils are compared
-    *
-    * */
    public static int DEFAULT_STENCIL_SIMILARITY_STRIDE = 6;
    public static int DEFAULT_STENCIL_SIMILARITY_STRIDE_IN_SAMPLE = 6;
    public static int DEFAULT_STENCIL_SIMILARITY_STRIDE_IN_SAMPLE_INTERVAL = 2;
    public static boolean DEFAULT_STENCIL_SIMILARITY_DEEP_SAMPLING = false;
    public static String DEFAULT_STENCIL_SIMILARITY_METHOD = "multiplied";
+
+   /**
+    * This function checks the similarity between two stencils. In areas that aren't an exclusion,
+    * the values between both stencils are compared
+    * @param args
+    * @return
+    */
    public static double stencilSimilarity(Arguments args) {
       Stencil a = (Stencil) args.get("a", null);
       Stencil b = (Stencil) args.get("b", null);
@@ -507,11 +593,11 @@ public class Visual {
                                              * (readingsFN / (readingsFN + readingsAN)))) * 2), 1.0);
    }
 
-   /*
-   *
-   * This function converts a stencil to a string (for logging purposes)
-   *
-   * */
+   /**
+    * This function converts a stencil to a string (for logging purposes)
+    * @param thisStencil
+    * @return
+    */
    public static String stencilToString(int[][] thisStencil) {
       StringBuilder combinedString = new StringBuilder();
       for (int yy = 0; yy < thisStencil[0].length; yy +=3) {
@@ -525,14 +611,15 @@ public class Visual {
       return combinedString.toString();
    }
 
-   /*
-   *
-   * This function determines the similarity between two pictograms - note that supplying a
-   * maskPictogram will create an exclusion on the comparison of any pixels between pictograms that
-   * are black within the mask
-   *
-   * */
-
+   /**
+    * This function determines the similarity between two pictograms - note that supplying a
+    * maskPictogram will create an exclusion on the comparison of any pixels between pictograms that
+    * are black within the mask
+    * @param a
+    * @param b
+    * @param maskPictogram
+    * @return
+    */
    public static Double pictogramSimilarity(Bitmap a, Bitmap b, Bitmap maskPictogram) {
       List<Double> diffs = new ArrayList<>();
       for (int xx = 0; xx < a.getWidth(); xx ++) {
@@ -548,6 +635,14 @@ public class Visual {
    }
 
    // TODO integrate
+
+   /**
+    *
+    * @param a
+    * @param b
+    * @param maskPictogram
+    * @return
+    */
    public static Double pictogramSimilarityV2(Bitmap a, Bitmap b, Bitmap maskPictogram) {
       List<Double> diffs = new ArrayList<>();
       for (int xx = 0; xx < a.getWidth(); xx ++) {
@@ -573,12 +668,13 @@ public class Visual {
 
    }
 
-   /*
-    *
+   /**
     * This function handles the 'local differences' method for the 'isWhitespace' function, returning
     * the maximum difference between local pixels of the image
-    *
-    * */
+    * @param bitmap
+    * @param stride
+    * @return
+    */
    public static double isWhitespaceLocalDifferencesSubFunction(Bitmap bitmap, int stride) {
       // Index the entire image, and only compare pixels that are local wrt. each other
       // (where local pixels are those within distance of the stride variable)
@@ -598,18 +694,6 @@ public class Visual {
       return optionalGetDouble(diffs.stream().mapToDouble(x->x).max());
    }
 
-   /*
-   *
-   * This function determines whether a supplied image is whitespace or not. It can use one of
-   * three differing methods to arrive at a determination of the result:
-   *
-   *    1. prescribed
-   *
-   *    2. prescribedAndMaximum
-   *
-   *    3. localDifferences
-   *
-   * */
    public static int DEFAULT_IS_WHITESPACE_MINIMUM_RADIUS = 2;
    public static int DEFAULT_IS_WHITESPACE_LOCAL_SAMPLING_STRIDE = 3;
    public static double DEFAULT_IS_WHITESPACE_THRESHOLD_AMBIGUOUS = 0.1;
@@ -619,6 +703,19 @@ public class Visual {
 
    public static int DEFAULT_IS_WHITESPACE_PRESERVE_DIMENSIONS_THUMBNAIL_SIZE = 20;
 
+   /**
+    * This function determines whether a supplied image is whitespace or not. It can use one of
+    * three differing methods to arrive at a determination of the result:
+    *
+    *    1. prescribed
+    *
+    *    2. prescribedAndMaximum
+    *
+    *    3. localDifferences
+    *
+    * @param args
+    * @return
+    */
    public static boolean isWhitespace(Arguments args) {
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
       int stride = (int) args.get("stride", DEFAULT_IS_WHITESPACE_LOCAL_SAMPLING_STRIDE);
@@ -683,16 +780,16 @@ public class Visual {
       return false;
    }
 
-
-   /*
-    *
-    * This function evaluates the whitespace of the supplied dividers
-    *
-    * */
    public static double DEFAULT_DIVIDER_WHITESPACE_ALTERNATIONS_THRESHOLD_AMBIGUOUS = 0.1;
    public static double DEFAULT_DIVIDER_WHITESPACE_ALTERNATIONS_THRESHOLD_COLOUR_PALETTE = 0.8;
    public static boolean DEFAULT_DIVIDER_WHITESPACE_ALTERNATIONS_PRESERVE_DIMENSIONS = false;
    public static String DEFAULT_DIVIDER_WHITESPACE_ALTERNATIONS_METHOD = "prescribedAndMaximum";
+
+   /**
+    * This function evaluates the whitespace of the supplied dividers
+    * @param args
+    * @return
+    */
    public static List<Boolean> dividerWhitespaceAlternations(Arguments args) {
       List<Bitmap> dividers = args.getListBitmap("visualComponents", new ArrayList<>());
       if (dividers.isEmpty()) return new ArrayList<>();
@@ -718,12 +815,12 @@ public class Visual {
                   A("method", method)))).collect(Collectors.toList());
    }
 
-   /*
-   *
-   * This function determines if whitespace alternations (generated by the dividerWhitespaceAlternations
-   * function) alternate (to and from whitespace) evenly
-   *
-   * */
+   /**
+    * This function determines if whitespace alternations (generated by the dividerWhitespaceAlternations
+    * function) alternate (to and from whitespace) evenly
+    * @param thisDividerWhitespaceAlternations
+    * @return
+    */
    public static boolean dividerWhitespaceAlternationsWellFormed(
                                                    List<Boolean> thisDividerWhitespaceAlternations) {
       return IntStream.range(0, thisDividerWhitespaceAlternations.size())
@@ -732,15 +829,17 @@ public class Visual {
                                                 == thisDividerWhitespaceAlternations.get(i - 1))));
    }
 
-   /*
-    *
-    * This function determines whether the supplied visual components are equally spaced (in terms
-    * of distance) by whitespace or not
-    *
-    * */
+
    public static String DEFAULT_VISUAL_COMPONENTS_EQUALLY_SPACED_ORIENTATION = "h";
    public static double DEFAULT_VISUAL_COMPONENTS_EQUALLY_SPACED_THRESHOLD_DISTANCE = 0.1;
    public static boolean DEFAULT_VISUAL_COMPONENTS_EQUALLY_SPACED_ENCASED = true;
+
+   /**
+    * This function determines whether the supplied visual components are equally spaced (in terms
+    * of distance) by whitespace or not
+    * @param args
+    * @return
+    */
    public static boolean visualComponentsEquallySpaced(Arguments args) {
       List<Bitmap> visualComponents = args.getListBitmap("visualComponents", new ArrayList<>());
       List<Boolean> alternations = args.getListBoolean("alternations", new ArrayList<>());
@@ -800,13 +899,13 @@ public class Visual {
       return true;
    }
 
-
-   /*
-   *
-   * This function retrieves the whitespace pixel from an image
-   *
-   * */
    public static String DEFAULT_GET_WHITESPACE_PIXEL_METHOD = "simple";
+
+   /**
+    * This function retrieves the whitespace pixel from an image
+    * @param args
+    * @return
+    */
    public static int getWhitespacePixel(Arguments args) {
       // Run a check to determine that the bitmap is not null first
       Bitmap bitmap = (Bitmap) args.get("bitmap", null);
@@ -822,6 +921,11 @@ public class Visual {
       return Color.parseColor(hexColorString);
    }
 
+   /**
+    * This function finds the dominant colour in a bitmap
+    * @param bitmap
+    * @return The dominant colour in a bitmap
+    */
    public static int dominantColourInImage(Bitmap bitmap) {
       HashMap<String, Integer> colourPalette = colourPaletteFromImage(Args(A("bitmap", bitmap),
               A("threshold", 0.01)));
@@ -829,12 +933,14 @@ public class Visual {
       return Color.parseColor(Collections.max(colourPalette.entrySet(), Map.Entry.comparingByValue()).getKey());
    }
 
-   /*
-   *
-   * This function returns a list of integers, representing the various divider bound offsets for a
-   * list of visual components derived from an image
-   *
-   * */
+   /**
+    * This function returns a list of integers, representing the various divider bound offsets for a
+    * list of visual components derived from an image
+    * @param offsets
+    * @param whitespace
+    * @param length
+    * @return
+    */
    @SuppressWarnings("all")
    public static List<Integer> dividerBoundOffsets(
                         List<HashMap<String, Integer>> offsets, List<Boolean> whitespace, int length) {
@@ -850,12 +956,14 @@ public class Visual {
       return listOfOffsets;
    }
 
-   /*
-   *
-   * This function combines two images along an axis
-   *
-   * */
+
    public static String DEFAULT_COMBINE_IMAGES_ORIENTATION = "h";
+
+   /**
+    * This function combines two images along an axis
+    * @param args
+    * @return
+    */
    public static Bitmap combineImages(Arguments args) {
       Bitmap a = (Bitmap) args.get("a", null);
       Bitmap b = (Bitmap) args.get("b", null);
@@ -879,12 +987,13 @@ public class Visual {
       return comboBitmap;
    }
 
-   /*
-   *
-   * This function combines a list of images along an axis
-   *
-   * */
    public static String DEFAULT_COMBINE_IMAGES_LIST_ORIENTATION = "h";
+
+   /**
+    * This function combines a list of images along an axis
+    * @param args
+    * @return
+    */
    public static Bitmap combineImagesList(Arguments args) {
       List<Bitmap> listOfBitmaps = args.getListBitmap("listOfBitmaps", null);
       String orientation = (String) args.get("orientation", DEFAULT_COMBINE_IMAGES_LIST_ORIENTATION);
@@ -903,6 +1012,4 @@ public class Visual {
       }
       return output;
    }
-
-
 }
