@@ -61,7 +61,17 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     implementation 'com.arthenica:ffmpeg-kit-full:6.0-2'
+    implementation group: 'com.github.dpaukov', name: 'combinatoricslib3', version: '3.4.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
+
+    //testImplementation group: 'org.bytedeco', name: 'javacv', version: '1.2'
+
+    testImplementation("org.bytedeco:javacv-platform:1.5.10")
 
 
+
+    //testImplementation group: 'org.bytedeco', name: 'javacpp', version: '1.2.1'
+    //testImplementation group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.1.0-1.2'
+    //testImplementation group: 'org.bytedeco.javacpp-presets', name: 'ffmpeg', version: '3.0.2-1.2'
 
 }

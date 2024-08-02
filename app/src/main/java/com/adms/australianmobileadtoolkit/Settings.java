@@ -33,7 +33,7 @@ public class Settings {
    public static final int jobServiceID = 999;
    public static double recordScaleDivisor = 2;
 
-   public static boolean DEBUG = false;
+   public static boolean DEBUG = true;
 
    // The directories that will need to be created
    //         "videos" (Required by screen-recorder)

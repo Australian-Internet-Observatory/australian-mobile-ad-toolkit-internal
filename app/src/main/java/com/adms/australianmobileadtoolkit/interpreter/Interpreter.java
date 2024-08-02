@@ -30,7 +30,9 @@ import static java.util.Arrays.asList;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.util.Base64;
@@ -46,6 +48,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -169,6 +172,26 @@ public class Interpreter {
         return foundAPositiveInSift;
     }
 
+    public void debugWriteImage(Context context) {
+        Bitmap.Config conf = Bitmap.Config.ARGB_8888;
+        Bitmap bitmap_object = Bitmap.createBitmap(100, 100, conf);
+        Canvas canvas = new Canvas();
+        canvas.setBitmap(bitmap_object);
+        Paint p = new Paint();
+        p.setColor(Color.WHITE);
+        p.setStrokeWidth(100);
+        p.setAlpha(255);
+        canvas.drawLine(0,0,100,100, p);
+
+        String fname = filePath(asList(MainActivity.getMainDir(context).getAbsolutePath(), "ffmpeg_cache", "xxx.png")).getAbsolutePath();
+        try {
+            bitmap_object.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(fname));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
     /*
      *
      * This method initiates the startEventDetection for each of the processable videos
@@ -178,6 +201,9 @@ public class Interpreter {
         List<File> unsiftedVideoFiles = new ArrayList<>();
         Log.i(TAG, "Running Interpreter as "+instance+" instance!");
         if (DEBUG) {
+
+            debugWriteImage(thisContext);
+
             Log.i(TAG, "Running Interpreter in debug mode!");
             startEventDetection( filePath(asList(rootDirectoryPath.getAbsolutePath(), "debug", "input", Settings.DEBUG_TARGET_VIDEO)));
         } else {
