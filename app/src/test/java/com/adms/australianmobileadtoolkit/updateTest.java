@@ -2592,9 +2592,12 @@ public class updateTest {
         File testFile = new File(dansTestFolder, "frame-240.jpg");
         Bitmap thisBitmap = BitmapFactory.decodeFile(testFile.getAbsolutePath());
 
+        System.out.println("Created");
+
         // Generate Y axis statistics about bitmap
         JSONObject statistics = generateScreenshotStatistics(thisBitmap, false);
-
+        System.out.println("Statistics generated");
+        printJSON(statistics);
         //List<Integer> dividersFoundInScreenshot = findDividersInScreenshot(thisBitmap, statistics, false);
 
         // Locate whitespace
