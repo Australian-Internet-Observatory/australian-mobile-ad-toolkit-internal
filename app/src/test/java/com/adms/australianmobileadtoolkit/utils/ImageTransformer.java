@@ -146,10 +146,6 @@ public class ImageTransformer extends ImageProcessor {
         return this;
     }
 
-    public ImageTransformer convolve2d(double[][] kernel) {
-        return convolve2d(kernel, false);
-    }
-
     public ImageTransformer medianFilter(int kernelSize) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -266,6 +262,8 @@ public class ImageTransformer extends ImageProcessor {
         return this;
     }
 
+
+
     /**
      * Perform a 2D convolution on the image with the specified kernel
      * @param kernel The kernel to convolve the image with
@@ -330,6 +328,16 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         return this;
+    }
+    public ImageTransformer convolve2d(double[][] kernel) {
+        return convolve2d(kernel, false);
+    }
+    public ImageTransformer convolve2d(ConvolutionKernels kernel) {
+        return convolve2d(kernel.getKernel());
+    }
+
+    public ImageTransformer convolve2d(ConvolutionKernels kernel, boolean invertNegative) {
+        return convolve2d(kernel.getKernel(), invertNegative);
     }
 
     public ImageTransformer shift(int dx, int dy) {

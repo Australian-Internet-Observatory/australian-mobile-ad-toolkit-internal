@@ -16,20 +16,19 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 
 import com.adms.australianmobileadtoolkit.utils.Guards;
+import com.adms.australianmobileadtoolkit.utils.ImageAnalyser;
 import com.adms.australianmobileadtoolkit.utils.ImageAnnotator;
-import com.adms.australianmobileadtoolkit.utils.ImageProcessor;
 import com.adms.australianmobileadtoolkit.utils.ImageTransformer;
 import com.adms.australianmobileadtoolkit.utils.Orientation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.robolectric.ParameterizedRobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
@@ -39,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,14 +50,27 @@ import java.util.stream.IntStream;
 public final class ParameterizedMediaBoundariesTest {
     private final String frame;
     private final String extension;
+    private final File testFile;
+    private final File resultFolder;
+    private static final File simulationsFolder = (
+            new File(String.valueOf(filePath(asList(((new File("")).getAbsolutePath()),
+                    "src", "test", "res", "simulations")))));
 
-    public ParameterizedMediaBoundariesTest(String frame, String extension) {
+    public ParameterizedMediaBoundariesTest(String frame, String extension) throws FileNotFoundException {
         this.frame = frame;
         this.extension = extension;
+        // Prepare the test file and result folder
+        String fileName = frame + "." + extension;
+        testFile = new File(simulationsFolder, fileName);
+        resultFolder = new File(simulationsFolder, frame + "-results");
+        if (!resultFolder.exists()) {
+            resultFolder.mkdirs();
+        }
+        Guards.ensureFileExists(testFile);
     }
 
-    @ParameterizedRobolectricTestRunner.Parameters(name = "Test {index}: {0}")
-    public static Collection getData() {
+    @ParameterizedRobolectricTestRunner.Parameters(name = "Test {index}: {0}.{1}")
+    public static Collection getTestData() {
         Object[][] frames = new Object[][] {
                 { "84", "png "},
                 { "504", "png "},
@@ -100,6 +111,38 @@ public final class ParameterizedMediaBoundariesTest {
         return Arrays.asList(frames);
     }
 
+    // ----------------------------- START OF TEST DECLARATIONS -----------------------------
+
+    @Test
+    public void updatedEdgeDetectionTest() {
+        ImageAnalyser imageAnalyser = new ImageAnalyser(testFile);
+        List<Integer> horizontalEdges = imageAnalyser.getHorizontalEdges();
+
+        // Annotate the image with the horizontal edges
+        new ImageAnnotator(testFile)
+                .drawLines(Orientation.HORIZONTAL, horizontalEdges, 3, Color.GREEN)
+                .save(new File(resultFolder, "updated-edges.jpg"));
+    }
+
+    @Test
+    public void originalEdgeDetectionTest() {
+        Bitmap thisBitmap = BitmapFactory.decodeFile(testFile.getAbsolutePath());
+
+        // Generate Y axis statistics about bitmap
+        JSONObject statistics = generateScreenshotStatistics(thisBitmap, false);
+
+        // Locate whitespace
+        HashMap<Integer, String> mediaBoundaries = findMediaBoundaries(thisBitmap, statistics);
+
+        // Annotate the media boundaries on the image
+        new ImageAnnotator(testFile)
+                .drawLines(Orientation.HORIZONTAL, new ArrayList<>(mediaBoundaries.keySet()), 3, Color.GREEN)
+                .save(new File(resultFolder, "original-edges.jpg"));
+    }
+
+    // ----------------------------- END OF TEST DECLARATIONS -----------------------------
+    // Below are the utility functions used by the tests
+
     public static File filePath(List<String> path) {
         File output = null;
         for (String s : path) {
@@ -107,9 +150,6 @@ public final class ParameterizedMediaBoundariesTest {
         }
         return output;
     }
-    private static final File simulationsFolder = (
-            new File(String.valueOf(filePath(asList(((new File("")).getAbsolutePath()),
-            "src", "test", "res", "simulations")))));
 
     public static JSONObject generateScreenshotStatistics(Bitmap thisBitmap, boolean verbose) {
         if (thisBitmap.getHeight() == 0 || thisBitmap.getWidth() == 0) throw new IllegalArgumentException("Bitmap width or height must be at least 1");
@@ -573,8 +613,8 @@ public final class ParameterizedMediaBoundariesTest {
                 .save(new File(resultFolder, "aggregated-no-sharpen.jpg"));
     }
 
-    @Test
-    @Config(manifest = Config.NONE)
+//    @Test
+//    @Config(manifest = Config.NONE)
     public void edgeMatchingTest() throws FileNotFoundException {
         String fileName = frame + "." + extension;
         File testFile = new File(simulationsFolder, fileName);
@@ -897,8 +937,8 @@ public final class ParameterizedMediaBoundariesTest {
         // Filter for edges with consistent colour
     }
 
-    @Test
-    @Config(manifest = Config.NONE)
+//    @Test
+//    @Config(manifest = Config.NONE)
     public void dansMediaBoundariesTest() throws FileNotFoundException, JSONException {
         String fileName = frame + "." + extension;
         File testFile = new File(simulationsFolder, fileName);

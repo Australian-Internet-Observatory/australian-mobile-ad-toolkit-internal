@@ -2,9 +2,11 @@ package com.adms.australianmobileadtoolkit.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.List;
 
 /**
  * Used to annotate images with labels and elements
@@ -19,7 +21,7 @@ public class ImageAnnotator extends ImageProcessor {
         super(originalImage);
     }
 
-    public void drawLine(Orientation orientation, int position, int thickness, int color) {
+    public ImageAnnotator drawLine(Orientation orientation, int position, int thickness, int color) {
         // Add a line to the image
         for (int i = 0; i < thickness; i++) {
             if (orientation == Orientation.HORIZONTAL) {
@@ -38,10 +40,26 @@ public class ImageAnnotator extends ImageProcessor {
                 }
             }
         }
+        return this;
     }
 
-    public void drawLine(Orientation orientation, int position) {
-        int RED = 0xFFFF0000;
-        drawLine(orientation, position, 3, RED);
+    public ImageAnnotator drawLine(Orientation orientation, int position) {
+        drawLine(orientation, position, 3, Color.RED);
+        return this;
+    }
+
+    public ImageAnnotator drawLines(Orientation orientation, List<Integer> positions, int thickness, int color) {
+        for (int position : positions) {
+            drawLine(orientation, position, thickness, color);
+        }
+        return this;
+    }
+    public ImageAnnotator drawLines(Orientation orientation, List<Integer> positions, int thickness) {
+        drawLines(orientation, positions, thickness, Color.RED);
+        return this;
+    }
+    public ImageAnnotator drawLines(Orientation orientation, List<Integer> positions) {
+        drawLines(orientation, positions, 3, Color.RED);
+        return this;
     }
 }
