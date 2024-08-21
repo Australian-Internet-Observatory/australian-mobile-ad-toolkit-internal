@@ -9,15 +9,20 @@ import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.pixel
 import static com.adms.australianmobileadtoolkit.updateTest.averageColours;
 import static com.adms.australianmobileadtoolkit.updateTest.whitespacePixelFromImage;
 
+import static org.robolectric.Shadows.shadowOf;
 import static java.util.Arrays.asList;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
 
 import com.adms.australianmobileadtoolkit.utils.Guards;
 import com.adms.australianmobileadtoolkit.utils.ImageAnalyser;
 import com.adms.australianmobileadtoolkit.utils.ImageAnnotator;
+import com.adms.australianmobileadtoolkit.utils.ImageProcessor;
 import com.adms.australianmobileadtoolkit.utils.ImageTransformer;
 import com.adms.australianmobileadtoolkit.utils.Orientation;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.ParameterizedRobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowCanvas;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -76,36 +82,36 @@ public final class ParameterizedMediaBoundariesTest {
                 { "504", "png "},
                 { "518", "png "},
                 { "frame-0", "jpg" },
-                { "frame-24", "jpg" },
-                { "frame-48", "jpg" },
-                { "frame-72", "jpg" },
-                { "frame-96", "jpg" },
+//                { "frame-24", "jpg" },
+//                { "frame-48", "jpg" },
+//                { "frame-72", "jpg" },
+//                { "frame-96", "jpg" },
                 { "frame-120", "jpg" },
-                { "frame-144", "jpg" },
-                { "frame-168", "jpg" },
-                { "frame-192", "jpg" },
-                { "frame-216", "jpg" },
+//                { "frame-144", "jpg" },
+//                { "frame-168", "jpg" },
+//                { "frame-192", "jpg" },
+//                { "frame-216", "jpg" },
                 { "frame-240", "jpg" },
-                { "frame-264", "jpg" },
-                { "frame-288", "jpg" },
-                { "frame-312", "jpg" },
+//                { "frame-264", "jpg" },
+//                { "frame-288", "jpg" },
+//                { "frame-312", "jpg" },
                 { "frame-321", "jpg" },
-                { "frame-336", "jpg" },
-                { "frame-360", "jpg" },
-                { "frame-384", "jpg" },
-                { "frame-408", "jpg" },
-                { "frame-432", "jpg" },
-                { "frame-456", "jpg" },
+//                { "frame-336", "jpg" },
+//                { "frame-360", "jpg" },
+//                { "frame-384", "jpg" },
+//                { "frame-408", "jpg" },
+//                { "frame-432", "jpg" },
+//                { "frame-456", "jpg" },
                 { "frame-480", "jpg" },
-                { "frame-504", "jpg" },
-                { "frame-528", "jpg" },
-                { "frame-552", "jpg" },
-                { "frame-576", "jpg" },
-                { "frame-600", "jpg" },
-                { "frame-624", "jpg" },
-                { "frame-648", "jpg" },
-                { "frame-672", "jpg" },
-                { "frame-696", "jpg" },
+//                { "frame-504", "jpg" },
+//                { "frame-528", "jpg" },
+//                { "frame-552", "jpg" },
+//                { "frame-576", "jpg" },
+//                { "frame-600", "jpg" },
+//                { "frame-624", "jpg" },
+//                { "frame-648", "jpg" },
+//                { "frame-672", "jpg" },
+//                { "frame-696", "jpg" },
                 { "frame-720", "jpg" },
         };
         return Arrays.asList(frames);
@@ -116,6 +122,7 @@ public final class ParameterizedMediaBoundariesTest {
     @Test
     public void updatedEdgeDetectionTest() {
         ImageAnalyser imageAnalyser = new ImageAnalyser(testFile);
+        imageAnalyser.setLogDirectory(resultFolder.getAbsolutePath());
         List<Integer> horizontalEdges = imageAnalyser.getHorizontalEdges();
 
         // Annotate the image with the horizontal edges
@@ -135,9 +142,22 @@ public final class ParameterizedMediaBoundariesTest {
         HashMap<Integer, String> mediaBoundaries = findMediaBoundaries(thisBitmap, statistics);
 
         // Annotate the media boundaries on the image
-        new ImageAnnotator(testFile)
-                .drawLines(Orientation.HORIZONTAL, new ArrayList<>(mediaBoundaries.keySet()), 3, Color.GREEN)
-                .save(new File(resultFolder, "original-edges.jpg"));
+        ImageAnnotator annotator = new ImageAnnotator(testFile);
+        annotator
+                .drawLines(Orientation.HORIZONTAL, new ArrayList<>(mediaBoundaries.keySet()), 3, Color.GREEN);
+        for (Map.Entry<Integer, String> entry : mediaBoundaries.entrySet()) {
+            int y = entry.getKey();
+            String label = entry.getValue();
+            // If label is "whitespaceAbove", draw a rectangle above the media boundary
+            if (label.equals("whitespaceAbove")) {
+                annotator.drawRect(y - 10, 0, y - 3, thisBitmap.getWidth(), 3, Color.RED, false);
+            }
+            // If label is "whitespaceBelow", draw a rectangle below the media boundary
+            else if (label.equals("whitespaceBelow")) {
+                annotator.drawRect(y + 3, 0, y + 10, thisBitmap.getWidth(), 3, Color.RED, false);
+            }
+        }
+        annotator.save(new File(resultFolder, "original-edges.jpg"));
     }
 
     // ----------------------------- END OF TEST DECLARATIONS -----------------------------

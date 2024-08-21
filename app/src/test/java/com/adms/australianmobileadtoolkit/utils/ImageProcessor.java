@@ -9,6 +9,23 @@ import java.io.FileOutputStream;
 public abstract class ImageProcessor {
     protected Bitmap bitmap;
 
+    protected String logDirectory = null;
+    private int logStepCount = 0;
+
+    public void setLogDirectory(String logDirectory) {
+        this.logDirectory = logDirectory;
+        this.logStepCount = 0;
+    }
+
+    protected void log(String stepName) {
+        if (logDirectory == null) {
+            return;
+        }
+        String transformerId = this.hashCode() + "";
+        save(new File(logDirectory, transformerId + "_" + logStepCount + "_" + stepName + ".jpg"));
+        logStepCount++;
+    }
+
     public ImageProcessor(Bitmap bitmap) {
         this.bitmap = bitmap.copy(bitmap.getConfig(), bitmap.isMutable());
     }

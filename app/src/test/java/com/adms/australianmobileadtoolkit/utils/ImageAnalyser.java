@@ -66,6 +66,7 @@ public class ImageAnalyser extends ImageProcessor {
         int MIN_SPACING = 10;
 
         ImageTransformer transformer = new ImageTransformer(this.getBitmap());
+        transformer.setLogDirectory(this.logDirectory);
         int POOL_SIZE = transformer.getBitmap().getWidth() / 250;
         transformer
                 .averagePool(POOL_SIZE);
@@ -83,8 +84,9 @@ public class ImageAnalyser extends ImageProcessor {
                 .convolve2d(ConvolutionKernels.EDGE_DETECTION_HORIZONTAL, true)
                 .convolve2d(ConvolutionKernels.EDGE_DETECTION_HORIZONTAL, true);
 
-        ImageTransformer verticalTransformer = transformer.copy()
-                .convolve2d(ConvolutionKernels.EDGE_DETECTION_VERTICAL, true)
+        ImageTransformer verticalTransformer = transformer.copy();
+        verticalTransformer.setLogDirectory(this.logDirectory);
+        verticalTransformer.convolve2d(ConvolutionKernels.EDGE_DETECTION_VERTICAL, true)
                 .invert();
 
         // Subtract the vertical edges from the horizontal edges

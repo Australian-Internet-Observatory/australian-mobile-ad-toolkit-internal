@@ -11,6 +11,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 public class ImageTransformer extends ImageProcessor {
+
+
     public ImageTransformer(Bitmap bitmap) {
         super(bitmap);
     }
@@ -41,6 +43,7 @@ public class ImageTransformer extends ImageProcessor {
                 bitmap.setPixel(x, y, newPixels[x][y]);
             }
         }
+        log("grayscale");
         return this;
     }
 
@@ -63,6 +66,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("quantize");
         return this;
     }
 
@@ -82,6 +86,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("blendLighten");
         return this;
     }
 
@@ -111,6 +116,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("maxPool");
         return this;
     }
 
@@ -143,6 +149,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("averagePool");
         return this;
     }
 
@@ -179,6 +186,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("medianFilter");
         return this;
     }
 
@@ -195,6 +203,7 @@ public class ImageTransformer extends ImageProcessor {
                 bitmap.setPixel(x, y, 0xFF000000 | (r << 16) | (g << 8) | b);
             }
         }
+        log("invert");
         return this;
     }
 
@@ -214,6 +223,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("blendMultiply");
         return this;
     }
 
@@ -259,6 +269,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("topKAveragePool");
         return this;
     }
 
@@ -327,6 +338,7 @@ public class ImageTransformer extends ImageProcessor {
                 bitmap.setPixel(x, y, newPixels[y][x]);
             }
         }
+        log("convolve2d");
         return this;
     }
     public ImageTransformer convolve2d(double[][] kernel) {
@@ -355,6 +367,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("shift");
         return this;
     }
 
@@ -393,6 +406,7 @@ public class ImageTransformer extends ImageProcessor {
                 bitmap.setPixel(x, y, Color.valueOf(Color.rgb(newGray, newGray, newGray)).toArgb());
             }
         }
+        log("equaliseHistogram");
         return this;
     }
 
@@ -415,6 +429,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("upsample");
         return this;
     }
 
@@ -450,6 +465,7 @@ public class ImageTransformer extends ImageProcessor {
                 }
             }
             bitmap = newBitmap;
+            log("aggregate");
             return this;
         }
 
@@ -461,11 +477,13 @@ public class ImageTransformer extends ImageProcessor {
                 bitmap.setPixel(pixelX, pixelY, aggregated[i]);
             }
         }
+        log("aggregate");
         return this;
     }
 
     public ImageTransformer crop(int x, int y, int width, int height) {
         bitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
+        log("crop");
         return this;
     }
 
@@ -495,6 +513,7 @@ public class ImageTransformer extends ImageProcessor {
             }
         }
         bitmap = newBitmap;
+        log("sampleInDirection");
         return this;
     }
 
@@ -508,6 +527,7 @@ public class ImageTransformer extends ImageProcessor {
                 }
             }
         }
+        log("updateColor");
         return this;
     }
 

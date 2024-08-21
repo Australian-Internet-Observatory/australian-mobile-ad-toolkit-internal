@@ -1,11 +1,15 @@
 package com.adms.australianmobileadtoolkit.utils;
 
+import static org.robolectric.Shadows.shadowOf;
+
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+
+import org.robolectric.shadows.ShadowCanvas;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.List;
 
 /**
@@ -60,6 +64,44 @@ public class ImageAnnotator extends ImageProcessor {
     }
     public ImageAnnotator drawLines(Orientation orientation, List<Integer> positions) {
         drawLines(orientation, positions, 3, Color.RED);
+        return this;
+    }
+
+    public ImageAnnotator drawRect(int top, int left, int bottom, int right, int thickness, int color, boolean fill) {
+        // Add a rectangle to the image
+        for (int i = 0; i < thickness; i++) {
+            if (fill) {
+                for (int x = left; x < right; x++) {
+                    for (int y = top; y < bottom; y++) {
+                        if (x < 0 || x >= bitmap.getWidth() || y < 0 || y >= bitmap.getHeight()) {
+                            continue;
+                        }
+                        bitmap.setPixel(x, y, color);
+                    }
+                }
+            } else {
+                for (int x = left; x < right; x++) {
+                    if (top + i >= bitmap.getHeight() || top + i < 0) {
+                        continue;
+                    }
+                    bitmap.setPixel(x, top + i, color);
+                    if (bottom + i >= bitmap.getHeight() || bottom + i < 0) {
+                        continue;
+                    }
+                    bitmap.setPixel(x, bottom + i, color);
+                }
+                for (int y = top; y < bottom; y++) {
+                    if (left + i >= bitmap.getWidth() || left + i < 0) {
+                        continue;
+                    }
+                    bitmap.setPixel(left + i, y, color);
+                    if (right + i >= bitmap.getWidth() || right + i < 0) {
+                        continue;
+                    }
+                    bitmap.setPixel(right + i, y, color);
+                }
+            }
+        }
         return this;
     }
 }
