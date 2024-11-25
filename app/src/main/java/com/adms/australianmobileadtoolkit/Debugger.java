@@ -39,7 +39,7 @@ public class Debugger {
       if (debugDirName.exists()) {deleteRecursive(debugDirName); debugDirName.mkdirs(); }
 
       // The source folder of the debug data files
-      String debugDataFilesSourceDir = Settings.DEBUG_DATA_FILES_SOURCE_DIRECTORY;
+      String debugDataFilesSourceDir = appSettings.DEBUG_DATA_FILES_SOURCE_DIRECTORY;
       // Index the debug files, and generate file IDs for each of them
       List<Integer> fileIDs = new ArrayList<>();
       try {

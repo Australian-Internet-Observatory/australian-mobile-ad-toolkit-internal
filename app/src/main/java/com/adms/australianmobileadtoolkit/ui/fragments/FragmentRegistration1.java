@@ -1,21 +1,18 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
-import static com.adms.australianmobileadtoolkit.Settings.USING_DEMOGRAPHIC_QUESTIONS;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.appSettings.USING_DEMOGRAPHIC_QUESTIONS;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
 
 import android.content.DialogInterface;
 import android.content.res.Configuration;
-import android.media.Image;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
@@ -29,7 +26,6 @@ import com.adms.australianmobileadtoolkit.ui.dialogs.DialogFailedRegistration;
 import com.adms.australianmobileadtoolkit.ui.dialogs.DialogLoading;
 import com.adms.australianmobileadtoolkit.ui.dialogs.DialogSuccessfulRegistration;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 public class FragmentRegistration1 extends Fragment implements AsyncResponse {
@@ -148,25 +144,30 @@ public class FragmentRegistration1 extends Fragment implements AsyncResponse {
 
 
    private void goBack(String instance) {
-      Fragment fragment = null;
-      if (instance.equals("FragmentRegistration1")) {
-         fragment = new FragmentRegistration1();
-      } else
-      if (instance.equals("FragmentMain")) {
-         fragment = new FragmentMain();
-      }
+      try {
+         Fragment fragment = null;
+         if (instance.equals("FragmentRegistration1")) {
+            fragment = new FragmentRegistration1();
+         } else
+         if (instance.equals("FragmentMain")) {
+            fragment = new FragmentMain();
+         }
 
-      FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-      transaction.setCustomAnimations(
-              R.anim.enter_from_left,  // enter
-              R.anim.exit_to_right,  // exit
-              R.anim.enter_from_right,   // popEnter
-              R.anim.exit_to_left  // popExit
-      );
-      assert fragment != null;
-      transaction.replace(R.id.fragmentContainerView, fragment);
-      transaction.addToBackStack(null);
-      transaction.commit();
+         FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+         transaction.setCustomAnimations(
+                 R.anim.enter_from_left,  // enter
+                 R.anim.exit_to_right,  // exit
+                 R.anim.enter_from_right,   // popEnter
+                 R.anim.exit_to_left  // popExit
+         );
+         assert fragment != null;
+         transaction.replace(R.id.fragmentContainerView, fragment);
+         transaction.addToBackStack(null);
+         transaction.commit();
+      } catch (Exception e) {
+         // TODO
+         e.printStackTrace();
+      }
    }
 
 

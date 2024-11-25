@@ -1,13 +1,9 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
-import static com.adms.australianmobileadtoolkit.InactivityReceiver.sendPeriodicNotification;
-import static com.adms.australianmobileadtoolkit.InactivityReceiver.sendRebootNotification;
-import static com.adms.australianmobileadtoolkit.MainActivity.mProjectionManager;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
-import static com.adms.australianmobileadtoolkit.Settings.DEBUG;
-import static com.adms.australianmobileadtoolkit.Settings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
+import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -33,8 +29,6 @@ import com.adms.australianmobileadtoolkit.RecorderService;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.interpreter.Interpreter;
-
-import org.json.JSONException;
 
 import java.util.Objects;
 
@@ -150,11 +144,11 @@ public class FragmentMain extends Fragment {
          btn.setOnClickListener(view1 -> {
             Thread thread = new Thread(() -> {
                Interpreter lManager = new Interpreter(getActivity());
-               try {
+               //try {
                   lManager.run("DETECTION");
-               } catch (JSONException e) {
-                  throw new RuntimeException(e);
-               }
+             //  } catch (JSONException e) {
+//throw new RuntimeException(e);
+             //  }
             });
             thread.start();
          });

@@ -48,6 +48,13 @@ public class Visual {
       return Math.min(((Math.floorDiv(colourChannel, interval) * interval) + (interval / 2)), 255);
    }
 
+   public static Integer colourQuantizePixel(int thisColour, int interval) {
+      return Color.rgb(
+              colourQuantizeBitmapSnap(Color.red(thisColour), interval),
+              colourQuantizeBitmapSnap(Color.green(thisColour), interval),
+              colourQuantizeBitmapSnap(Color.blue(thisColour), interval));
+   }
+
    /*
     *
     * This function performs colour quantization on a bitmap, by snapping the RGB values of all
@@ -904,5 +911,8 @@ public class Visual {
       return output;
    }
 
+   public static boolean isWhitespaceIndicator(int number) {
+      return (number < -1); // Deliberately set past -1 (to avoid confusion with -1)
+   }
 
 }

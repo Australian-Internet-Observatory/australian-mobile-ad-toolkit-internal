@@ -3,9 +3,9 @@ package com.adms.australianmobileadtoolkit.ui.fragments;
 import static android.view.View.TEXT_ALIGNMENT_CENTER;
 import static android.widget.LinearLayout.VERTICAL;
 import static com.adms.australianmobileadtoolkit.MainActivity.THIS_OBSERVER_ID;
-import static com.adms.australianmobileadtoolkit.Settings.get_ACTIVATION_CODE_NOT_APPLICABLE_STRING;
-import static com.adms.australianmobileadtoolkit.Settings.get_ACTIVATION_CODE_PREFIX_STRING;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
+import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_NOT_APPLICABLE_STRING;
+import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_PREFIX_STRING;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
@@ -30,7 +30,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.adms.australianmobileadtoolkit.R;
-import com.adms.australianmobileadtoolkit.Settings;
+import com.adms.australianmobileadtoolkit.appSettings;
 import com.adms.australianmobileadtoolkit.ui.SortByObservedAt;
 
 import org.json.JSONObject;
@@ -48,7 +48,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class FragmentDashboard extends Fragment {
@@ -216,15 +215,15 @@ public class FragmentDashboard extends Fragment {
    private JSONObject httpRequestDashboard() {
       try {
          // Declare the AWS Lambda endpoint
-         String urlParam = Settings.AWS_LAMBDA_ENDPOINT;
+         String urlParam = appSettings.AWS_LAMBDA_ENDPOINT;
          // The unique ID of the observer to insert with the HTTP request
          String observerID = THIS_OBSERVER_ID;
          // The identifier for submitting data donations
-         String identifierDataDonation = Settings.IDENTIFIER_AD_LEADS;
+         String identifierDataDonation = appSettings.IDENTIFIER_AD_LEADS;
          // The HTTP request connection timeout (in milliseconds)
-         int requestConnectTimeout = Settings.AWS_LAMBDA_ENDPOINT_CONNECTION_TIMEOUT;
+         int requestConnectTimeout = appSettings.AWS_LAMBDA_ENDPOINT_CONNECTION_TIMEOUT;
          // The HTTP request read timeout (in milliseconds)
-         int requestReadTimeout = Settings.AWS_LAMBDA_ENDPOINT_READ_TIMEOUT;
+         int requestReadTimeout = appSettings.AWS_LAMBDA_ENDPOINT_READ_TIMEOUT;
          // Write up the stream for inserting the image (as a Base64 string) into the request
          // Assemble the request JSON object
          JSONObject requestBody = new JSONObject();

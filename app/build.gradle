@@ -1,10 +1,12 @@
 plugins {
     id 'com.android.application'
 }
-
 android {
     namespace 'com.adms.australianmobileadtoolkit'
     compileSdk 34
+    packagingOptions {
+        resources.excludes.add("META-INF/*")
+    }
 
     testOptions {
         unitTests {
@@ -16,8 +18,8 @@ android {
         multiDexEnabled  true
         minSdk 26
         targetSdk 34
-        versionCode 1006
-        versionName "1.006"
+        versionCode 1013
+        versionName "1.013"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets {
@@ -54,8 +56,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.code.gson:gson:2.8.9'
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.robolectric:robolectric:4.9'
+    implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
     androidTestImplementation 'org.testng:testng:6.9.6'
     implementation 'com.google.android.material:material:1.9.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -63,15 +64,34 @@ dependencies {
     implementation 'com.arthenica:ffmpeg-kit-full:6.0-2'
     implementation group: 'com.github.dpaukov', name: 'combinatoricslib3', version: '3.4.0'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
+    implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
 
-    //testImplementation group: 'org.bytedeco', name: 'javacv', version: '1.2'
+    // Logging
+    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
+    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.20.0'
 
+
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.9'
+    //testImplementation("org.bytedeco:javacv-platform:1.5.10")
     testImplementation("org.bytedeco:javacv-platform:1.5.10")
+    //testImplementation("org.bytedeco:javacpp-platform:1.5.10")
+    //testImplementation("org.bytedeco:ffmpeg:6.1.1-1.5.10")
+    //testImplementation("org.bytedeco:ffmpeg-platform:6.1.1-1.5.10")
+    //testImplementation("org.bytedeco:ffmpeg-platform:6.1.1-1.5.10")
 
 
+    //implementation("org.bytedeco:javacv-platform:1.5.10")
+    //implementation("org.bytedeco:javacv:1.5.10")
+    //implementation("org.bytedeco:javacpp:1.5.10")
+    //implementation("org.bytedeco:ffmpeg:6.1.1-1.5.10")
+    //implementation("org.bytedeco:ffmpeg-platform:6.1.1-1.5.10")
+    ////testImplementation("org.bytedeco:ffmpeg-platform:6.1.1-1.5.10")
+    //implementation group: 'org.bytedeco.gradle-javacpp-platform', name: 'org.bytedeco.gradle-javacpp-platform.gradle.plugin', version: '1.5.10', ext: 'pom'
 
-    //testImplementation group: 'org.bytedeco', name: 'javacpp', version: '1.2.1'
-    //testImplementation group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.1.0-1.2'
-    //testImplementation group: 'org.bytedeco.javacpp-presets', name: 'ffmpeg', version: '3.0.2-1.2'
+
+    // testImplementation group: 'org.bytedeco.gradle-javacpp-platform', name: 'org.bytedeco.gradle-javacpp-platform.gradle.plugin', version: '1.5.10', ext: 'pom'
 
 }

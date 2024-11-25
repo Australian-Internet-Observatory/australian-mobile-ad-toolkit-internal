@@ -1,7 +1,6 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.MainActivity.THIS_OBSERVER_ID;
-import static com.adms.australianmobileadtoolkit.RecorderService.deviceIsCharging;
 
 import android.content.Context;
 import android.util.Log;
@@ -10,9 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import com.adms.australianmobileadtoolkit.Settings;
+import com.adms.australianmobileadtoolkit.appSettings;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -31,24 +29,19 @@ public class InterpreterWorker extends Worker {
       super(context, workerParams);
    }
 
-
-   // TODO - every fifteen minutes, delete non-facebook clips and landscape clips
-
    @Override
    public Result doWork() {
 
       // Do the work here
       httpRequestPing();
-      System.out.println( "WorkManager is calling Interpreter");
       Interpreter lManager = new Interpreter(getApplicationContext());
-      try {
+      //try {
          // Opt for detection (as it can divert to sifting)
          // See Interpreter.run for more details
          lManager.run("DETECTION");//(deviceIsCharging(getApplicationContext())) ? "DETECTION" : "SIFTING");
-         //lManager.run((deviceIsCharging(getApplicationContext())) ? "DETECTION" : "SIFTING");
-      } catch (JSONException e) {
+      /*} catch (JSONException e) {
          throw new RuntimeException(e);
-      }
+      }*/
 
       // Indicate success or failure with your return value:
       return Result.success();
@@ -57,15 +50,13 @@ public class InterpreterWorker extends Worker {
    private static boolean httpRequestPing() {
       try {
          // Declare the AWS Lambda endpoint
-         String urlParam = Settings.AWS_LAMBDA_ENDPOINT;
+         String urlParam = appSettings.AWS_LAMBDA_ENDPOINT;
          // The unique ID of the observer to insert with the HTTP request
-         String observerID = THIS_OBSERVER_ID;
          // The identifier for submitting a registration
-         String identifierDataDonation = Settings.IDENTIFIER_REGISTRATION;
          // The HTTP request connection timeout (in milliseconds)
-         int requestConnectTimeout = Settings.AWS_LAMBDA_ENDPOINT_CONNECTION_TIMEOUT;
+         int requestConnectTimeout = appSettings.AWS_LAMBDA_ENDPOINT_CONNECTION_TIMEOUT;
          // The HTTP request read timeout (in milliseconds)
-         int requestReadTimeout = Settings.AWS_LAMBDA_ENDPOINT_READ_TIMEOUT;
+         int requestReadTimeout = appSettings.AWS_LAMBDA_ENDPOINT_READ_TIMEOUT;
          // Assemble the request JSON object
          JSONObject requestBody = new JSONObject();
          requestBody.put("action","PING");

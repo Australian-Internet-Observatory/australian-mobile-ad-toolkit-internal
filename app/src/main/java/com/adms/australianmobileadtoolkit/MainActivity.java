@@ -11,31 +11,34 @@ import static com.adms.australianmobileadtoolkit.Debugger.copyDebugData;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.cancelAllInactivityNotifications;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.setPeriodicNotifications;
-import static com.adms.australianmobileadtoolkit.Settings.DEBUG;
-import static com.adms.australianmobileadtoolkit.Settings.get_APP_CHILD_DIRECTORY;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
-import static com.adms.australianmobileadtoolkit.Settings.SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE;
-import static com.adms.australianmobileadtoolkit.Settings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
+import static com.adms.australianmobileadtoolkit.appSettings.get_APP_CHILD_DIRECTORY;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
+import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE;
+import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
+import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.getVideoMetadataAndroid;
+import static com.adms.australianmobileadtoolkit.interpreter.Interpreter.rootDirectoryPath;
+import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.platformInterpretationRoutine;
 
 import android.app.ActivityManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.media.projection.MediaProjectionManager;
+import android.net.ConnectivityManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -97,7 +100,7 @@ public class MainActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
 
         // The directories that will need to be created
-        List<String> directoriesToCreate = Settings.DIRECTORIES_TO_CREATE;
+        List<String> directoriesToCreate = appSettings.DIRECTORIES_TO_CREATE;
         // Set the main view
         setContentView(R.layout.activity_base);
         mProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
@@ -147,6 +150,52 @@ public class MainActivity extends BaseActivity {
         if (ContextCompat.checkSelfPermission(MainActivity.this, POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{POST_NOTIFICATIONS},101);
         }
+
+        /*
+        String packageName = getPackageName();
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            Toast.makeText(this, "no allowed", Toast.LENGTH_SHORT).show();
+            // it is not enabled. Ask the user to do so from the settings.
+            Intent notificationIntent = new Intent(Settings.ACTION_APP_USAGE_SETTINGS);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this,0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+            String expandedNotificationText = String.format("Background activity is restricted on this device.\nPlease allow it so we can post an active notification during work sessions.\n\nTo do so, click on the notification to go to\nApp management -> search for %s -> Battery Usage -> enable 'Allow background activity')", getString(R.string.app_name));
+            NotificationCompat.Builder builderRebootNotification = constructNotification(this,
+                    get_NOTIFICATION_PERIODIC_CHANNEL_ID(this),
+                    "ooby",
+                    expandedNotificationText, null)
+                    .setContentIntent(pendingIntent);
+            sendNotification(this, builderRebootNotification, "NOTIFICATION_REBOOT_ID_CASE");
+
+        }else {
+            Toast.makeText(this, "allowed", Toast.LENGTH_SHORT).show();
+            // good news! It works fine even in the background.
+        }*/
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Intent intent = new Intent();
+            String packageName = getPackageName();
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + packageName));
+                startActivity(intent);
+            }
+        }
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Intent intent = new Intent();
+            String packageName = getPackageName();
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (cm.getRestrictBackgroundStatus() == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED) {
+                intent.setAction(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS);
+                intent.setData(Uri.parse("package:" + packageName));
+                startActivity(intent);
+            }
+        }
+
+        openBatteryUsagePage(this);
+
+
         // Generate the notification channel
         generateNotificationChannel(this, get_NOTIFICATION_PERIODIC_CHANNEL_ID(this),
               get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME(this), get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION(this));
@@ -172,6 +221,11 @@ public class MainActivity extends BaseActivity {
 
         Intent intentOfMainActivityAsIntent = getIntent();
         refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
+    }
+
+    public void openBatteryUsagePage(Context ctx) {
+        //Intent intent = new Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS);
+        //startActivity();
     }
 
     public void refreshIntent(Intent intentOfMainActivityAsIntent, Boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN) {
@@ -252,6 +306,11 @@ public class MainActivity extends BaseActivity {
             }
         } catch (Exception e) {
             Log.e(TAG, "Failed on createFiles: ", e);
+        }
+
+        if (DEBUG) {
+
+            platformInterpretationRoutine(context, rootDirectoryPath, getVideoMetadataAndroid, frameGrabAndroid, true);
         }
 
     }

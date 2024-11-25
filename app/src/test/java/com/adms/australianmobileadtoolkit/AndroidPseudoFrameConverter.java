@@ -25,6 +25,7 @@ package com.adms.australianmobileadtoolkit;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourToHex;
 
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.hardware.Camera;
 
 import org.bytedeco.javacv.Frame;
@@ -166,12 +167,19 @@ public class AndroidPseudoFrameConverter extends FrameConverter<Bitmap> {
                 int rgb;
                 if (x < width - 1 || y < height - 1) {
                     rgb = in.getInt(y * stride + 3 * x);
+                    int r = Color.red(rgb);
+                    int g = Color.green(rgb);
+                    int b = Color.blue(rgb);
+
+                    rgb = Color.argb(255, r,g,b);
                 } else {
                     int b = in.get(y * stride + 3 * x    ) & 0xff;
                     int g = in.get(y * stride + 3 * x + 1) & 0xff;
                     int r = in.get(y * stride + 3 * x + 2) & 0xff;
                     rgb = (r << 16) | (g << 8) | b; // This line is optimized
+                    rgb = Color.argb(255, 255,255,255);//Math.min(255, r*2), Math.min(255, g*2), Math.min(255, b*2));
                 }
+
                 buffer.putInt(y * rowBytes + 4 * x, rgb);
             }
         }

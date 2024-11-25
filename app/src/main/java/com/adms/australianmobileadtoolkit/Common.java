@@ -15,6 +15,17 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unchecked")
 public class Common {
 
+   public static boolean withinTestEnvironment() {
+      boolean result;
+      try {
+         Class.forName("com.adms.australianmobileadtoolkit.testsMachine");
+         result = true;
+      } catch (final Exception e) {
+         result = false;
+      }
+      return result;
+   }
+
 
    /*
    *

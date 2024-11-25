@@ -1,9 +1,9 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
-import static com.adms.australianmobileadtoolkit.Settings.get_DEMOGRAPHIC_FAILSAFE_COUNTRY;
-import static com.adms.australianmobileadtoolkit.Settings.get_DEMOGRAPHIC_FAILSAFE_STRING;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.appSettings.get_DEMOGRAPHIC_FAILSAFE_COUNTRY;
+import static com.adms.australianmobileadtoolkit.appSettings.get_DEMOGRAPHIC_FAILSAFE_STRING;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
 
 import android.content.DialogInterface;
 import android.os.Bundle;

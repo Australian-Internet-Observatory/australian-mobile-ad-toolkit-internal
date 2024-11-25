@@ -10,7 +10,6 @@ package com.adms.australianmobileadtoolkit;
 import static android.app.Activity.RESULT_OK;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION;
 
-import static androidx.core.app.ActivityCompat.startActivityForResult;
 import static com.adms.australianmobileadtoolkit.Common.filePath;
 import static com.adms.australianmobileadtoolkit.Common.getFilesInDirectory;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNotification;
@@ -18,15 +17,13 @@ import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNot
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
 import static com.adms.australianmobileadtoolkit.MainActivity.SCREEN_RECORDING_PERMISSION_CODE;
 import static com.adms.australianmobileadtoolkit.MainActivity.mProjectionManager;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_CHANNEL_ID;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_CHANNEL_ID_NAME;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.Settings.get_NOTIFICATION_RECORDING_TITLE;
-import static com.adms.australianmobileadtoolkit.Settings.get_RECORD_SERVICE_EXTRA_RESULT_CODE;
-import static com.adms.australianmobileadtoolkit.Settings.maxNumberOfVideos;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.Settings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_CHANNEL_ID;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_CHANNEL_ID_NAME;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_TITLE;
+import static com.adms.australianmobileadtoolkit.appSettings.get_RECORD_SERVICE_EXTRA_RESULT_CODE;
+import static com.adms.australianmobileadtoolkit.appSettings.maxNumberOfVideos;
 
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -42,7 +39,6 @@ import android.media.projection.MediaProjectionConfig;
 import android.media.projection.MediaProjectionManager;
 import android.os.BatteryManager;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -55,10 +51,8 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.WindowManager;
 
-import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.LiveData;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,11 +74,11 @@ public final class RecorderService extends Service {
     private int resultCode;
     private static final String TAG = "RecorderService";
     // The extra result code associated with the intent of the recording service
-    private static final String EXTRA_DATA = Settings.RECORD_SERVICE_EXTRA_DATA;
+    private static final String EXTRA_DATA = appSettings.RECORD_SERVICE_EXTRA_DATA;
     // The ID of the notification associated with the recording service
     // (the value has no actual bearing on the functionality, although don't set it to zero:
     // https://developer.android.com/guide/components/foreground-services#:~:text=startForeground(ONGOING_NOTIFICATION_ID%2C%20notification)%3B)
-    private static final int ONGOING_NOTIFICATION_ID = Settings.RECORD_SERVICE_ONGOING_NOTIFICATION_ID;
+    private static final int ONGOING_NOTIFICATION_ID = appSettings.RECORD_SERVICE_ONGOING_NOTIFICATION_ID;
     // Whether or not the device screen is off
     public static boolean screenOff = false;
     // Whether or not a recording is in progress
@@ -289,6 +283,10 @@ public final class RecorderService extends Service {
     }
 
     private Handler mHandler;
+
+    private String recordingFilename(String videoDir, String orientation) {
+        return (videoDir + File.separatorChar + "unclassified" + "." + ((int) Math.floor(System.currentTimeMillis() / (double) 1000)) + "." + UUID.randomUUID().toString() + "." + orientation + ".mp4");
+    }
     
     /*
     * 
@@ -296,21 +294,29 @@ public final class RecorderService extends Service {
     * 
     * */
     private void startRecording(int resultCode, Intent data) {
-        int videoRecordingMaximumFileSize = Settings.videoRecordingMaximumFileSize;
-        int videoRecordingEncodingBitRate = Settings.videoRecordingEncodingBitRate;
-        int videoRecordingFrameRate = Settings.videoRecordingFrameRate;
+        int videoRecordingMaximumFileSize = appSettings.videoRecordingMaximumFileSize;
+
+        if (android.os.Build.VERSION.SDK_INT < 28) {
+            videoRecordingMaximumFileSize = 1000000;
+        }
         // If the recording is not in progress
         if(!recordingInProgress) {
             // Set up a new MediaProjectionManager for the recording process
             MediaProjectionManager mProjectionManager = (MediaProjectionManager)
                   getApplicationContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
             mMediaRecorder = new MediaRecorder();
+
             DisplayMetrics metrics = new DisplayMetrics();
             WindowManager wm = (WindowManager) getApplicationContext().getSystemService(WINDOW_SERVICE);
             wm.getDefaultDisplay().getRealMetrics(metrics);
             int mScreenDensity = metrics.densityDpi;
-            int displayWidth = Math.max((int)Math.round(metrics.widthPixels/Settings.recordScaleDivisor), 500);
+            Integer lowerBoundOnWidth = 500;
+            if (android.os.Build.VERSION.SDK_INT < 28) {
+                lowerBoundOnWidth = 2000;
+            }
+            int displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
             int displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
+
             // Determine the orientation of the device
             String finalOrientation = ((displayWidth < displayHeight) ? "portrait" : "landscape");
             // The following info listener is set to execute when the mMediaRecorder identifies that
@@ -322,9 +328,8 @@ public final class RecorderService extends Service {
                           + " been reached; setting new output file.");
                     // Write out a new file
                     try (RandomAccessFile newRandomAccessFile =
-                               new RandomAccessFile(videoDir + File.separatorChar
-                                     + System.currentTimeMillis() + "."
-                                     + UUID.randomUUID().toString() + "." + finalOrientation + ".mp4","rw")) {
+                               new RandomAccessFile(recordingFilename(videoDir, finalOrientation),"rw")) {
+
                         mMediaRecorder.setNextOutputFile(newRandomAccessFile.getFD());
                         File thisVideoFolder = filePath(Arrays.asList((videoDir))); // TODO - inserted
 
@@ -359,17 +364,24 @@ public final class RecorderService extends Service {
             //CamcorderProfile cpLow = CamcorderProfile.get(CamcorderProfile.QUALITY_LOW);
             // Configure the mMediaRecorder
             //mMediaRecorder.setProfile(cpLow);
+            //CamcorderProfile cpHigh = CamcorderProfile.get(CamcorderProfile.QUALITY_);
+
+            /*Log.i(TAG, "cpHigh.videoBitRate: " + cpHigh.videoBitRate);
+            Log.i(TAG, "cpHigh.videoFrameWidth: " + cpHigh.videoFrameWidth);
+            Log.i(TAG, "cpHigh.videoFrameHeight: " + cpHigh.videoFrameHeight);
+            Log.i(TAG, "cpHigh.videoFrameRate: " + cpHigh.videoFrameRate);*/
+
+
             mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
             mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             mMediaRecorder.setVideoSize(displayWidth, displayHeight);
             mMediaRecorder.setMaxFileSize(videoRecordingMaximumFileSize); // 5mb (4.7mb)
             mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-            mMediaRecorder.setVideoEncodingBitRate(25000);//videoRecordingEncodingBitRate);
+            mMediaRecorder.setVideoEncodingBitRate(25000);
             mMediaRecorder.setCaptureRate(30); // success with 1 - 30
             mMediaRecorder.setVideoFrameRate(30);
             // Set the preliminary output file
-            mMediaRecorder.setOutputFile(videoDir + File.separatorChar + System.currentTimeMillis() + "."
-                  + UUID.randomUUID().toString() + "." + finalOrientation + ".mp4");
+            mMediaRecorder.setOutputFile(recordingFilename(videoDir, finalOrientation));
             boolean didPrepare = false;
             try {
                 // Attempt to prepare the recording
