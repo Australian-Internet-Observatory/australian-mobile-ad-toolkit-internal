@@ -118,7 +118,7 @@ public class testSerialization {
         /*serialXObject y = new serialXObject("frameSampleMetadata");
         y.save();*/
 
-        serialXObject frameSnippetIDsByOffsetChainOBJ = new serialXObject("frameSnippetIDsByOffsetChain");
+        /*serialXObject frameSnippetIDsByOffsetChainOBJ = new serialXObject("frameSnippetIDsByOffsetChain");
         HashMap<Integer, HashMap<Integer, JSONObject>> frameSnippetIDsByOffsetChain = new HashMap<>();
         try {
             frameSnippetIDsByOffsetChain = (HashMap<Integer, HashMap<Integer, JSONObject>>) ((JSONObject) frameSnippetIDsByOffsetChainOBJ.container.get("DATA")).get("frameSnippetIDsByOffsetChains");
@@ -141,7 +141,10 @@ public class testSerialization {
                     e.printStackTrace();
                 }
             }
-        }
+        }*/
+
+        serialXObject y = new serialXObject("frameSampleMetadata");
+
     }
 
     // brute force hashmap differences

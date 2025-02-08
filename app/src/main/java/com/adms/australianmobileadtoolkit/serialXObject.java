@@ -145,25 +145,32 @@ public class serialXObject {
                     (new JSONXObject(readFromFile(new File(outputDirectory, id+".keys.json")))).get("data"), List.class);
 
             // Initialise the initialized HashMap
+            Boolean wellFormed = true;// TODO - we are exploring an error where the keys within the 'types' do not match those of the flats
             initialized = new HashMap<>();
             for (String thisKey : flats.keys()) {
                 initialized.put(thisKey, false);
-            }
-
-            preContainer = new JSONXObject();
-
-            while (initialized.containsValue(false)) {
-                for (String thisKey : initialized.keySet()) {
-                    if (!initialized.get(thisKey)) {
-                        preContainer.set(thisKey, this.assess(thisKey));
-                    }
+                if (!types.has(thisKey)) {
+                    wellFormed = false;
                 }
             }
 
-            // at the end of the process, hand over the precontainer values to the container itself
-            //containerKeys
-            for (String k : containerKeys) {
-                container.set(k, preContainer.get(k));
+            if (wellFormed) {
+                preContainer = new JSONXObject();
+                while (initialized.containsValue(false)) {
+                    for (String thisKey : initialized.keySet()) {
+                        if (!initialized.get(thisKey)) {
+                            preContainer.set(thisKey, this.assess(thisKey));
+                        }
+                    }
+                }
+                // at the end of the process, hand over the precontainer values to the container itself
+                //containerKeys
+                for (String k : containerKeys) {
+                    container.set(k, preContainer.get(k));
+                }
+            } else {
+                System.out.println("Reinitiating as unstable data");
+
             }
 
             // The flats and types will not be accessed again until it is time to write the file
