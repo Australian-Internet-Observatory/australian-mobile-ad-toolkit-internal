@@ -3,6 +3,7 @@ package com.adms.australianmobileadtoolkit.interpreter.platform;
 import static com.adms.australianmobileadtoolkit.Arguments.A;
 import static com.adms.australianmobileadtoolkit.Arguments.Args;
 import static com.adms.australianmobileadtoolkit.Common.binAsAverages;
+import static com.adms.australianmobileadtoolkit.Common.exceptionWrite;
 import static com.adms.australianmobileadtoolkit.Common.optionalGetDouble;
 import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
 import static com.adms.australianmobileadtoolkit.appSettings.prescribedMinVideoWidth;
@@ -43,15 +44,23 @@ import android.graphics.drawable.BitmapDrawable;
 import android.util.Log;
 import android.util.Pair;
 
+import com.adms.australianmobileadtoolkit.serialXObject;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import com.adms.australianmobileadtoolkit.Arguments;
 import com.adms.australianmobileadtoolkit.JSONXObject;
 import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.interpreter.visual.Stencil;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -64,6 +73,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -860,7 +870,7 @@ public class Facebook {
     public static JSONObject facebookComprehensiveReading(Context context,
                                                           File tempDirectory, File thisScreenRecordingFile, Function<JSONXObject, JSONXObject> videoMetadataFunction,
                                                           Function<JSONXObject, Bitmap> frameGrabFunction) {
-        long elapsedTimeFacebookComprehensiveFramesSample = System.currentTimeMillis();
+        Double elapsedTimeFacebookComprehensiveFramesSample = Long.valueOf(System.currentTimeMillis()).doubleValue();
         JSONObject output = new JSONObject();
         JSONObject statistics = new JSONObject();
         Double intervalAsPercentageOfFrameRate = 0.5;
@@ -875,6 +885,9 @@ public class Facebook {
         Integer w = null;
         Integer h = null;
 
+        String exitStatus = "INCONCLUSIVE";
+        Boolean proceedOnThis = true;
+
 
 
 
@@ -885,16 +898,9 @@ public class Facebook {
 
         System.out.println(videoMetadata);
 
-        JSONObject outputOfQuickReading = facebookGenerateQuickReading(context, false, null, thisScreenRecordingFile, videoMetadataFunction, frameGrabFunction);
-        String denotedMode = null;
-        Integer wsColor = null;
-        try {
-            denotedMode = (String) outputOfQuickReading.get("denotedMode");
-            wsColor = (Integer) outputOfQuickReading.get("denotedColour");
-        } catch (Exception e) {
-
-            logger.error(e);
-        }
+        JSONXObject outputOfQuickReading = new JSONXObject(facebookGenerateQuickReading(context, false, null, thisScreenRecordingFile, videoMetadataFunction, frameGrabFunction));
+        String denotedMode = (String) outputOfQuickReading.get("denotedMode");
+        Integer wsColor = (Integer) outputOfQuickReading.get("denotedColour");
 
         try {
             // Initialize the pseudo frame grabber
@@ -1077,10 +1083,7 @@ public class Facebook {
                                     .set("minWidth", prescribedMinVideoWidth);
 
                             currentFrameBitmap = frameGrabFunction.apply(bitmapGrabStat);
-                            if (h == null) {
-                                w = currentFrameBitmap.getWidth();
-                                h = currentFrameBitmap.getHeight();
-                            }
+
                             totalFramesSampled ++;
                             System.out.println(currentFrame);
 
@@ -1095,11 +1098,16 @@ public class Facebook {
                                     //System.out.println("SCAN FLAG TRIGGERED FROM HERE");
                                     break;
                                 }
+                            } else {
+                                if (h == null) {
+                                    w = currentFrameBitmap.getWidth();
+                                    h = currentFrameBitmap.getHeight();
+                                }
                             }
                         }
 
-                        // The indication of the early exit flag will be that the currentFrameBitmap is not null,
-                        // in which case we can proceed with a comparison at this frame.
+                        // The indication of the early exit flag will be that the currentFrameBitmap is null -
+                        // the latter will mean that we can proceed with a comparison at this frame.
                         if (!earlyExitFlag) {
 
                             if (!signaturesMap.containsKey(currentFrame)) {
@@ -1216,6 +1224,8 @@ public class Facebook {
                 // TODO
             }
 
+            exitStatus = "ANALYSED "+totalComparisons.toString() + " FRAMES";
+
             // Capture the necessary statistics
             statistics.put("signaturesMap", signaturesMap);
             statistics.put("offsetChain", offsetChain);
@@ -1229,7 +1239,7 @@ public class Facebook {
             statistics.put("intervalMinimumComparable", intervalMinimumComparable);
             statistics.put("adjustingIntervalDivisionFactor", adjustingIntervalDivisionFactor);
             statistics.put("scanLog", scanLog);
-            statistics.put("rangesToScanLog", rangesToScanLog);
+            //statistics.put("rangesToScanLog", rangesToScanLog);
             statistics.put("totalComparisons", totalComparisons);
             statistics.put("frameRate", frameRate);
             statistics.put("w", w);
@@ -1251,6 +1261,8 @@ public class Facebook {
             // frameComparisonStructure // TODO - preserve matched offsets
 
         } catch (Exception e) {
+            exitStatus = "READING_FAILURE: "+exceptionWrite(e);
+            proceedOnThis = false;
             logger.error(e);
             try {
                 output.put("error", e.getMessage());
@@ -1259,6 +1271,10 @@ public class Facebook {
                 logger.error(e2);
             }
         }
+        try {
+            output.put("exitStatus", exitStatus);
+            output.put("proceedOnThis", proceedOnThis);
+        } catch (Exception e2) {}
         return output;
     }
 
@@ -1683,7 +1699,7 @@ public class Facebook {
         return output;
     }
 
-    public static JSONObject isFacebookAdHeaderPassThrough(JSONObject output, long elapsedTimeIsFacebookAdHeader) {
+    public static JSONObject isFacebookAdHeaderPassThrough(JSONObject output, Double elapsedTimeIsFacebookAdHeader) {
         try {
             output.put("elapsedTimeIsFacebookAdHeader", Math.abs(elapsedTimeIsFacebookAdHeader - System.currentTimeMillis()));
         } catch (Exception e) {
@@ -1696,7 +1712,7 @@ public class Facebook {
 
     public static JSONObject isFacebookAdHeader(Bitmap thisBitmap, JSONObject thisFitter, HashMap<String, Object> pictogramsReference,
                                                 Integer determinedWSColor, String determinedExposureType) {
-        long elapsedTimeIsFacebookAdHeader = System.currentTimeMillis();
+        Double elapsedTimeIsFacebookAdHeader = Long.valueOf(System.currentTimeMillis()).doubleValue();
 
         Integer sponsoredTextTypicalWidth = 143;
         Integer sponsoredTextTypicalWidthAlt = 154;
@@ -1730,13 +1746,13 @@ public class Facebook {
         String exposureType = (determinedExposureType.equals("dark")) ? "Dark" : "Light";
         Integer thisWSColor = determinedWSColor;
         // Quantize the test imgae
-        long elapsedTimeColorQuantization = System.currentTimeMillis();
+        Double elapsedTimeColorQuantization = Long.valueOf(System.currentTimeMillis()).doubleValue();
         Bitmap thisAppliedBitmap = colourQuantizeBitmap(Args(A("bitmap", thisBitmap), A("interval", 4)));
         try { output.put("elapsedTimeColorQuantization", Math.abs(elapsedTimeColorQuantization - System.currentTimeMillis())); } catch (Exception e) {
             logger.error(e); }
 
         // Fit the fitter over the test image
-        long elapsedTimeFitOnImage = System.currentTimeMillis();
+        Double elapsedTimeFitOnImage = Long.valueOf(System.currentTimeMillis()).doubleValue();
         JSONObject adaptiveBoundary = fitterFitOnImage(thisFitter, thisAppliedBitmap, thisWSColor, null, false, null);
         try { output.put("elapsedTimeFitOnImage", Math.abs(elapsedTimeFitOnImage - System.currentTimeMillis())); } catch (Exception e) {
             logger.error(e);}
@@ -1756,7 +1772,7 @@ public class Facebook {
         }
 
         // Determine the sponsored text boundary
-        long elapsedTimeFinderGenerate = System.currentTimeMillis();
+        Double elapsedTimeFinderGenerate = Long.valueOf(System.currentTimeMillis()).doubleValue();
         JSONObject sponsoredTextBoundary = finderGenerate(thisAppliedBitmap, adaptiveBoundary, thisWSColor, null, false, null);
         try { output.put("elapsedTimeFinderGenerate", Math.abs(elapsedTimeFinderGenerate - System.currentTimeMillis())); } catch (Exception e) {
             logger.error(e); }
@@ -1775,7 +1791,7 @@ public class Facebook {
         }
         try {
 
-            long elapsedTimePictogramComparison = System.currentTimeMillis();
+            Double elapsedTimePictogramComparison = Long.valueOf(System.currentTimeMillis()).doubleValue();
             // Determine the area to test for the 'Sponsored' text
             Integer cropX = (Integer) sponsoredTextBoundary.get("x");
             Integer cropY = (Integer) sponsoredTextBoundary.get("y");
@@ -2302,7 +2318,7 @@ public class Facebook {
                                                       Integer determinedWSColor, String determinedExposureType) {
         JSONObject statistics = new JSONObject();
         try {
-            long elapsedTimeToGenerateSnippetCroppings = System.currentTimeMillis();
+            Double elapsedTimeToGenerateSnippetCroppings = Long.valueOf(System.currentTimeMillis()).doubleValue();
             Integer minimumAnalyzableHeightOfFrame = 30;
             Double topRegionOfImageRatio = 0.3;
             List<String> generatedCroppingFiles = new ArrayList<>();
@@ -2509,15 +2525,19 @@ public class Facebook {
      *
      * */
     public static JSONObject masterOffsetChainToSubOffsetChains(JSONObject frameSampleMetadata) {
-        long elapsedTimeMasterOffsetChainToSubOffsetChains = System.currentTimeMillis();
+        String exitStatus = "INCONCLUSIVE";
+        Boolean proceedOnThis = true;
+
+        Double elapsedTimeMasterOffsetChainToSubOffsetChains = Long.valueOf(System.currentTimeMillis()).doubleValue();
         JSONObject statistics = new JSONObject();
         // Determine the 'sub-' offset chains from the 'masterOffsetChain'
         List<JSONObject> masterOffsetChain = new ArrayList<>();
         try {
             masterOffsetChain = ((List<JSONObject>) ((JSONObject) frameSampleMetadata.get("statistics")).get("offsetChain"));
         } catch (Exception e) {
-
+            exitStatus = "MASTER_OFFSET_CHAIN_LOAD_FAILURE: "+exceptionWrite(e);
             logger.error(e);
+            proceedOnThis = false;
 
         }
 
@@ -2590,14 +2610,27 @@ public class Facebook {
                 retainedLastFrame = currentFrame;
             } catch (Exception e) {
                 logger.error(e);
+                exitStatus = "INTANGIBLE_ERROR_REACHED";
+                proceedOnThis = false;
                 // TODO - not yet reached in any tangible case
             }
         }
         try {
             statistics.put("offsetChains", offsetChains);
             statistics.put("elapsedTimeMasterOffsetChainToSubOffsetChains", Math.abs(elapsedTimeMasterOffsetChainToSubOffsetChains - System.currentTimeMillis()));
+            if (exitStatus.equals("INCONCLUSIVE")) {
+                exitStatus = "SUCCESS";
+            }
         } catch (Exception e) {
-            logger.error(e); }
+            logger.error(e);
+            proceedOnThis = false;
+            exitStatus = "WRITE_FAILURE: "+exceptionWrite(e);
+        }
+
+        try {
+            statistics.put("exitStatus", exitStatus);
+            statistics.put("proceedOnThis", proceedOnThis);
+        } catch (Exception e) {}
         return statistics;
     }
 
@@ -2965,18 +2998,23 @@ public class Facebook {
                                                          File framesSampleTempDirectory, File thisFacebookSnippetDirectory,
                                                          JSONObject fitterFacebookAdHeader, HashMap<String, Object> pictogramsReference,
                                                          Boolean verbose, Integer determinedWSColor, String determinedExposureType) {
+        String exitStatus = "INCONCLUSIVE";
+        Boolean proceedOnThis = true;
         JSONObject statistics = new JSONObject();
         try {
             // Generate the frame snippets directory (if it doesn't exist)
             createDirectory(thisFacebookSnippetDirectory, true);
 
-            long elapsedTimeOffsetChainsToFrameSnippets = System.currentTimeMillis();
+            Double elapsedTimeOffsetChainsToFrameSnippets = Long.valueOf(System.currentTimeMillis()).doubleValue();
             HashMap<Integer, HashMap<Integer, JSONObject>> frameSnippetIDsByOffsetChains = new HashMap<>();
             List<HashMap<Integer, Integer>> offsetChains = new ArrayList<>();
             try {
                 offsetChains = (List<HashMap<Integer, Integer>>) offsetChainsContainer.get("offsetChains");
             } catch (Exception e) {
-                logger.error(e);}
+                exitStatus = "ERROR_AT_LOAD_OFFSET_CHAINS: "+exceptionWrite(e);
+                proceedOnThis = false;
+                logger.error(e);
+            }
 
             Integer heightOfFrame = null;
             HashMap<Integer, JSONObject> signaturesMap = null;
@@ -2984,7 +3022,10 @@ public class Facebook {
                 heightOfFrame = ((Integer) ((JSONObject) frameSampleMetadata.get("statistics")).get("h"));
                 signaturesMap = (HashMap<Integer, JSONObject>) ((JSONObject) frameSampleMetadata.get("statistics")).get("signaturesMap");
             } catch (Exception e) {
-                logger.error(e);}
+                exitStatus = "ERROR_AT_LOAD_SIGNATURE_MAPS: "+exceptionWrite(e);
+                proceedOnThis = false;
+                logger.error(e);
+            }
 
             // For each offset chain...
             Integer thisOffsetChainID = 0;
@@ -3031,8 +3072,18 @@ public class Facebook {
                     File thisFrameSnippetDirectory = new File(thisOffsetChainDirectory, "frameSnippet-"+thisFrameSnippetID);
                     createDirectory(thisFrameSnippetDirectory, true);
                     // Generate the frame snippet's croppings, along with its respective metadata
-                    JSONObject snippetCroppingResults = generateSnippetCroppings(thisFrameSnippetDirectory, framesSampleTempDirectory,
-                            thisFrameSnippet, fitterFacebookAdHeader, pictogramsReference, thisFrameSnippetID, verbose, determinedWSColor, determinedExposureType);
+                    JSONObject snippetCroppingResults = new JSONObject();
+                    try {
+                        // This can cause errors when a bitmap returns a null reference
+                        snippetCroppingResults = generateSnippetCroppings(thisFrameSnippetDirectory, framesSampleTempDirectory,
+                                thisFrameSnippet, fitterFacebookAdHeader, pictogramsReference, thisFrameSnippetID, verbose, determinedWSColor, determinedExposureType);
+                    } catch (Exception e) {
+                        proceedOnThis = false;
+                        try { statistics.put("exitStatus", "FAILUREONCROPPINGS"); } catch (Exception e2) {}
+                        try { statistics.put("proceedOnThis", proceedOnThis); } catch (Exception e2) {}
+                        return statistics;
+
+                    }
                     writeToJSON(new File(thisFrameSnippetDirectory, "metadata.json"), snippetCroppingResults);
                     frameSnippetIDs.put(thisFrameSnippetID, snippetCroppingResults);
                     thisFrameSnippetID ++;
@@ -3063,7 +3114,16 @@ public class Facebook {
         } catch (Exception eX) {
             int a = 1;
             logger.error(eX);
+            proceedOnThis = false;
+            exitStatus = "ENCOUNTERED_ERROR: "+exceptionWrite(eX);
         }
+
+        if (exitStatus.equals("INCONCLUSIVE")) {
+            exitStatus = "SUCCESS";
+        }
+
+        try { statistics.put("proceedOnThis", proceedOnThis); } catch (Exception e2) {}
+        try { statistics.put("exitStatus", exitStatus); } catch (Exception e) {}
 
         return statistics;
     }
@@ -3179,60 +3239,115 @@ public class Facebook {
      * // TODO - make logic for deleting ad contents after overfilling and no internet
      *
      * */
-    public static void prepareAdContentForUpload(JSONObject analysisData, File adHoldingDirectory, File facebookSnippetDirectory) {
+    public static String prepareAdContentForUpload(JSONObject analysisData, File adHoldingDirectory, File facebookSnippetDirectory) {
+        String exitStatus = "INCONCLUSIVE";
         HashMap<Integer, HashMap<Integer, JSONObject>> frameSnippetIDsByOffsetChain = new HashMap<>();
         try {
             frameSnippetIDsByOffsetChain = ((HashMap<Integer, HashMap<Integer, JSONObject>>) ((JSONObject)
                     analysisData.get("frameSnippetIDsByOffsetChain")).get("frameSnippetIDsByOffsetChains"));
         } catch (Exception e) {
+            exitStatus = "ERROR_AT_LOAD_FRAME_SNIPPETS: "+exceptionWrite(e);
             logger.error(e);
         }
 
         // For each frame snippet...
+        Integer nAds = 0;
         for (Integer offsetChainID : frameSnippetIDsByOffsetChain.keySet()) {
             for (Integer frameSnippetID : frameSnippetIDsByOffsetChain.get(offsetChainID).keySet()) {
                 JSONObject frameSnippet = frameSnippetIDsByOffsetChain.get(offsetChainID).get(frameSnippetID);
                 // Determine whether the frame snippet is an ad (or not)
                 Boolean determinedAsFacebookAd = false;
-                List<String> generatedCroppingFiles = new ArrayList<>();
-                try {
-                    determinedAsFacebookAd = (Boolean) frameSnippet.get("determinedAsFacebookAd");
-                    generatedCroppingFiles = (List<String>) frameSnippet.get("generatedCroppingFiles");
-                } catch (Exception e) {
-                    logger.error(e);}
-                if (determinedAsFacebookAd) {
-                    // Prepare the ad content for this frame snippet
-                    String uuidForAdContent = System.currentTimeMillis()  + "." + UUID.randomUUID().toString();
-                    // Create a folder for the ad within the holding folder
-                    File thisAdDirectory = new File(adHoldingDirectory, uuidForAdContent);
-                    createDirectory(thisAdDirectory, true);
-                    File thisOffsetChainDirectory = new File(facebookSnippetDirectory, "offsetChain-" + offsetChainID);
-                    File thisFrameSnippetDirectory = new File(thisOffsetChainDirectory, "frameSnippet-" + frameSnippetID);
-                    // Copy across the images from the frame snippet
-                    for (String generatedCroppingFile : generatedCroppingFiles) {
-                        File fileFrom = new File(thisFrameSnippetDirectory, generatedCroppingFile);
-                        File fileTo = new File(thisAdDirectory, generatedCroppingFile);
-                        try {
-                            Files.copy(Paths.get(fileFrom.getAbsolutePath()), Paths.get(fileTo.getAbsolutePath()));
-                        } catch (Exception e) {
-                            logger.error(e);}
-                    }
-                    // Write the analysis data for this ad to file
+                // Occassionally, an empty frame snippet may be reached, which can derail the entire preparation ad upload process
+                // and put the software in a lock - to get around this, we firstly observe that the frameSnippet is even workable before
+                // proceeding - otherwise, if its an empty frame snippet, just overlook it.
+                if (frameSnippet.has("determinedAsFacebookAd")) {
+                    List<String> generatedCroppingFiles = new ArrayList<>();
                     try {
-                        analysisData.put("thisAdOffsetChainID",offsetChainID);
-                        analysisData.put("thisAdFrameSnippetID",frameSnippetID);
+                        determinedAsFacebookAd = (Boolean) frameSnippet.get("determinedAsFacebookAd");
+                        generatedCroppingFiles = (List<String>) frameSnippet.get("generatedCroppingFiles");
                     } catch (Exception e) {
-                        logger.error(e);}
-                    writeToJSON(new File(thisAdDirectory, "adContent.json"), analysisData);
+                        exitStatus = "ERROR_AT_DETERMINATION";
+                        logger.error(e);
+                    }
+                    if (determinedAsFacebookAd) {
+                        nAds ++;
+                        // Prepare the ad content for this frame snippet
+                        String uuidForAdContent = System.currentTimeMillis()  + "." + UUID.randomUUID().toString();
+                        // Create a folder for the ad within the holding folder
+                        File thisAdDirectory = new File(adHoldingDirectory, uuidForAdContent);
+                        createDirectory(thisAdDirectory, true);
+                        File thisOffsetChainDirectory = new File(facebookSnippetDirectory, "offsetChain-" + offsetChainID);
+                        File thisFrameSnippetDirectory = new File(thisOffsetChainDirectory, "frameSnippet-" + frameSnippetID);
+                        // Copy across the images from the frame snippet
+                        for (String generatedCroppingFile : generatedCroppingFiles) {
+                            File fileFrom = new File(thisFrameSnippetDirectory, generatedCroppingFile);
+                            File fileTo = new File(thisAdDirectory, generatedCroppingFile);
+                            try {
+                                Files.copy(Paths.get(fileFrom.getAbsolutePath()), Paths.get(fileTo.getAbsolutePath()));
+                            } catch (Exception e) {
+                                exitStatus = "ERROR_AT_COPYING";
+                                logger.error(e);}
+                        }
+                        // Write the analysis data for this ad to file
+                        try {
+                            analysisData.put("thisAdOffsetChainID",offsetChainID);
+                            analysisData.put("thisAdFrameSnippetID",frameSnippetID);
+                        } catch (Exception e) {
+                            exitStatus = "ERROR_AT_ANALYSIS";
+                            logger.error(e);}
+                        if (exitStatus.equals("INCONCLUSIVE")) {
+                            writeToJSON(new File(thisAdDirectory, "adContent.json"), analysisData);
+                        }
+                    }
                 }
+
             }
         }
+        if (exitStatus.equals("INCONCLUSIVE")) {
+            exitStatus = "SUCCESSFUL WITH N ADS: "+nAds.toString();
+        }
+        return exitStatus;
+    }
+
+    public static JSONObject serialObjectPassthrough(Supplier<JSONObject> supplier, File rootDirectory, String identifier, String subIdentifier) {
+        File serializationDirectory = new File(rootDirectory, "serializations");
+        createDirectory(serializationDirectory, false);
+        File thisSerializationDirectory = new File(serializationDirectory, identifier);
+        serialXObject.setTargetDirectory(thisSerializationDirectory);
+        createDirectory(thisSerializationDirectory, false);
+        serialXObject outputSerialized = new serialXObject(subIdentifier);
+        JSONObject output;
+        if (!outputSerialized.container.has("DATA")) {
+            output = supplier.get();
+            try {
+                if ((Boolean) output.get("proceedOnThis")) {
+                    outputSerialized.set("DATA", output);
+                    outputSerialized.save();
+                    Log.i(TAG, "##########################################");
+                    Log.i(TAG, "SAVED DATA");
+                    Log.i(TAG, "##########################################");
+                } else {
+                    Log.i(TAG, "##########################################");
+                    Log.i(TAG, "COULD NOT SAVE DATA");
+                    Log.i(TAG, "##########################################");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            output = (JSONObject) outputSerialized.container.get("DATA");
+            Log.i(TAG, "##########################################");
+            Log.i(TAG, "LOADING PERSISTED DATA");
+            Log.i(TAG, "##########################################");
+            try { output.put("exitStatus", "LOADED_FROM_PERSISTED_DATA"); } catch (Exception e) {}
+        }
+        return output;
     }
 
     public static void facebookInterpretation(Context context, File appStorageRecordingsDirectory, HashMap<String, String> thisInterpretation, File rootDirectory, Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
                                               Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid, File adsFromDispatchDirectory, JSONObject fitterFacebookAdHeader, HashMap<String, Object> pictogramsReference) {
-
-
+        Boolean proceedable = true;
+        JSONXObject highLevelOutcome = new JSONXObject();
         // Determine the exposure mode of the screen recording
         File screenRecordingFile = new File(appStorageRecordingsDirectory, thisInterpretation.get("filename"));
         Integer thisScreenRecordingTimestamp = Integer.parseInt(thisInterpretation.get("timestamp"));
@@ -3240,14 +3355,46 @@ public class Facebook {
         // Create two temp folders that are necessary for the analysis to take place
         // The tempFacebookComprehensiveSampleDirectory is necessary to hold raw screenshots obtained from sampling the screen recording
         // NOTE: It will be created by the facebookComprehensiveFramesSample method
-        File tempFacebookComprehensiveSampleDirectory = new File(rootDirectory, "tempFacebookComprehensiveSample");
+        File tempFacebookComprehensiveSampleDirectoryMaster = new File(rootDirectory, "tempFacebookComprehensiveSample");
+
+        // Create the master temp folder if it doesn't exist
+        createDirectory(tempFacebookComprehensiveSampleDirectoryMaster, false);
+
+        // Create the directory contextualised to this analysis
+        File tempFacebookComprehensiveSampleDirectory = new File(tempFacebookComprehensiveSampleDirectoryMaster, thisInterpretation.get("filename"));
+
+
+
+
         // The tempFacebookFrameSnippetsDirectory is necessary to hold temporary frame snippet data
-        File tempFacebookFrameSnippetsDirectory = new File(rootDirectory, "tempFacebookFrameSnippets");
+        File tempFacebookFrameSnippetsMasterDirectory = new File(rootDirectory, "tempFacebookFrameSnippets");
+        createDirectory(tempFacebookFrameSnippetsMasterDirectory, false);
+        File tempFacebookFrameSnippetsDirectory = new File(tempFacebookFrameSnippetsMasterDirectory, thisInterpretation.get("filename"));
+
+
+
         // NOTE: Prior to running the analysis, there is a possibility that these directories exist, in which case, they need to be deleted
-        facebookAnalysisCleanup(tempFacebookComprehensiveSampleDirectory, tempFacebookFrameSnippetsDirectory);
+        // TODO
+        //facebookAnalysisCleanup(tempFacebookComprehensiveSampleDirectory, tempFacebookFrameSnippetsDirectory);
 
         // Run the comprehensive sampling process
-        JSONObject frameSampleMetadata = facebookComprehensiveReading(context, tempFacebookComprehensiveSampleDirectory, screenRecordingFile, getVideoMetadataFunction, frameGrabFunction);
+        JSONObject frameSampleMetadata = serialObjectPassthrough(
+                (() -> facebookComprehensiveReading(context, tempFacebookComprehensiveSampleDirectory, screenRecordingFile, getVideoMetadataFunction, frameGrabFunction)),
+                rootDirectory, thisInterpretation.get("filename"), "frameSampleMetadata");
+
+
+
+
+
+
+        try {
+            highLevelOutcome.set("facebookComprehensiveReading", frameSampleMetadata.get("exitStatus"));
+            if (!((Boolean) frameSampleMetadata.get("proceedOnThis"))) {
+                proceedable = false;
+            }
+        } catch (Exception e) {
+            proceedable = false;
+        }
 
         Integer wsColor = null;
         String denotedMode = null;
@@ -3255,20 +3402,53 @@ public class Facebook {
             wsColor = (Integer) frameSampleMetadata.get("wsColor");
             denotedMode = (String) frameSampleMetadata.get("denotedMode");
         } catch (Exception e) {
-            logger.error(e);}
+            proceedable = false;
+            logger.error(e);
+        }
 
         JSONObject offsetChains = new JSONObject();
         JSONObject frameSnippetIDsByOffsetChain = new JSONObject();
         JSONObject analysisData = new JSONObject();
 
         // If the comprehensive sampling process generated the necessary folder
-        if (tempFacebookComprehensiveSampleDirectory.exists()) {
+        if ((proceedable) && (tempFacebookComprehensiveSampleDirectory.exists())) {
             // Generate the 'sub-' offset chains for the master offset chain within the frameSampleMetadata
-            offsetChains = masterOffsetChainToSubOffsetChains(frameSampleMetadata);
+
+            offsetChains = serialObjectPassthrough(
+                    (() -> masterOffsetChainToSubOffsetChains(frameSampleMetadata)),
+                    rootDirectory, thisInterpretation.get("filename"), "offsetChains");
+
+
+            try {
+                highLevelOutcome.set("masterOffsetChainToSubOffsetChains", offsetChains.get("exitStatus"));
+                if (!((Boolean) offsetChains.get("proceedOnThis"))) {
+                    proceedable = false;
+                }
+            } catch (Exception e) {
+                proceedable = false;
+            }
+
             // Generate the frame snippets from the offsetChains
-            frameSnippetIDsByOffsetChain = offsetChainsToFrameSnippets(
-                    offsetChains, frameSampleMetadata, tempFacebookComprehensiveSampleDirectory, tempFacebookFrameSnippetsDirectory,
-                    fitterFacebookAdHeader, pictogramsReference, DEBUG, wsColor, denotedMode);
+
+            JSONObject finalOffsetChains = offsetChains;
+            Integer finalWsColor = wsColor;
+            String finalDenotedMode = denotedMode;
+            frameSnippetIDsByOffsetChain = serialObjectPassthrough(
+                    (() -> offsetChainsToFrameSnippets(
+                            finalOffsetChains, frameSampleMetadata, tempFacebookComprehensiveSampleDirectory, tempFacebookFrameSnippetsDirectory,
+                            fitterFacebookAdHeader, pictogramsReference, DEBUG, finalWsColor, finalDenotedMode)),
+                    rootDirectory, thisInterpretation.get("filename"), "frameSnippetIDsByOffsetChain");
+
+
+            try {
+                highLevelOutcome.set("offsetChainsToFrameSnippets", frameSnippetIDsByOffsetChain.get("exitStatus"));
+                if (!((Boolean) frameSnippetIDsByOffsetChain.get("proceedOnThis"))) {
+                    proceedable = false;
+                }
+            } catch (Exception e) {
+                proceedable = false;
+            }
+
             // Isolate ad content
             try {
                 analysisData.put("timestampOfDerivingScreenRecording", thisScreenRecordingTimestamp);
@@ -3278,9 +3458,18 @@ public class Facebook {
             } catch (Exception e) {
                 logger.error(e);}
             // Prepare the ad content for upload (if it exists)
-            prepareAdContentForUpload(analysisData, adsFromDispatchDirectory, tempFacebookFrameSnippetsDirectory);
+            String adContentResult = prepareAdContentForUpload(analysisData, adsFromDispatchDirectory, tempFacebookFrameSnippetsDirectory);
+            try {
+                if (!adContentResult.contains("SUCCESSFUL")) {
+                    proceedable = false;
+                }
+                highLevelOutcome.set("prepareAdContentForUpload", adContentResult);
+            } catch (Exception e) {
+                proceedable = false;
+            }
 
         } else {
+            proceedable = false; // reasserting in case folder does not exist but proceedable
             // There is no guarantee that the facebookComprehensiveFramesSample method will succeed in creating the tempFacebookComprehensiveSample
             // directory. To overcome this, we need a logic here.
             // TODO
@@ -3296,11 +3485,27 @@ public class Facebook {
             } catch (Exception e) {
                 logger.error(e);}
         }
+
         if (implementedOnAndroid) {
             // Finally delete the recording
-            screenRecordingFile.delete();
+
+            File logsDirectory = new File(rootDirectory, "logs");
+            createDirectory(logsDirectory, false);
+            try {
+                highLevelOutcome.set("proceedable", proceedable);
+            } catch (Exception e) {}
+            writeToJSON((new File(logsDirectory, screenRecordingFile.getName()+"."+UUID.randomUUID().toString()+".json")), highLevelOutcome.internalJSONObject);
+
+            if ((proceedable)
+                    && (highLevelOutcome.has("facebookComprehensiveReading"))
+                    && (highLevelOutcome.has("masterOffsetChainToSubOffsetChains"))
+                    && (highLevelOutcome.has("offsetChainsToFrameSnippets"))
+                    && (highLevelOutcome.has("prepareAdContentForUpload"))) {
+                // TODO - the serializations need to be cleaned up after execution (AS WELL)
+                facebookAnalysisCleanup(tempFacebookComprehensiveSampleDirectory, tempFacebookFrameSnippetsDirectory);
+                screenRecordingFile.delete();
+            }
             // Clean up
-            facebookAnalysisCleanup(tempFacebookComprehensiveSampleDirectory, tempFacebookFrameSnippetsDirectory);
         }
     }
 

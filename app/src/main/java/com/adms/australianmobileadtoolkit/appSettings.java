@@ -42,7 +42,7 @@ public class appSettings {
 
    // The directories that will need to be created
    //         "videos" (Required by screen-recorder)
-   public static List<String> DIRECTORIES_TO_CREATE = (DEBUG) ? Arrays.asList("videos", "debug", "ffmpeg_cache") : Arrays.asList("videos", "ffmpeg_cache");
+   public static List<String> DIRECTORIES_TO_CREATE = (DEBUG) ? Arrays.asList("videos", "debug", "ffmpeg_cache", "logs", "serializations") : Arrays.asList("videos", "ffmpeg_cache", "logs", "serializations");
 
    // The child directory to instantiate for the app
    public static String get_APP_CHILD_DIRECTORY(Context context) {

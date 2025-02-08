@@ -47,6 +47,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -486,7 +487,9 @@ public class Platform {
                 requestBody.put("content", (new String(Files.readAllBytes(Paths.get(thisDispatchableFile.getAbsolutePath())))));
             }
         } catch (Exception e) {
-            logger.error(e); }
+            successfullyDispatched = false;
+            logger.error(e);
+        }
         try {
             // Set up the HTTP request configuration
             URL url = new URL(urlParam);
@@ -506,7 +509,8 @@ public class Platform {
             connection.connect();
 
             if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                BufferedReader br = new BufferedReader(new InputStreamReader((connection.getInputStream())));
+                InputStream thisInputStream = connection.getInputStream();
+                BufferedReader br = new BufferedReader(new InputStreamReader(thisInputStream));
                 StringBuilder sb = new StringBuilder();
                 String output;
                 while ((output = br.readLine()) != null) {
@@ -517,8 +521,11 @@ public class Platform {
                     successfullyDispatched = (response.get("dispatched")).equals("TRUE");
                 } catch (Exception e) {
                     logger.error(e); }
+                thisInputStream.close();
             }
+
         } catch (Exception e) {
+            successfullyDispatched = false;
             logger.error(e);
         }
         return successfullyDispatched;
@@ -556,33 +563,51 @@ public class Platform {
 
         if ((adsFromDispatchDirectory != null) && (adsFromDispatchDirectoryFiles != null)) {
             for (File thisAdDirectory : adsFromDispatchDirectoryFiles) {
-                String thisAdUUID = thisAdDirectory.getName();
-                // Paginate over the files within thisAdDirectory
-                File[] filesWithinThisAdDirectory = thisAdDirectory.listFiles();
 
-                Consumer<File> dispatchThenDelete = x -> {
-                    Boolean successfullyDispatched = dispatchAdFile(thisParticipantUUID, thisAdUUID, x);
-                    if (successfullyDispatched) {
-                        x.delete();
+                // A dispatch can only begin when the adContent file has been submitted - this prevents 'half-baked'
+                // entries from being prematurely uploaded.
+                if ((new File(thisAdDirectory, "adContent.json")).exists()) {
+                    String thisAdUUID = thisAdDirectory.getName();
+                    // Paginate over the files within thisAdDirectory
+                    File[] filesWithinThisAdDirectory = thisAdDirectory.listFiles();
+
+                    Function<File, Boolean> dispatchThenDelete = x -> {
+                        Boolean successfullyDispatched = dispatchAdFile(thisParticipantUUID, thisAdUUID, x);
+                        if (successfullyDispatched) {
+                            x.delete();
+                        }
+                        return successfullyDispatched;
+                    };
+
+                    Boolean adContentMetadataDispatched = true;
+                    Boolean adMediasDispatched = true;
+                    for (File thisDispatchableFile : filesWithinThisAdDirectory) {
+                        if (thisDispatchableFile.getName().equals("adContent.json")) {
+                            adContentMetadataDispatched = false;
+                        } else {
+                            if (!dispatchThenDelete.apply(thisDispatchableFile)) {
+                                adMediasDispatched = false;
+                            }
+                        }
                     }
-                };
+                    if ((!adContentMetadataDispatched) && (adMediasDispatched)) {
+                        dispatchThenDelete.apply(new File(thisAdDirectory, "adContent.json"));
+                    }
 
-                Boolean adContentMetadataDispatched = true;
-                for (File thisDispatchableFile : filesWithinThisAdDirectory) {
-                    if (thisDispatchableFile.getName().equals("adContent.json")) {
-                        adContentMetadataDispatched = false;
+                    // TODO - order ads correctly
+                    // Delete the folder if all constituent files have been uploaded
+                    if (thisAdDirectory.listFiles().length == 0) {
+                        deleteRecursive(thisAdDirectory);
+                    }
+                } else {
+                    // If the folder is empty, delete it
+                    if (thisAdDirectory.listFiles().length == 0) {
+                        deleteRecursive(thisAdDirectory);
+                        Log.i(TAG, "Deleting empty directory.");
                     } else {
-                        dispatchThenDelete.accept(thisDispatchableFile);
+                        // Naively, we might assume that the upload of ad content is
+                        Log.i(TAG, "Bypassing upload of ad content as not ready yet.");
                     }
-                }
-                if (!adContentMetadataDispatched) {
-                    dispatchThenDelete.accept(new File(thisAdDirectory, "adContent.json"));
-                }
-
-                // TODO - order ads correctly
-                // Delete the folder if all constituent files have been uploaded
-                if (thisAdDirectory.listFiles().length == 0) {
-                    deleteRecursive(thisAdDirectory);
                 }
             }
         }
@@ -641,6 +666,11 @@ public class Platform {
         File debugDirectory = new File(rootDirectory, "debug");
         appStorageRecordingsDirectory = (new File (rootDirectory.getAbsolutePath(), "videos"));
         File adsFromDispatchDirectory = new File(rootDirectory, "adsToDispatch");
+
+        // warm-start directory
+        //
+        // the warm-start directory helps us determine
+
 
         // Create the 'holding' directory for identified ads (if it hasn't already been created).
         createDirectory(adsFromDispatchDirectory, false);

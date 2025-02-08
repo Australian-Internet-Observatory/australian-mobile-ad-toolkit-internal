@@ -15,6 +15,10 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unchecked")
 public class Common {
 
+   public static String exceptionWrite(Exception e) {
+      return "Line number: " + e.getStackTrace()[0].getLineNumber() + " msg: "+e.getMessage();
+   }
+
    public static boolean withinTestEnvironment() {
       boolean result;
       try {

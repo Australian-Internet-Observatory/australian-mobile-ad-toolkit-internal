@@ -51,10 +51,14 @@ import com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -221,6 +225,34 @@ public class MainActivity extends BaseActivity {
 
         Intent intentOfMainActivityAsIntent = getIntent();
         refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
+
+        /*
+        stateObject.init(this);
+
+        String dummyIdentifier = "1234";
+        stateObject xxx = new stateObject(this, dummyIdentifier);
+        Log.i(TAG, xxx.toString());
+        if (!xxx.has("hello")) {
+            HashMap<Integer, Integer> yyy = new HashMap<>();
+            yyy.put(1,2);
+            yyy.put(3,4);
+            xxx.set("hello", yyy);
+            JSONObject berg = new JSONObject();
+            try {berg.put("a","b");}catch(Exception e){}
+            xxx.set("gerh", berg);
+            xxx.commit(this);
+            Log.i(TAG, "stateObject committed to memory");
+        } else {
+            Log.i(TAG, "stateObject retrieved from memory");
+            Log.i(TAG, xxx.toString());
+            try {
+                Log.i(TAG, (String) ((JSONObject) xxx.get("gerh")).get("a"));
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+        }*/
+
+
     }
 
     public void openBatteryUsagePage(Context ctx) {

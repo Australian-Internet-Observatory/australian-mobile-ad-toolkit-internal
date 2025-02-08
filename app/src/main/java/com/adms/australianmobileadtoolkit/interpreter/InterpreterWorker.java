@@ -33,7 +33,7 @@ public class InterpreterWorker extends Worker {
    public Result doWork() {
 
       // Do the work here
-      httpRequestPing();
+      //httpRequestPing();
       Interpreter lManager = new Interpreter(getApplicationContext());
       //try {
          // Opt for detection (as it can divert to sifting)

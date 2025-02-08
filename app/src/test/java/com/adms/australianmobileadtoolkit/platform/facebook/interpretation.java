@@ -48,7 +48,7 @@ public class interpretation {
         IsolatedTest thisTest = new IsolatedTest("practicalInterpretation");
         thisTest.setCasesDirectory(testScreenRecordingsDirectory);
 
-        String testVideo = "facebook_dark_lq_large_slow_exapp_nav_1.mp4";
+        String testVideo = "facebook_dark_hq_large_slow_inapp_nonav_2.mp4";
 
         Function<File, JSONObject> localRoutine = (x -> {
             File debugFile = prepareForPlatformInterpretationTest(thisTest, x, testVideo);
@@ -185,4 +185,6 @@ public class interpretation {
         logger.info("True Negatives: " + thisTest.confusionMatrix.tnN);
         logger.info("False Negatives: " + thisTest.confusionMatrix.fnN);
     }
+
+
 }
