@@ -2075,6 +2075,7 @@ public class Facebook {
                     nSnippets ++;
                 } catch (Exception e) {
 
+                    // TODO - should call rollback
                     logger.error(e);
 
                 }
@@ -2088,6 +2089,7 @@ public class Facebook {
                 FSInterval = (Integer) signaturesMap.get(frames.get(0)).get("strideY");
             } catch (Exception e) {
 
+                // TODO - should call rollback
                 logger.error(e);
 
             }
@@ -2106,6 +2108,8 @@ public class Facebook {
                         frameSignaturesWS.add((HashMap<Integer, Boolean>) (signaturesMap.get(frames.get(i))).get("frameSignatureWS"));
                     } catch (Exception e) {
                         logger.error(e);
+
+                        // TODO - should call rollback
                     }
                 }
 
@@ -2120,6 +2124,7 @@ public class Facebook {
                     JSONObject thisSnippet = null;
                     try { thisSnippet = new JSONObject(thisSnippetRaw.toString()); } catch (Exception e) {
 
+                        // TODO - should call rollback
                         logger.error(e);
                     }
                     Integer upper = null;
@@ -2133,6 +2138,7 @@ public class Facebook {
                         thisSnippet.put("lower", lower);
                     } catch (Exception e) {
 
+                        // TODO - should call rollback
                         logger.error(e);
 
                     }
@@ -2170,6 +2176,7 @@ public class Facebook {
                             thisSnippet.put("inhibitedRanges", adjustedInhibitedRange);
                         } catch (Exception e) {
 
+                            // TODO - should call rollback
                             logger.error(e);
                         }
 
@@ -2185,6 +2192,7 @@ public class Facebook {
                                 thisSnippet.put("whitespaceRanges", discreteIntervalsToRanges(FSInterval, isolatedFrameSignatureIntervals));
                             } catch (Exception e) {
 
+                                // TODO - should call rollback
                                 logger.error(e);
 
                             }
@@ -2260,6 +2268,7 @@ public class Facebook {
                     thisSnippet.put("whitespaceRanges", thisSnippetWhitespaceRanges);
                 } catch (Exception e) {
 
+                    // TODO - should call rollback
                     logger.error(e);
 
                 }
@@ -2269,6 +2278,8 @@ public class Facebook {
             int b = 2;
 
         } catch (Exception e) {
+
+            // TODO - should call rollback
             logger.error(e);
         }
         //System.exit(0);
@@ -3128,6 +3139,17 @@ public class Facebook {
         return statistics;
     }
 
+    public static void offsetChainsToFrameSnippetsRollback(File rootDirectory, HashMap<String, String> thisInterpretation) {
+        Log.i(TAG, "PERFORMING ROLLBACK!");
+        // Delete the serialXObject's record
+        serialObjectDelete(rootDirectory, thisInterpretation, "frameSnippetIDsByOffsetChain");
+        // Delete the tangible files that were generated in this step
+        File tempFacebookFrameSnippetsMasterDirectory = new File(rootDirectory, "tempFacebookFrameSnippets");
+        createDirectory(tempFacebookFrameSnippetsMasterDirectory, false);
+        File tempFacebookFrameSnippetsDirectory = new File(tempFacebookFrameSnippetsMasterDirectory, thisInterpretation.get("filename"));
+        deleteRecursive(tempFacebookFrameSnippetsDirectory);
+    }
+
 
 
 
@@ -3344,6 +3366,19 @@ public class Facebook {
         return output;
     }
 
+    public static void serialObjectDelete(File rootDirectory, HashMap<String, String> thisInterpretation, String subidentifier) {
+        File serializationDirectory = new File(rootDirectory, "serializations");
+        createDirectory(serializationDirectory, false);
+        File thisSerializationDirectory = new File(serializationDirectory,thisInterpretation.get("filename"));
+        serialXObject.setTargetDirectory(thisSerializationDirectory);
+        Log.i(TAG, "SERIAL OBJECT DIR");
+        Log.i(TAG, thisSerializationDirectory.getAbsolutePath());
+        createDirectory(thisSerializationDirectory, false);
+        serialXObject outputSerialized = new serialXObject(subidentifier);
+        Log.i(TAG, thisInterpretation.get("filename"));
+        outputSerialized.delete();
+    }
+
     public static void facebookInterpretation(Context context, File appStorageRecordingsDirectory, HashMap<String, String> thisInterpretation, File rootDirectory, Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
                                               Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid, File adsFromDispatchDirectory, JSONObject fitterFacebookAdHeader, HashMap<String, Object> pictogramsReference) {
         Boolean proceedable = true;
@@ -3462,6 +3497,15 @@ public class Facebook {
             try {
                 if (!adContentResult.contains("SUCCESSFUL")) {
                     proceedable = false;
+                }
+
+                if (adContentResult.equals("ERROR_AT_COPYING")) {
+                    // Occassionally the frame snippets 'creation process' does not create all the files needed in the next steps - this
+                    // would require a rollback on the files from the previous step
+
+                    // Perform rollback
+                    offsetChainsToFrameSnippetsRollback(rootDirectory, thisInterpretation);
+
                 }
                 highLevelOutcome.set("prepareAdContentForUpload", adContentResult);
             } catch (Exception e) {

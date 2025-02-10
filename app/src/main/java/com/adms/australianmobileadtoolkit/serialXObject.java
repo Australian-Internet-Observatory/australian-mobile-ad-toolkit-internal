@@ -322,4 +322,17 @@ public class serialXObject {
         writeToFile((new File(outputDirectory, id+".flats.json")), flats, "flats");
         writeToFile((new File(outputDirectory, id+".types.json")), types, "types");
     }
+
+    public void delete() {
+        Log.i("serialXObject","SERIAL OBJECT" + (new File(outputDirectory, id+".flats.json")).getAbsolutePath());
+        try { (new File(outputDirectory, id+".flats.json")).delete(); } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try { (new File(outputDirectory, id+".types.json")).delete(); } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try { (new File(outputDirectory, id+".keys.json")).delete(); } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

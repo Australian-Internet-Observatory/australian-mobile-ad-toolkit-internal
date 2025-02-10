@@ -21,7 +21,7 @@ public class appSettings {
    public static boolean USING_DEMOGRAPHIC_QUESTIONS = false;
    // Maximum file size for video recordings (5MB)
 
-   public static int videoRecordingMaximumFileSize = 2000000;
+   public static int videoRecordingMaximumFileSize = 1000000; // TODO - setting down from 2mb as sometimes the
 
    // Video recording encoding bit rate
    public static int videoRecordingEncodingBitRate = 10000; // 400000 on hpd -
