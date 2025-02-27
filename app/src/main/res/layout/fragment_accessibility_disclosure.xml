@@ -1,0 +1,150 @@
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+android:id="@+id/fragment_registration_1"
+android:orientation="vertical"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+tools:context="com.adms.australianmobileadtoolkit.MainActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="15dp">
+    <LinearLayout
+        android:id="@+id/fragment_accessibility_disclosure"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="15dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/barlow_bold"
+            android:letterSpacing="0.1"
+            android:paddingHorizontal="0dp"
+            android:paddingVertical="10dp"
+            android:text="@string/fragment_accessibility_disclosure_title"
+            android:textColor="@color/yellow_primary"
+            android:textSize="17sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:height="15dp"
+            android:textAlignment="center" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/yellow_primary" />
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/barlow_bold"
+            android:letterSpacing="0.1"
+            android:paddingHorizontal="0dp"
+            android:paddingVertical="10dp"
+            android:text="@string/fragment_accessibility_disclosure_subtitle_overview_1"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="15dp"
+            android:text="@string/fragment_accessibility_disclosure_description_overview_1" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/barlow_bold"
+            android:letterSpacing="0.1"
+            android:paddingHorizontal="0dp"
+            android:paddingVertical="10dp"
+            android:text="@string/fragment_accessibility_disclosure_subtitle_overview_2"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="15dp"
+            android:text="@string/fragment_accessibility_disclosure_description_overview_2" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/barlow_bold"
+            android:letterSpacing="0.1"
+            android:paddingHorizontal="0dp"
+            android:paddingVertical="10dp"
+            android:text="@string/fragment_accessibility_disclosure_subtitle_overview_3"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="15dp"
+            android:text="@string/fragment_accessibility_disclosure_description_overview_3a" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="10dp"
+            android:paddingBottom="15dp"
+            android:textColor="@color/yellow_primary"
+            android:textStyle="italic"
+            android:textSize="13sp"
+            android:text="@string/fragment_accessibility_disclosure_description_overview_3b" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="15dp"
+            android:text="@string/fragment_accessibility_disclosure_description_overview_3c" />
+
+
+
+
+        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/barlow_bold"
+                            android:letterSpacing="0.1"
+                            android:paddingHorizontal="0dp"
+                            android:paddingVertical="10dp"
+                            android:text="@string/fragment_accessibility_disclosure_subtitle_data"
+                            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="15dp"
+            android:text="@string/fragment_accessibility_disclosure_data_1" />
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:height="15dp" />
+
+        <Button
+            android:id="@+id/buttonBackToMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Go Back"
+            android:theme="@style/SecondaryButton" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:height="15dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/yellow_primary" />
+
+    </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

@@ -12,6 +12,8 @@ import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESE
 
 import static com.adms.australianmobileadtoolkit.Common.filePath;
 import static com.adms.australianmobileadtoolkit.Common.getFilesInDirectory;
+import static com.adms.australianmobileadtoolkit.Common.readStringFromFile;
+import static com.adms.australianmobileadtoolkit.Common.writeToFile;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNotification;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNotificationForward;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
@@ -24,6 +26,7 @@ import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RE
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.get_RECORD_SERVICE_EXTRA_RESULT_CODE;
 import static com.adms.australianmobileadtoolkit.appSettings.maxNumberOfVideos;
+import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
 
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -54,6 +57,8 @@ import android.view.WindowManager;
 import androidx.core.app.NotificationCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import com.adms.australianmobileadtoolkit.interpreter.AccessibilityService;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -72,6 +77,10 @@ public final class RecorderService extends Service {
     private MediaRecorder mMediaRecorder;
     private BroadcastReceiver mScreenStateReceiver;
     private int resultCode;
+    private final int dispatchCooldownResetValue = 2;
+    private int dispatchCooldown = dispatchCooldownResetValue;
+    private String previousRecordingFilename;
+    private String tentativeRecordingFilename;
     private static final String TAG = "RecorderService";
     // The extra result code associated with the intent of the recording service
     private static final String EXTRA_DATA = appSettings.RECORD_SERVICE_EXTRA_DATA;
@@ -323,13 +332,50 @@ public final class RecorderService extends Service {
             // the recording service has created a video recording that exceeds the maximum file size
             mMediaRecorder.setOnInfoListener((mr, what, extra) -> {
                 // If the maximum file size has been reached
+                if (what == MediaRecorder.MEDIA_RECORDER_INFO_NEXT_OUTPUT_FILE_STARTED) {
+                    //Log.i(TAG, );
+                    if (previousRecordingFilename != null) {
+                        Boolean withinTargetPlatform = true;
+
+                        // By default (if the user has not yet accepted to accessibility services), we do not conduct a check on the target platform
+                        if (isAccessibilityServiceEnabled(getApplicationContext(), AccessibilityService.class)) {
+                            // There is a possibility that the value may've not been written.
+                            try {
+                                withinTargetPlatform = (readStringFromFile(new File(MainActivity.getMainDir(this), "withinTargetApplication")).contains("true"));
+                            } catch (Exception e) {}
+                            if (withinTargetPlatform) {
+                                dispatchCooldown = dispatchCooldownResetValue;
+                            } else {
+                                dispatchCooldown --;
+                            }
+                        }
+
+
+                        if (dispatchCooldown <= 0) {
+                            (new File(previousRecordingFilename)).delete();
+                        }
+
+                        // Delete the previous recording
+                        /* Note: There is an instance where accessibilityService may observe that the user leaves a target platform before the current
+                        * recording has finished dispatching - when the recorderService then checks the accessibilityService
+                        * for the current app, it will return to it that the last reading was not in the target platform, causing it
+                        * to discard the recording (which would still contain portion thereof the target platform.
+                        *
+                        * To get around this, we can set a cooldown that requires that at least one recording containing non-target apps
+                        * be retained (after leaving a target app). This can't guarantee desired functionality, but it should catch
+                        * most issues.
+                        *
+                        * */
+                    }
+                    previousRecordingFilename = tentativeRecordingFilename;
+                }
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_APPROACHING) {
                     System.out.println("The media recorder has identified that the maximum file size has"
                           + " been reached; setting new output file.");
                     // Write out a new file
+                    tentativeRecordingFilename = recordingFilename(videoDir, finalOrientation);
                     try (RandomAccessFile newRandomAccessFile =
-                               new RandomAccessFile(recordingFilename(videoDir, finalOrientation),"rw")) {
-
+                               new RandomAccessFile(tentativeRecordingFilename,"rw")) {
                         mMediaRecorder.setNextOutputFile(newRandomAccessFile.getFD());
                         File thisVideoFolder = filePath(Arrays.asList((videoDir))); // TODO - inserted
 
@@ -381,7 +427,8 @@ public final class RecorderService extends Service {
             mMediaRecorder.setCaptureRate(30); // success with 1 - 30
             mMediaRecorder.setVideoFrameRate(30);
             // Set the preliminary output file
-            mMediaRecorder.setOutputFile(recordingFilename(videoDir, finalOrientation));
+            previousRecordingFilename = recordingFilename(videoDir, finalOrientation);
+            mMediaRecorder.setOutputFile(previousRecordingFilename);
             boolean didPrepare = false;
             try {
                 // Attempt to prepare the recording

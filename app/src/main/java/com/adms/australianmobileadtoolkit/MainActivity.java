@@ -30,6 +30,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.projection.MediaProjectionManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
@@ -39,6 +41,8 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -47,7 +51,10 @@ import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager;
 import com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker;
+import com.adms.australianmobileadtoolkit.interpreter.platform.ImageClassifier;
+import com.adms.australianmobileadtoolkit.interpreter.platform.ObjectDetectorHelper;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
 
@@ -63,6 +70,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
+import kotlin.coroutines.CoroutineContext;
+import kotlinx.coroutines.CoroutineName;
+import kotlinx.coroutines.flow.FlowCollector;
 
 // TODO do further testing on intermittent stops
 
@@ -80,6 +93,8 @@ public class MainActivity extends BaseActivity {
     public static String THIS_REGISTRATION_STATUS = SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
 
     public static String intentOfMainActivity = "NONE";
+
+    public Boolean initiated = false;
 
     // TODO
     private static ItemViewModel viewModel;
@@ -103,154 +118,155 @@ public class MainActivity extends BaseActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // The directories that will need to be created
-        List<String> directoriesToCreate = appSettings.DIRECTORIES_TO_CREATE;
-        // Set the main view
-        setContentView(R.layout.activity_base);
-        mProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
 
-        // Determine whether the service is running, and use this to determine whether the mToggleButton
-        // is then checked
-        FragmentMain.setToggle(isServiceRunning());
-        Log.i(TAG, "on create was called");
-        // Identify the main directory of the app
-        mainDir = getMainDir(this.getApplicationContext());
-        //prefs.edit().clear().commit(); // Uncomment this line to wipe the Shared Preferences
-        // (in case it doesn't wipe when clearing the cache and storage, which technically shouldn't
-        // happen, but here we are)
-        // Run this block on the first run of the app
-        if (sharedPreferenceGet(this, "SHARED_PREFERENCE_FIRST_RUN", "true").equals("true")) {
-            System.out.println( "First run: setting shared preferences and generating directories");
-            // Create the directory required by the app within the mainDir
-            if ((!mainDir.exists()) && (!mainDir.mkdirs())) {
-                Log.e(TAG, "Failure on onCreate: couldn't create main directory");
+            // The directories that will need to be created
+            List<String> directoriesToCreate = appSettings.DIRECTORIES_TO_CREATE;
+            // Set the main view
+            setContentView(R.layout.activity_base);
+            mProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+
+            // Determine whether the service is running, and use this to determine whether the mToggleButton
+            // is then checked
+            FragmentMain.setToggle(isServiceRunning());
+            Log.i(TAG, "on create was called");
+            // Identify the main directory of the app
+            mainDir = getMainDir(this.getApplicationContext());
+            //prefs.edit().clear().commit(); // Uncomment this line to wipe the Shared Preferences
+            // (in case it doesn't wipe when clearing the cache and storage, which technically shouldn't
+            // happen, but here we are)
+            // Run this block on the first run of the app
+            if (sharedPreferenceGet(this, "SHARED_PREFERENCE_FIRST_RUN", "true").equals("true")) {
+                System.out.println( "First run: setting shared preferences and generating directories");
+                // Create the directory required by the app within the mainDir
+                if ((!mainDir.exists()) && (!mainDir.mkdirs())) {
+                    Log.e(TAG, "Failure on onCreate: couldn't create main directory");
+                }
+                // Create the directories that are necessary for the app's functionality
+                for (String value : directoriesToCreate) {
+                    File dir = new File(mainDir
+                          + (File.separatorChar + value + File.separatorChar));
+                    // Fail-safe (in case the directory already exists)
+                    if ((!dir.exists()) && (!dir.mkdirs())) {
+                        Log.e(TAG, "Failure on onCreate: couldn't create sub-directories");
+                    }
+                }
+                // Generate an observer ID for this device, to be later submitted with data donations
+                sharedPreferencePut(this, "SHARED_PREFERENCE_OBSERVER_ID", UUID.randomUUID().toString());
+                // This code block has finished - commit the SHARED_PREFERENCE_FIRST_RUN variable,
+                // to ensure it doesn't run again
+                sharedPreferencePut(this, "SHARED_PREFERENCE_FIRST_RUN", "false");
             }
-            // Create the directories that are necessary for the app's functionality
-            for (String value : directoriesToCreate) {
-                File dir = new File(mainDir
-                      + (File.separatorChar + value + File.separatorChar));
-                // Fail-safe (in case the directory already exists)
-                if ((!dir.exists()) && (!dir.mkdirs())) {
-                    Log.e(TAG, "Failure on onCreate: couldn't create sub-directories");
+            if (DEBUG) {
+                copyDebugData(this);
+            }
+            // Set the observer ID
+            THIS_OBSERVER_ID = sharedPreferenceGet(this, "SHARED_PREFERENCE_OBSERVER_ID",
+                  SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE);
+            THIS_REGISTRATION_STATUS = sharedPreferenceGet(this, "SHARED_PREFERENCE_REGISTERED",
+                  SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE);
+            boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
+
+            // Retrieve permission to send notifications whenever the app is opened
+            if (ContextCompat.checkSelfPermission(MainActivity.this, POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{POST_NOTIFICATIONS},101);
+            }
+
+            /*
+            String packageName = getPackageName();
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                Toast.makeText(this, "no allowed", Toast.LENGTH_SHORT).show();
+                // it is not enabled. Ask the user to do so from the settings.
+                Intent notificationIntent = new Intent(Settings.ACTION_APP_USAGE_SETTINGS);
+                PendingIntent pendingIntent = PendingIntent.getActivity(this,0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+                String expandedNotificationText = String.format("Background activity is restricted on this device.\nPlease allow it so we can post an active notification during work sessions.\n\nTo do so, click on the notification to go to\nApp management -> search for %s -> Battery Usage -> enable 'Allow background activity')", getString(R.string.app_name));
+                NotificationCompat.Builder builderRebootNotification = constructNotification(this,
+                        get_NOTIFICATION_PERIODIC_CHANNEL_ID(this),
+                        "ooby",
+                        expandedNotificationText, null)
+                        .setContentIntent(pendingIntent);
+                sendNotification(this, builderRebootNotification, "NOTIFICATION_REBOOT_ID_CASE");
+
+            }else {
+                Toast.makeText(this, "allowed", Toast.LENGTH_SHORT).show();
+                // good news! It works fine even in the background.
+            }*/
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Intent intent = new Intent();
+                String packageName = getPackageName();
+                PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+                if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                    intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    intent.setData(Uri.parse("package:" + packageName));
+                    startActivity(intent);
                 }
             }
-            // Generate an observer ID for this device, to be later submitted with data donations
-            sharedPreferencePut(this, "SHARED_PREFERENCE_OBSERVER_ID", UUID.randomUUID().toString());
-            // This code block has finished - commit the SHARED_PREFERENCE_FIRST_RUN variable,
-            // to ensure it doesn't run again
-            sharedPreferencePut(this, "SHARED_PREFERENCE_FIRST_RUN", "false");
-        }
-        if (DEBUG) {
-            copyDebugData(this);
-        }
-        // Set the observer ID
-        THIS_OBSERVER_ID = sharedPreferenceGet(this, "SHARED_PREFERENCE_OBSERVER_ID",
-              SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE);
-        THIS_REGISTRATION_STATUS = sharedPreferenceGet(this, "SHARED_PREFERENCE_REGISTERED",
-              SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE);
-        boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
 
-        // Retrieve permission to send notifications whenever the app is opened
-        if (ContextCompat.checkSelfPermission(MainActivity.this, POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{POST_NOTIFICATIONS},101);
-        }
-
-        /*
-        String packageName = getPackageName();
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-            Toast.makeText(this, "no allowed", Toast.LENGTH_SHORT).show();
-            // it is not enabled. Ask the user to do so from the settings.
-            Intent notificationIntent = new Intent(Settings.ACTION_APP_USAGE_SETTINGS);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this,0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
-            String expandedNotificationText = String.format("Background activity is restricted on this device.\nPlease allow it so we can post an active notification during work sessions.\n\nTo do so, click on the notification to go to\nApp management -> search for %s -> Battery Usage -> enable 'Allow background activity')", getString(R.string.app_name));
-            NotificationCompat.Builder builderRebootNotification = constructNotification(this,
-                    get_NOTIFICATION_PERIODIC_CHANNEL_ID(this),
-                    "ooby",
-                    expandedNotificationText, null)
-                    .setContentIntent(pendingIntent);
-            sendNotification(this, builderRebootNotification, "NOTIFICATION_REBOOT_ID_CASE");
-
-        }else {
-            Toast.makeText(this, "allowed", Toast.LENGTH_SHORT).show();
-            // good news! It works fine even in the background.
-        }*/
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Intent intent = new Intent();
-            String packageName = getPackageName();
-            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                intent.setData(Uri.parse("package:" + packageName));
-                startActivity(intent);
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Intent intent = new Intent();
+                String packageName = getPackageName();
+                ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+                if (cm.getRestrictBackgroundStatus() == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED) {
+                    intent.setAction(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS);
+                    intent.setData(Uri.parse("package:" + packageName));
+                    startActivity(intent);
+                }
             }
-        }
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Intent intent = new Intent();
-            String packageName = getPackageName();
-            ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-            if (cm.getRestrictBackgroundStatus() == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED) {
-                intent.setAction(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS);
-                intent.setData(Uri.parse("package:" + packageName));
-                startActivity(intent);
-            }
-        }
-
-        openBatteryUsagePage(this);
+            openBatteryUsagePage(this);
 
 
-        // Generate the notification channel
-        generateNotificationChannel(this, get_NOTIFICATION_PERIODIC_CHANNEL_ID(this),
-              get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME(this), get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION(this));
-        // Attempt to set the periodic notifications
-        setPeriodicNotifications(this);
+            // Generate the notification channel
+            generateNotificationChannel(this, get_NOTIFICATION_PERIODIC_CHANNEL_ID(this),
+                  get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME(this), get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION(this));
+            // Attempt to set the periodic notifications
+            setPeriodicNotifications(this);
 
-        viewModel = new ViewModelProvider(this).get(ItemViewModel.class);
+            viewModel = new ViewModelProvider(this).get(ItemViewModel.class);
 
-        String PERIODIC_WORK_TAG = "PERIODIC_WORK_TAG";
+            String PERIODIC_WORK_TAG = "PERIODIC_WORK_TAG";
 
-        try { WorkManager.getInstance().cancelAllWorkByTag(PERIODIC_WORK_TAG).getResult(); } catch (Exception e) { /* Do nothing */ }
-        try {  WorkManager.getInstance().pruneWork().getResult(); } catch (Exception e) { /* Do nothing */ }
-        try {
-            System.out.println( "WorkManager is set.");
-            PeriodicWorkRequest periodicWork = new PeriodicWorkRequest.Builder(InterpreterWorker.class, 15, TimeUnit.MINUTES)
-                  .addTag(PERIODIC_WORK_TAG)
-                  .build();
-            // Do not start another worker if the current one is active
-            WorkManager.getInstance().enqueueUniquePeriodicWork(
-                    "DETECTION_OR_SIFT", ExistingPeriodicWorkPolicy.KEEP,  periodicWork);
-
-        } catch (Exception e) { /* Do nothing */ }
-
-        Intent intentOfMainActivityAsIntent = getIntent();
-        refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
-
-        /*
-        stateObject.init(this);
-
-        String dummyIdentifier = "1234";
-        stateObject xxx = new stateObject(this, dummyIdentifier);
-        Log.i(TAG, xxx.toString());
-        if (!xxx.has("hello")) {
-            HashMap<Integer, Integer> yyy = new HashMap<>();
-            yyy.put(1,2);
-            yyy.put(3,4);
-            xxx.set("hello", yyy);
-            JSONObject berg = new JSONObject();
-            try {berg.put("a","b");}catch(Exception e){}
-            xxx.set("gerh", berg);
-            xxx.commit(this);
-            Log.i(TAG, "stateObject committed to memory");
-        } else {
-            Log.i(TAG, "stateObject retrieved from memory");
-            Log.i(TAG, xxx.toString());
+            try { WorkManager.getInstance().cancelAllWorkByTag(PERIODIC_WORK_TAG).getResult(); } catch (Exception e) { /* Do nothing */ }
+            try {  WorkManager.getInstance().pruneWork().getResult(); } catch (Exception e) { /* Do nothing */ }
             try {
-                Log.i(TAG, (String) ((JSONObject) xxx.get("gerh")).get("a"));
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
-            }
-        }*/
+                System.out.println( "WorkManager is set.");
+                PeriodicWorkRequest periodicWork = new PeriodicWorkRequest.Builder(InterpreterWorker.class, 15, TimeUnit.MINUTES)
+                      .addTag(PERIODIC_WORK_TAG)
+                      .build();
+                // Do not start another worker if the current one is active
+                WorkManager.getInstance().enqueueUniquePeriodicWork(
+                        "DETECTION_OR_SIFT", ExistingPeriodicWorkPolicy.KEEP,  periodicWork);
+
+            } catch (Exception e) { /* Do nothing */ }
+
+            Intent intentOfMainActivityAsIntent = getIntent();
+            refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
+
+            /*
+            stateObject.init(this);
+
+            String dummyIdentifier = "1234";
+            stateObject xxx = new stateObject(this, dummyIdentifier);
+            Log.i(TAG, xxx.toString());
+            if (!xxx.has("hello")) {
+                HashMap<Integer, Integer> yyy = new HashMap<>();
+                yyy.put(1,2);
+                yyy.put(3,4);
+                xxx.set("hello", yyy);
+                JSONObject berg = new JSONObject();
+                try {berg.put("a","b");}catch(Exception e){}
+                xxx.set("gerh", berg);
+                xxx.commit(this);
+                Log.i(TAG, "stateObject committed to memory");
+            } else {
+                Log.i(TAG, "stateObject retrieved from memory");
+                Log.i(TAG, xxx.toString());
+                try {
+                    Log.i(TAG, (String) ((JSONObject) xxx.get("gerh")).get("a"));
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+            }*/
 
 
     }

@@ -4,10 +4,14 @@ import static com.adms.australianmobileadtoolkit.RecorderService.createIntentFor
 import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
 import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
 import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
+import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
 
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.util.TypedValue;
@@ -26,13 +30,20 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.adms.australianmobileadtoolkit.MainActivity;
 import com.adms.australianmobileadtoolkit.RecorderService;
+import com.adms.australianmobileadtoolkit.interpreter.AccessibilityService;
+import com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.interpreter.Interpreter;
+import com.adms.australianmobileadtoolkit.ui.dialogs.DialogEnableAccessibilityService;
+import com.adms.australianmobileadtoolkit.ui.dialogs.DialogFailedRegistration;
 
 import java.util.Objects;
 
 public class FragmentMain extends Fragment {
+
+   private DialogEnableAccessibilityService enableAccessibilityService;
+
    // The tag of this class
    private static final String TAG = "FragmentMain";
    // The SwitchCompat toggler used with screen-recording
@@ -61,6 +72,8 @@ public class FragmentMain extends Fragment {
       transaction.commit();
    }
 
+   private View view;
+
    @Override
    public View onCreateView(LayoutInflater inflater, ViewGroup container,
                             Bundle savedInstanceState) {
@@ -68,7 +81,7 @@ public class FragmentMain extends Fragment {
             getActivity(), "SHARED_PREFERENCE_REGISTERED", SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE), SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
       // TODO Auto-generated method stub
 
-      View view = inflater.inflate(R.layout.fragment_main, container, false);
+      view = inflater.inflate(R.layout.fragment_main, container, false);
 
       // Attach the variable mToggleButton to the control within the view
       mToggleButton = (Switch) view.findViewById(R.id.simpleSwitch);
@@ -121,13 +134,55 @@ public class FragmentMain extends Fragment {
             transaction.replace(R.id.fragmentContainerView, fragment);
             transaction.addToBackStack(null);
             transaction.commit();
-            //startActivity(new Intent(this, RegistrationActivity.class));
          });
+
+
+
+
+
+
+
 
       } else {
          // Or else hide the 'registered' screen
          view.findViewById(R.id.fragment_main_registered).setVisibility(View.GONE);
       }
+
+
+      View.OnClickListener commonAccessibilityServicesProminentDisclosureRoutine = (v -> {
+         Fragment fragment = new FragmentAccessibilityDisclosure();
+
+         FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+         transaction.setCustomAnimations(
+                 R.anim.enter_from_left,  // enter
+                 R.anim.exit_to_right,  // exit
+                 R.anim.enter_from_right,   // popEnter
+                 R.anim.exit_to_left  // popExit
+         );
+         transaction.replace(R.id.fragmentContainerView, fragment);
+         transaction.addToBackStack(null);
+         transaction.commit();
+      });
+
+      Button buttonAccessibilityDisclosureA = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureA);
+      buttonAccessibilityDisclosureA.setOnClickListener(commonAccessibilityServicesProminentDisclosureRoutine);
+
+      Button buttonAccessibilityDisclosureB = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureB);
+      buttonAccessibilityDisclosureB.setOnClickListener(commonAccessibilityServicesProminentDisclosureRoutine);
+
+
+      // TODO - check accessibility permissions status and then relay to button design
+
+      Button buttonAccessibilityDisclosureAER = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureAER);
+      Button buttonAccessibilityDisclosureBER = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureBER);
+
+      updateAccessibilityServicesButtonText(requireContext(), view);
+
+      View.OnClickListener commonLaunchAccessibilityPermissionsRoutine = (v -> {
+         requireContext().startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+      });
+      buttonAccessibilityDisclosureAER.setOnClickListener(commonLaunchAccessibilityPermissionsRoutine);
+      buttonAccessibilityDisclosureBER.setOnClickListener(commonLaunchAccessibilityPermissionsRoutine);
 
       if (DEBUG) { // TODO - clean
          Button btn = new Button(getActivity());
@@ -153,9 +208,23 @@ public class FragmentMain extends Fragment {
             thread.start();
          });
       }
+
+      startAccessibilityService();
+
       return view;
 
+   }
 
+   public static void updateAccessibilityServicesButtonText(Context context, View view) {
+      Button buttonAccessibilityDisclosureAER = view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureAER);
+      Button buttonAccessibilityDisclosureBER = view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureBER);
+      if (!isAccessibilityServiceEnabled(context, AccessibilityService.class)) {
+         buttonAccessibilityDisclosureAER.setText(R.string.dialog_accessibility_launch_text);
+         buttonAccessibilityDisclosureBER.setText(R.string.dialog_accessibility_launch_text);
+      } else {
+         buttonAccessibilityDisclosureAER.setText(R.string.dialog_accessibility_revoke_text);
+         buttonAccessibilityDisclosureBER.setText(R.string.dialog_accessibility_revoke_text);
+      }
    }
 
    public static void setToggle(Boolean check) {
@@ -209,6 +278,34 @@ public class FragmentMain extends Fragment {
             ; break ;
          default : break ;
       }
+
+      updateAccessibilityServicesButtonText(requireContext(), view);
       MainActivity.intentOfMainActivity = "NONE";
+
+   }
+
+
+
+   public void startAccessibilityService() {
+      if ((enableAccessibilityService == null) || (!enableAccessibilityService.isShowing())) {
+         if (!isAccessibilityServiceEnabled(requireContext(), AccessibilityService.class)) {
+            dialogEnableAccessibilityService();
+         }
+      }
+   }
+
+   public void dialogEnableAccessibilityService() {
+      enableAccessibilityService = new DialogEnableAccessibilityService(requireContext(), getParentFragmentManager());
+      enableAccessibilityService.show();
+      /*
+      enableAccessibilityService.setOnDismissListener(new DialogInterface.OnDismissListener() {
+         @Override
+         public void onDismiss(DialogInterface dialog) {
+            if (!isAccessibilityServiceEnabled(requireContext(), AccessibilityService.class)) {
+               enableAccessibilityService.dismiss();
+               requireContext().startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+            }
+         }
+      });*/
    }
 }

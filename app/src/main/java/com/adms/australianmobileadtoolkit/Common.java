@@ -2,7 +2,25 @@ package com.adms.australianmobileadtoolkit;
 
 import static java.util.Collections.frequency;
 
+import android.content.Context;
+import android.view.View;
+import android.widget.Button;
+
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+
+import com.adms.australianmobileadtoolkit.ui.fragments.FragmentAccessibilityDisclosure;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.OptionalDouble;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
@@ -226,4 +245,31 @@ public class Common {
       return pos;
    }
 
+
+   public static void writeToFile(File thisFile, String contents) {
+      try {
+         PrintWriter writer = new PrintWriter(thisFile, "UTF-8");
+         writer.println(contents);
+         writer.close();
+      } catch (Exception e) { }
+   }
+
+   public static String convertStreamToString(InputStream is) throws Exception {
+      BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+      StringBuilder sb = new StringBuilder();
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+         sb.append(line).append("\n");
+      }
+      reader.close();
+      return sb.toString();
+   }
+
+   public static String readStringFromFile(File thisFile) {
+      try {
+         return convertStreamToString(Files.newInputStream(new File(thisFile.getAbsolutePath()).toPath()));
+      } catch (Exception e) {
+         return null;
+      }
+   }
 }

@@ -139,12 +139,13 @@ public class machine {
         if ((testVideo == null) || (filenameUnextended(x).equals(testVideo.replace(".mp4", "")))) {
 
             String xUnextended = filenameUnextended(x);
+            String xDebugDirectory = x.getName() + ".debugDirectory";
             logger.info("Running test " + x);
 
-            File debugFile = new File(thisTest.outputDirectory.getAbsolutePath(), xUnextended);
-            File adsFromFacebookDirectory = new File(debugFile, "adsToDispatch");
+            File debugDirectory = new File(thisTest.outputDirectory.getAbsolutePath(), xDebugDirectory);
+            File adsFromFacebookDirectory = new File(debugDirectory, "adsToDispatch");
 
-            File simulatedRecordingsDirectory = new File(debugFile, "videos");
+            File simulatedRecordingsDirectory = new File(debugDirectory, "videos");
             createDirectory(simulatedRecordingsDirectory, true);
             createDirectory(adsFromFacebookDirectory, true);
 
@@ -157,7 +158,7 @@ public class machine {
                 throw new RuntimeException(e);
             }
 
-            return debugFile;
+            return debugDirectory;
         }
         return null;
     }

@@ -23,7 +23,7 @@
     <string name="fragment_main_app_preface_unregistered">To begin detecting advertisements, you will need to register. This can be done below:</string>
     <string name="fragment_main_register_text">Register</string>
     <string name="fragment_main_footer_learn_more">To learn more about our research project, you can visit the official ADM+S website, by clicking <a href="https://www.admscentre.org.au/adobservatory/">here</a></string>
-    <string name="fragment_main_footer_privacy_policy"><a href="https://www.admscentre.org.au/wp-content/uploads/2021/05/ETH_Participant_Information-Sheet_V1.1_20210513.pdf">Read Our Privacy Policy</a></string>
+    <string name="fragment_main_footer_privacy_policy"><a href="https://www.admscentre.org.au/the-australian-mobile-ad-toolkit-privacy-policy/">Read Our Privacy Policy</a></string>
 
     <string name="fragment_main_app_status_registered">APP STATUS: REGISTERED</string>
     <string name="fragment_main_app_dashboard_tooltip">Advertisements that you have already observed can be viewed at your personal dashboard.</string>
@@ -48,6 +48,42 @@
     <string name="app_underscore_code">adms_mobile_ad_observatory</string>
     <string name="app_child_directory_name">australianmobileadobservatory</string>
     <string name="app_titled_code">AustralianMobileAdObservatory</string>
+
+
+    <string name="dialog_accessibility_launch_title">ACCESSIBILITY SERVICES</string>
+    <string name="dialog_accessibility_launch_description">This app uses accessibility services for necessary functionality that is not related to accessibility.</string>
+    <string name="dialog_accessibility_launch_text">ENABLE IN SETTINGS</string>
+    <string name="dialog_accessibility_learn_more">LEARN MORE</string>
+    <string name="dialog_accessibility_dismiss">DISMISS</string>
+    <string name="dialog_accessibility_revoke_text">REVOKE IN SETTINGS</string>
+
+
+
+    <string name="fragment_main_accessibility_title">Important Notice</string>
+    <string name="fragment_main_accessibility_description">This app uses accessibility services for necessary functionality not relating to accessibility.</string>
+    <string name="fragment_main_accessibility_services">LEARN MORE</string>
+
+
+    <string name="fragment_accessibility_disclosure_title">USAGE OF ACCESSIBILITY SERVICES</string>
+    <string name="fragment_accessibility_disclosure_subtitle_overview_1">AN OVERVIEW OF APP FUNCTIONALITY</string>
+    <string name="fragment_accessibility_disclosure_description_overview_1">The Australian Mobile Ad Toolkit is a mobile app that enables members of the public to submit advertisements they\'ve seen on their device, for the benefit of researchers studying digital advertising practises.\n\nThe app works by screen-recording the individual\'s device screen, using image analysis methods to isolate and collect advertisements seen on social media apps.</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_2">IMAGE ANALYSIS</string>
+    <string name="fragment_accessibility_disclosure_description_overview_2">Part of the image analysis involves digitally processing the screen recordings that come through the device. As social media apps alone do not constitute the entire viewing experience of a mobile device\'s usage, it becomes an issue that the app then spends time and computational resources processing screen-recordings that yield no valuable data.</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_3">ACCESSIBILITY SERVICES</string>
+    <string name="fragment_accessibility_disclosure_description_overview_3a">An application can apply the Android Accessibility Services API to get a better idea of when to collect data, and when to discard it.\n\nConsider the scenario of advertisements posted on social media platforms. The Android Accessibility Services API can be used in this situation to determine that the device is within the applications that serve these advertisements - it can then relay this information to the screen-recording service, advising it to either retain or discard data that will be processed further down the line.</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_3b">Note: It is stressed that while the software logic checks whether the user is within said apps, that no data is retained conveying the explicit app names that a person visits on their device in any of this app\'s functionality.</string>
+    <string name="fragment_accessibility_disclosure_description_overview_3c">In separate functionality of the app, social media advertisements advertised through the relevant social media platforms are collected through the screen-recording capabilities of the app, although this forms part of a disclosure that has been described in the privacy policy, and that is distinct to the contents of this \'Prominent Disclosure\'.</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_data">DATA ACCESS, COLLECTION AND USAGE</string>
+
+    <string name="fragment_accessibility_disclosure_data_1">This app accesses data about event changes in the system windows shown on the screen, as well as changes to a visually distinct section of the user interface.\n\nUpon reading data from these events, the app accesses the application package name of the mobile application in question that the user is currently interacting with; it then checks the package name to determine whether it coincides with an app currently being examined by the Australian Mobile Ad Toolkit.\n\nPartial to the screen-recording functionality of the app, this process is done to enable the app to discard screen-recordings of apps that are not relevant to the Australian Mobile Ad Toolkit, which reduces processing requirements and consequently improves the user experience of the app.</string>
+
+
+
+
 
 </resources>
 

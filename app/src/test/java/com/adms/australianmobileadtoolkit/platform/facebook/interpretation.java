@@ -41,17 +41,24 @@ import java.util.stream.Collectors;
 public class interpretation {
 
     public static JSONXObject screenRecordingsMetadata = new JSONXObject(readJSONFromFile(new File(simulationsDirectory, "screenRecordingsMetadata.json")));
+    public static final File testScreenRecordingsFeb2025Directory = (new File(simulationsDirectory, "screenRecordingsFeb2025Instagram"));
 
     @Test
-    public void testPlatformInterpretationRoutine() {
-        //org.bytedeco.javacpp.av_log_set_level(avutil.AV_LOG_QUIET);
-        IsolatedTest thisTest = new IsolatedTest("practicalInterpretation");
-        thisTest.setCasesDirectory(testScreenRecordingsDirectory);
+     public void testPlatformInterpretationRoutine() {
 
-        String testVideo = "facebook_dark_hq_large_slow_inapp_nonav_2.mp4";
+
+
+
+
+
+            //org.bytedeco.javacpp.av_log_set_level(avutil.AV_LOG_QUIET);
+        IsolatedTest thisTest = new IsolatedTest("practicalInterpretation");
+        thisTest.setCasesDirectory(testScreenRecordingsFeb2025Directory); // TODO - testScreenRecordingsDirectory
 
         Function<File, JSONObject> localRoutine = (x -> {
-            File debugFile = prepareForPlatformInterpretationTest(thisTest, x, testVideo);
+
+            File debugFile = prepareForPlatformInterpretationTest(thisTest, x, null);
+            System.out.println(debugFile);
             if (debugFile != null) {
                 printJSON(debugFile);
                 platformInterpretationRoutine(testContext, debugFile, getVideoMetadataMachine, frameGrabMachine, false);
@@ -62,8 +69,9 @@ public class interpretation {
         Function<File, JSONObject> evaluateRoutine = (x -> {
             JSONXObject output = new JSONXObject();
             String xUnextended = filenameUnextended(x);
+            String xDebugDirectory = x.getName() + ".debugDirectory";
 
-            File debugDirectory = new File(thisTest.outputDirectory.getAbsolutePath(), xUnextended);
+            File debugDirectory = new File(thisTest.outputDirectory.getAbsolutePath(), xDebugDirectory);
             File adsFromFacebookDirectory = new File(debugDirectory, "adsToDispatch");
             // Retrieve the adContent file
 
@@ -75,7 +83,7 @@ public class interpretation {
             HashMap<String, Boolean> adWithinFrameAccounted = new HashMap<>();
             List<String> falseAds = new ArrayList<>();
 
-            JSONXObject thisTestObject = (new JSONXObject((JSONObject) screenRecordingsMetadata.get(xUnextended)));
+            JSONXObject thisTestObject = (new JSONXObject((JSONObject) screenRecordingsMetadata.get(xDebugDirectory)));
 
             List<JSONXObject> prescribedAdsForTest = JSONArrayToList((JSONArray) thisTestObject.get("ads")).stream()
                     .map(y -> new JSONXObject((JSONObject) y) ).collect(Collectors.toList());
@@ -178,7 +186,7 @@ public class interpretation {
 
         // OCR evaluation happens here
 
-        thisTest.evaluateOnCases(evaluateRoutine);
+       // thisTest.evaluateOnCases(evaluateRoutine);
 
         logger.info("True Positives: " + thisTest.confusionMatrix.tpN);
         logger.info("False Positives: " + thisTest.confusionMatrix.fpN);

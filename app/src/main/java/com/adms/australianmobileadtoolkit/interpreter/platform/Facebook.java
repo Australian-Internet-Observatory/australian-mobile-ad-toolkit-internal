@@ -536,7 +536,7 @@ public class Facebook {
             int thisColor = Color.parseColor(thisColourHex);
             List<Integer> colours = new ArrayList<>();
             for (Integer x : regardedMaxColourGlobal.keySet()) {
-                if (pixelDifferencePercentage(thisColor, regardedMaxColourGlobal.get(x)) < 0.025) {
+                if (pixelDifferencePercentage(thisColor, regardedMaxColourGlobal.get(x)) < 0.05) { // Setting up from 0.025
                     colours.add(x);
                 }
             }
@@ -2023,10 +2023,12 @@ public class Facebook {
 
 
 
-    public static List<JSONObject> frameSnippetsFromTrueDividers(HashMap<Integer, List<Integer>> trueDividers,
+    public static JSONXObject frameSnippetsFromTrueDividers(HashMap<Integer, List<Integer>> trueDividers,
                                                                  HashMap<Integer, Integer> thisOffsetChain, Integer h,
                                                                  HashMap<Integer, JSONObject> signaturesMap, String thisMode) {
-
+        JSONXObject output = new JSONXObject();
+        output.set("success", true);
+        output.set("exitStatus", "INCONCLUSIVE");
         List<JSONObject> frameSnippetsCollapsed = new ArrayList<>();
         try {
 
@@ -2074,9 +2076,10 @@ public class Facebook {
                     thisSnippet.put("height", Math.abs(consistentBoundaries.get(i) - consistentBoundaries.get(i+1)));
                     nSnippets ++;
                 } catch (Exception e) {
-
-                    // TODO - should call rollback
+                    output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_SET_SNIPPET");
+                    output.set("success", false); // TODO - determine if this causes a lock on processing
                     logger.error(e);
+                    return output;
 
                 }
                 snippets.add(thisSnippet);
@@ -2088,122 +2091,135 @@ public class Facebook {
             try {
                 FSInterval = (Integer) signaturesMap.get(frames.get(0)).get("strideY");
             } catch (Exception e) {
-
-                // TODO - should call rollback
+                output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_RETRIEVE_FS_INTERVAL");
+                output.set("success", false); // TODO - determine if this causes a lock on processing
                 logger.error(e);
+                return output;
 
             }
 
+            Log.i(TAG, frames.toString());
+
             HashMap<Integer, List<JSONObject>> frameSnippets = new HashMap<>();
             for (Integer thisFrame : frames) {
-                //System.out.println("This frame: " + thisFrame);
-                // Retrieve the relevant frame signatures for this frame's inhibited range
-                List<HashMap<Integer, Boolean>> frameSignaturesWS = new ArrayList();
-                List<HashMap<Integer, HashMap<Integer, Integer>>> frameSignatures = new ArrayList();
-                int inhibitedRangeLookBehind = Math.max(frames.indexOf(thisFrame)-inhibitedRangeLookaround, 0);
-                int inhibitedRangeLookForward = Math.min(frames.indexOf(thisFrame)+inhibitedRangeLookaround, frames.size()-1);
-                for (int i = inhibitedRangeLookBehind; i <= inhibitedRangeLookForward; i ++) {
-                    try {
-                        frameSignatures.add((HashMap<Integer, HashMap<Integer, Integer>>) (signaturesMap.get(frames.get(i))).get("frameSignature"));
-                        frameSignaturesWS.add((HashMap<Integer, Boolean>) (signaturesMap.get(frames.get(i))).get("frameSignatureWS"));
-                    } catch (Exception e) {
-                        logger.error(e);
-
-                        // TODO - should call rollback
-                    }
-                }
-
-
-
-                // generate an inhibited range
-                List<List<Integer>> thisInhibitedRange = generateInhibitedRange(frameSignatures, frameSignaturesWS, h, FSInterval);
-
-                // as according to this frame, go over the snippets, and contextualise them - determine what parts reside in which frames, if at all
-                List<JSONObject> adjustedSnippets = new ArrayList<>();
-                for (JSONObject thisSnippetRaw : snippets) {
-                    JSONObject thisSnippet = null;
-                    try { thisSnippet = new JSONObject(thisSnippetRaw.toString()); } catch (Exception e) {
-
-                        // TODO - should call rollback
-                        logger.error(e);
-                    }
-                    Integer upper = null;
-                    Integer lower = null;
-                    try {
-                        int x = forceToRange(((Integer) thisSnippet.get("upper")) + cumulativeOffsetB, 0, h - 1);
-                        int y = forceToRange(((Integer) thisSnippet.get("lower")) + cumulativeOffsetB, 0, h - 1);
-                        upper = Math.min(x, y);
-                        lower = Math.max(x, y);
-                        thisSnippet.put("upper", upper);
-                        thisSnippet.put("lower", lower);
-                    } catch (Exception e) {
-
-                        // TODO - should call rollback
-                        logger.error(e);
-
-                    }
-
-                    // added - if the snippet is outside of the bounds of the frame, dont add it
-                    if (!((upper == lower) && ((upper == 0) || (upper == (h - 1))))) {
-
-                        //apply the adjusted values
-
-                        // determine the inhibited range for this adjusted snippet
-                        List<List<Integer>> adjustedInhibitedRange = new ArrayList<>();
-                        Boolean perfectlyOverlapped = false;
-                        Boolean outOfBounds = false;
-                        for (List<Integer> aRange : thisInhibitedRange) {
-                            Integer rangeStart = aRange.get(0);
-                            Integer rangeEnd = aRange.get(1);
-                            Integer adjustedRangeStart = Math.max(rangeStart,upper);
-                            Integer adjustedRangeEnd = Math.min(rangeEnd,lower);
-                            if ((adjustedRangeEnd < 0) || (adjustedRangeStart > h)) {
-                                outOfBounds = true;
-                                break;
-                            }
-
-                            if (!(((rangeStart <= upper) && (rangeEnd <= upper)) || ((rangeStart >= lower) && (rangeEnd >= lower)))) { // out of range
-                                if ((adjustedRangeStart >= upper) && (adjustedRangeEnd <= lower)) {
-                                    adjustedInhibitedRange.add(Arrays.asList(adjustedRangeStart, adjustedRangeEnd));
-                                }
-                                if ((adjustedRangeStart == upper) && (adjustedRangeEnd == lower)) {
-                                    perfectlyOverlapped = true;
-                                    break;
-                                }
-                            }
-                        }
+                    Boolean cancelFrameSnippetAppendage = false;
+                    //System.out.println("This frame: " + thisFrame);
+                    // Retrieve the relevant frame signatures for this frame's inhibited range
+                    List<HashMap<Integer, Boolean>> frameSignaturesWS = new ArrayList();
+                    List<HashMap<Integer, HashMap<Integer, Integer>>> frameSignatures = new ArrayList();
+                    int inhibitedRangeLookBehind = Math.max(frames.indexOf(thisFrame)-inhibitedRangeLookaround, 0);
+                    int inhibitedRangeLookForward = Math.min(frames.indexOf(thisFrame)+inhibitedRangeLookaround, frames.size()-1);
+                    for (int i = inhibitedRangeLookBehind; i <= inhibitedRangeLookForward; i ++) {
                         try {
-                            thisSnippet.put("inhibitedRanges", adjustedInhibitedRange);
+                            frameSignatures.add((HashMap<Integer, HashMap<Integer, Integer>>) (signaturesMap.get(frames.get(i))).get("frameSignature"));
+                            frameSignaturesWS.add((HashMap<Integer, Boolean>) (signaturesMap.get(frames.get(i))).get("frameSignatureWS"));
                         } catch (Exception e) {
-
-                            // TODO - should call rollback
-                            logger.error(e);
+                            cancelFrameSnippetAppendage = true;
+                            //logger.error(e);
+                            Log.i(TAG, "ATTACH: "+frames.get(i));
+                            output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_FRAME_SIGNATURES_ADD: "+exceptionWrite(e));
+                            output.set("success", false); // TODO - determine if this causes a lock on processing
+                            return output;
                         }
+                    }
 
-                        if ((!perfectlyOverlapped) && (!outOfBounds)) {
+                    //if (!cancelFrameSnippetAppendage) {
 
-                            // determine the whitespace for this adjusted snippet
+                        // generate an inhibited range
+                        List<List<Integer>> thisInhibitedRange = generateInhibitedRange(frameSignatures, frameSignaturesWS, h, FSInterval);
+
+                        // as according to this frame, go over the snippets, and contextualise them - determine what parts reside in which frames, if at all
+                        List<JSONObject> adjustedSnippets = new ArrayList<>();
+                        for (JSONObject thisSnippetRaw : snippets) {
+                            JSONObject thisSnippet = null;
                             try {
-                                HashMap<Integer, Boolean> thisFrameSignatureWS = (HashMap<Integer, Boolean>) signaturesMap.get(thisFrame).get("frameSignatureWS");
-                                List<Integer> isolatedFrameSignatureIntervals = thisFrameSignatureWS.keySet().stream().sorted()
-                                        .filter(x -> thisFrameSignatureWS.get(x)).collect(Collectors.toList());
-                                //printJSON(isolatedFrameSignatureIntervals);
-                                //printJSON(discreteIntervalsToRanges(FSInterval, isolatedFrameSignatureIntervals));
-                                thisSnippet.put("whitespaceRanges", discreteIntervalsToRanges(FSInterval, isolatedFrameSignatureIntervals));
+                                thisSnippet = new JSONObject(thisSnippetRaw.toString());
                             } catch (Exception e) {
 
-                                // TODO - should call rollback
+                                output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_RETRIEVE_SNIPPET_RAW");
+                                output.set("success", false); // TODO - determine if this causes a lock on processing
                                 logger.error(e);
+                                return output;
+                            }
+                            Integer upper = null;
+                            Integer lower = null;
+                            try {
+                                int x = forceToRange(((Integer) thisSnippet.get("upper")) + cumulativeOffsetB, 0, h - 1);
+                                int y = forceToRange(((Integer) thisSnippet.get("lower")) + cumulativeOffsetB, 0, h - 1);
+                                upper = Math.min(x, y);
+                                lower = Math.max(x, y);
+                                thisSnippet.put("upper", upper);
+                                thisSnippet.put("lower", lower);
+                            } catch (Exception e) {
+                                output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_FORCE_TO_RANGE");
+                                output.set("success", false); // TODO - determine if this causes a lock on processing
+                                logger.error(e);
+                                return output;
 
                             }
 
-                            adjustedSnippets.add(thisSnippet);
+                            // added - if the snippet is outside of the bounds of the frame, dont add it
+                            if (!((upper == lower) && ((upper == 0) || (upper == (h - 1))))) {
+
+                                //apply the adjusted values
+
+                                // determine the inhibited range for this adjusted snippet
+                                List<List<Integer>> adjustedInhibitedRange = new ArrayList<>();
+                                Boolean perfectlyOverlapped = false;
+                                Boolean outOfBounds = false;
+                                for (List<Integer> aRange : thisInhibitedRange) {
+                                    Integer rangeStart = aRange.get(0);
+                                    Integer rangeEnd = aRange.get(1);
+                                    Integer adjustedRangeStart = Math.max(rangeStart, upper);
+                                    Integer adjustedRangeEnd = Math.min(rangeEnd, lower);
+                                    if ((adjustedRangeEnd < 0) || (adjustedRangeStart > h)) {
+                                        outOfBounds = true;
+                                        break;
+                                    }
+
+                                    if (!(((rangeStart <= upper) && (rangeEnd <= upper)) || ((rangeStart >= lower) && (rangeEnd >= lower)))) { // out of range
+                                        if ((adjustedRangeStart >= upper) && (adjustedRangeEnd <= lower)) {
+                                            adjustedInhibitedRange.add(Arrays.asList(adjustedRangeStart, adjustedRangeEnd));
+                                        }
+                                        if ((adjustedRangeStart == upper) && (adjustedRangeEnd == lower)) {
+                                            perfectlyOverlapped = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                try {
+                                    thisSnippet.put("inhibitedRanges", adjustedInhibitedRange);
+                                } catch (Exception e) {
+                                    output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_INHIBITED_RANGES");
+                                    output.set("success", false); // TODO - determine if this causes a lock on processing
+                                    logger.error(e);
+                                    return output;
+                                }
+
+                                if ((!perfectlyOverlapped) && (!outOfBounds)) {
+
+                                    // determine the whitespace for this adjusted snippet
+                                    try {
+                                        HashMap<Integer, Boolean> thisFrameSignatureWS = (HashMap<Integer, Boolean>) signaturesMap.get(thisFrame).get("frameSignatureWS");
+                                        List<Integer> isolatedFrameSignatureIntervals = thisFrameSignatureWS.keySet().stream().sorted()
+                                                .filter(x -> thisFrameSignatureWS.get(x)).collect(Collectors.toList());
+                                        //printJSON(isolatedFrameSignatureIntervals);
+                                        //printJSON(discreteIntervalsToRanges(FSInterval, isolatedFrameSignatureIntervals));
+                                        thisSnippet.put("whitespaceRanges", discreteIntervalsToRanges(FSInterval, isolatedFrameSignatureIntervals));
+                                    } catch (Exception e) {
+                                        output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_WS_RANGES");
+                                        output.set("success", false); // TODO - determine if this causes a lock on processing
+                                        logger.error(e);
+                                        return output;
+
+                                    }
+
+                                    adjustedSnippets.add(thisSnippet);
+                                }
+                            }
+                            frameSnippets.put(thisFrame, adjustedSnippets);
                         }
-                    }
-
-
-                }
-                frameSnippets.put(thisFrame, adjustedSnippets);
+                    //}
 
                 if (thisFrame != frames.get(frames.size() - 1)) {
                     cumulativeOffsetB += thisOffsetChain.get(thisFrame);
@@ -2229,8 +2245,7 @@ public class Facebook {
                         try {
                             return (((Integer) x.get("snippetID")) == finalThisSnippetID);
                         } catch (Exception e) {
-
-                            logger.error(e);
+                            // This does not cause an error as its a lambda call on a filter
                             return false;
                         }
                     }).collect(Collectors.toList());
@@ -2267,9 +2282,10 @@ public class Facebook {
                     thisSnippet.put("inhibitedRanges", thisSnippetInhibitedRanges);
                     thisSnippet.put("whitespaceRanges", thisSnippetWhitespaceRanges);
                 } catch (Exception e) {
-
-                    // TODO - should call rollback
+                    output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_APPLY_ON_SNIPPET");
+                    output.set("success", false); // TODO - determine if this causes a lock on processing
                     logger.error(e);
+                    return output;
 
                 }
                 frameSnippetsCollapsed.add(thisSnippet);
@@ -2278,12 +2294,16 @@ public class Facebook {
             int b = 2;
 
         } catch (Exception e) {
-
-            // TODO - should call rollback
+            e.printStackTrace();
+            output.set("exitStatus", "ERROR_AT_FRAME_SNIPPETS_UNCAUGHT: "+e.getMessage());
+            output.set("success", false); // TODO - determine if this causes a lock on processing
             logger.error(e);
+            return output;
         }
         //System.exit(0);
-        return frameSnippetsCollapsed;
+        output.set("frameSnippetsCollapsed", frameSnippetsCollapsed); // List<JSONObject>
+
+        return output;
     }
 
     public static List<Integer> cropRangeToBoundary(List<Integer> thisRange, List<Integer> thisBoundary) {
@@ -2324,9 +2344,12 @@ public class Facebook {
      * TODO - not all images are picked up by the ad header checker
      *
      * */
-    public static JSONObject generateSnippetCroppings(File thisFrameSnippetDirectory, File tempFramesDirectory, JSONObject thisFrameSnippet,
+    public static JSONXObject generateSnippetCroppings(File thisFrameSnippetDirectory, File tempFramesDirectory, JSONObject thisFrameSnippet,
                                                       JSONObject thisFitter, HashMap<String, Object> pictogramsReference, Integer thisFrameSnippetID, Boolean verbose,
                                                       Integer determinedWSColor, String determinedExposureType) {
+        JSONXObject output = new JSONXObject();
+        output.set("success", true);
+        output.set("exitStatus", "INCONCLUSIVE");
         JSONObject statistics = new JSONObject();
         try {
             Double elapsedTimeToGenerateSnippetCroppings = Long.valueOf(System.currentTimeMillis()).doubleValue();
@@ -2347,9 +2370,10 @@ public class Facebook {
                 whitespaceRanges = (HashMap<Integer, List<List<Integer>>>) thisFrameSnippet.get("whitespaceRanges");
                 maximumHeightOfFrameSnippet = (Integer) thisFrameSnippet.get("height");
             } catch (Exception e) {
-
+                output.set("success", false);
+                output.set("exitStatus", "ERROR_AT_RETRIEVE_VALUES");
                 logger.error(e);
-
+                return output;
 
             }
 
@@ -2439,7 +2463,10 @@ public class Facebook {
                                     determinedAsFacebookAd = true;
                                 }
                             } catch (Exception e) {
+                                output.set("success", false);
+                                output.set("exitStatus", "ERROR_AT_DETERMINE_AS_FB_AD");
                                 logger.error(e);
+                                return output;
                             }
                             frameFacebookAdHeaderDetections.put(thisFrame, result);
 
@@ -2467,10 +2494,10 @@ public class Facebook {
                             int[] pixelFill = IntStream.range(0, w*h).map(x -> Color.argb(0,0,0,0)).toArray();
                             thisFrameBitmap.setPixels(pixelFill, 0, 0, 0, iR.first, w, h);
                         } catch (Exception e) {
-
+                            // Errors caused here are usually the result of overflow in pixel settings and shouldn't be worried about
                             logger.error(e);
 
-                        } // TODO - investigate errors here
+                        }
                     }
                 }
 
@@ -2513,17 +2540,22 @@ public class Facebook {
                 statistics.put("determinedAsFacebookAd", determinedAsFacebookAd);
                 statistics.put("elapsedTimeToGenerateSnippetCroppings", Math.abs(elapsedTimeToGenerateSnippetCroppings - System.currentTimeMillis()));
             } catch (Exception e) {
+                output.set("success", false);
+                output.set("exitStatus", "ERROR_AT_SET_VALUES");
                 logger.error(e);
+                return output;
             }
         } catch (Exception eX) {
-            int a = 1;
-            int b = 2;
             logger.info(eX.getStackTrace()[0].getLineNumber());
             logger.info(eX.getCause());
             logger.error(eX);
+            eX.printStackTrace();
+            output.set("success", false);
+            output.set("exitStatus", "GENERAL_ERROR");
+            return output;
         }
-
-        return statistics;
+        output.set("statistics", statistics);
+        return output;
     }
 
     // this function takes a master offset chain, and converts it into sub-offset chains
@@ -2976,25 +3008,20 @@ public class Facebook {
          System.out.println(thisColourPalette);*/
         }
 
-        JSONObject statistics = new JSONObject();
-        try {
-            statistics.put("verticalStrideUnit", verticalStrideUnit);
-            statistics.put("ArrayThisAverageColourDifferenceToWhitespacePixelPercentage", ArrayThisAverageColourDifferenceToWhitespacePixelPercentage);
-            statistics.put("ArrayThisAverageColourRDifferenceToWhitespacePixelRPercentage", ArrayThisAverageColourRDifferenceToWhitespacePixelRPercentage);
-            statistics.put("ArrayThisAverageColourGDifferenceToWhitespacePixelGPercentage", ArrayThisAverageColourGDifferenceToWhitespacePixelGPercentage);
-            statistics.put("ArrayThisAverageColourBDifferenceToWhitespacePixelBPercentage", ArrayThisAverageColourBDifferenceToWhitespacePixelBPercentage);
-            statistics.put("ArrayThisDominantColourDifferenceToWhitespacePixelPercentage", ArrayThisDominantColourDifferenceToWhitespacePixelPercentage);
-            statistics.put("ArraySpreadOfDominantColourPercentage", ArraySpreadOfDominantColourPercentage);
-            statistics.put("ArrayFrequencyOfDominantColourPercentage", ArrayFrequencyOfDominantColourPercentage);
-            statistics.put("ArrayMaxPixelAdjacency", ArrayMaxPixelAdjacency);
-            statistics.put("ArrayPixels", ArrayPixels);
-        } catch (Exception e) {
-
-            logger.error(e);
-        }
+        JSONXObject statistics = new JSONXObject();
+        statistics.set("verticalStrideUnit", verticalStrideUnit);
+        statistics.set("ArrayThisAverageColourDifferenceToWhitespacePixelPercentage", ArrayThisAverageColourDifferenceToWhitespacePixelPercentage);
+        statistics.set("ArrayThisAverageColourRDifferenceToWhitespacePixelRPercentage", ArrayThisAverageColourRDifferenceToWhitespacePixelRPercentage);
+        statistics.set("ArrayThisAverageColourGDifferenceToWhitespacePixelGPercentage", ArrayThisAverageColourGDifferenceToWhitespacePixelGPercentage);
+        statistics.set("ArrayThisAverageColourBDifferenceToWhitespacePixelBPercentage", ArrayThisAverageColourBDifferenceToWhitespacePixelBPercentage);
+        statistics.set("ArrayThisDominantColourDifferenceToWhitespacePixelPercentage", ArrayThisDominantColourDifferenceToWhitespacePixelPercentage);
+        statistics.set("ArraySpreadOfDominantColourPercentage", ArraySpreadOfDominantColourPercentage);
+        statistics.set("ArrayFrequencyOfDominantColourPercentage", ArrayFrequencyOfDominantColourPercentage);
+        statistics.set("ArrayMaxPixelAdjacency", ArrayMaxPixelAdjacency);
+        statistics.set("ArrayPixels", ArrayPixels);
 
 
-        return statistics;
+        return statistics.internalJSONObject;
     }
 
 
@@ -3005,13 +3032,13 @@ public class Facebook {
      *
      * TODO - with the frame snippet alts, we can further improve the alignment of content
      * */
-    public static JSONObject offsetChainsToFrameSnippets(JSONObject offsetChainsContainer, JSONObject frameSampleMetadata,
+    public static JSONXObject offsetChainsToFrameSnippets(JSONObject offsetChainsContainer, JSONObject frameSampleMetadata,
                                                          File framesSampleTempDirectory, File thisFacebookSnippetDirectory,
                                                          JSONObject fitterFacebookAdHeader, HashMap<String, Object> pictogramsReference,
                                                          Boolean verbose, Integer determinedWSColor, String determinedExposureType) {
         String exitStatus = "INCONCLUSIVE";
         Boolean proceedOnThis = true;
-        JSONObject statistics = new JSONObject();
+        JSONXObject statistics = new JSONXObject();
         try {
             // Generate the frame snippets directory (if it doesn't exist)
             createDirectory(thisFacebookSnippetDirectory, true);
@@ -3052,11 +3079,20 @@ public class Facebook {
                 for (Integer thisFrame : orderedFrames) {
                     // Load in the bitmap (temporarily)
                     File thisBitmapFile = new File(framesSampleTempDirectory, thisFrame + "." + fileFormat);
+                    Log.i(TAG, "TENTATIVE BITMAP:");
+                    Log.i(TAG, thisBitmapFile.getAbsolutePath());
                     Bitmap thisFrameBitmap = BitmapFactory.decodeFile(thisBitmapFile.getAbsolutePath());
                     // Calculate the general frame statistics
-                    JSONObject frameStatistics = generateScreenshotStatistics(thisFrameBitmap, false);
+                    JSONObject frameStatistics;
+                    try {
+                        frameStatistics = generateScreenshotStatistics(thisFrameBitmap, false); // examined
+                    } catch (Exception e) {
+                        statistics.set("proceedOnThis", false);
+                        statistics.set("exitStatus", "MISSING_FRAME");
+                        return statistics;
+                    }
                     // Find the dividers
-                    thisDividerMap.put(thisFrame, findDividersInScreenshot(thisFrameBitmap, frameStatistics, false));
+                    thisDividerMap.put(thisFrame, findDividersInScreenshot(thisFrameBitmap, frameStatistics, false)); // examined
                 }
 
                 // Write thisDividerMap to file
@@ -3067,13 +3103,21 @@ public class Facebook {
                 // Given thisOffsetChain and thisDividerMap, thisSuperOffsetChain can be constructed.
                 // This data-structure projects all dividers across all frames, in order to determine
                 // determine trueDividers within the next step
-                HashMap<Integer, List<Integer>> thisSuperOffsetChain = generateSuperOffsetChain(thisOffsetChain, thisDividerMap);
+                HashMap<Integer, List<Integer>> thisSuperOffsetChain = generateSuperOffsetChain(thisOffsetChain, thisDividerMap); // examined
 
                 // The trueDividers (i.e., those that are certain to not have been generated out of error) are derived
-                HashMap<Integer, List<Integer>> trueDividers = trueDividersFromSuperOffsetChain(thisSuperOffsetChain, heightOfFrame);
+                HashMap<Integer, List<Integer>> trueDividers = trueDividersFromSuperOffsetChain(thisSuperOffsetChain, heightOfFrame); // examined
 
+                List<JSONObject> frameSnippets;
                 // At this stage, the boundaries of the frameSnippets can be generated (and without having to load any images into immediate memory)
-                List<JSONObject> frameSnippets = frameSnippetsFromTrueDividers(trueDividers, thisOffsetChain, heightOfFrame, signaturesMap, determinedExposureType);
+                JSONXObject frameSnippetsFromTrueDividersResult = frameSnippetsFromTrueDividers(trueDividers, thisOffsetChain, heightOfFrame, signaturesMap, determinedExposureType); // examined
+                if (!((Boolean) frameSnippetsFromTrueDividersResult.get("success"))) {
+                    statistics.set("proceedOnThis", false);
+                    statistics.set("exitStatus", frameSnippetsFromTrueDividersResult.get("exitStatus"));
+                    return statistics;
+                } else {
+                    frameSnippets = (List<JSONObject>) frameSnippetsFromTrueDividersResult.get("frameSnippetsCollapsed");
+                }
 
                 // Then the image content for the frame snippets are determined, and the necessary croppings are undertaken
                 Integer thisFrameSnippetID = 0;
@@ -3083,18 +3127,16 @@ public class Facebook {
                     File thisFrameSnippetDirectory = new File(thisOffsetChainDirectory, "frameSnippet-"+thisFrameSnippetID);
                     createDirectory(thisFrameSnippetDirectory, true);
                     // Generate the frame snippet's croppings, along with its respective metadata
-                    JSONObject snippetCroppingResults = new JSONObject();
-                    try {
-                        // This can cause errors when a bitmap returns a null reference
-                        snippetCroppingResults = generateSnippetCroppings(thisFrameSnippetDirectory, framesSampleTempDirectory,
-                                thisFrameSnippet, fitterFacebookAdHeader, pictogramsReference, thisFrameSnippetID, verbose, determinedWSColor, determinedExposureType);
-                    } catch (Exception e) {
-                        proceedOnThis = false;
-                        try { statistics.put("exitStatus", "FAILUREONCROPPINGS"); } catch (Exception e2) {}
-                        try { statistics.put("proceedOnThis", proceedOnThis); } catch (Exception e2) {}
+                    JSONXObject snippetCroppingResultsContainer = new JSONXObject();
+                    snippetCroppingResultsContainer = generateSnippetCroppings(thisFrameSnippetDirectory, framesSampleTempDirectory,
+                            thisFrameSnippet, fitterFacebookAdHeader, pictogramsReference, thisFrameSnippetID, verbose, determinedWSColor, determinedExposureType); // examined
+                    if (!((Boolean) snippetCroppingResultsContainer.get("success"))) {
+                        statistics.set("proceedOnThis", false);
+                        statistics.set("exitStatus", snippetCroppingResultsContainer.get("exitStatus"));
                         return statistics;
-
                     }
+                    JSONObject snippetCroppingResults = (JSONObject) snippetCroppingResultsContainer.get("statistics");
+
                     writeToJSON(new File(thisFrameSnippetDirectory, "metadata.json"), snippetCroppingResults);
                     frameSnippetIDs.put(thisFrameSnippetID, snippetCroppingResults);
                     thisFrameSnippetID ++;
@@ -3109,7 +3151,12 @@ public class Facebook {
                             thisOffsetChainContainsAd = true;
                         }
                     } catch (Exception e) {
-                        logger.error(e);}
+                        logger.error(e);
+                        e.printStackTrace();
+                        statistics.set("proceedOnThis", false);
+                        statistics.set("exitStatus", "ERROR_AT_CLEANUP");
+                        return statistics;
+                    }
                 }
                 frameSnippetIDsByOffsetChains.put(thisOffsetChainID, frameSnippetIDs);
 
@@ -3120,10 +3167,10 @@ public class Facebook {
 
                 thisOffsetChainID ++;
             }
-            statistics.put("frameSnippetIDsByOffsetChains", frameSnippetIDsByOffsetChains);
-            statistics.put("elapsedTimeOffsetChainsToFrameSnippets", Math.abs(System.currentTimeMillis() - elapsedTimeOffsetChainsToFrameSnippets));
+            statistics.set("frameSnippetIDsByOffsetChains", frameSnippetIDsByOffsetChains);
+            statistics.set("elapsedTimeOffsetChainsToFrameSnippets", Math.abs(System.currentTimeMillis() - elapsedTimeOffsetChainsToFrameSnippets));
         } catch (Exception eX) {
-            int a = 1;
+            // examined
             logger.error(eX);
             proceedOnThis = false;
             exitStatus = "ENCOUNTERED_ERROR: "+exceptionWrite(eX);
@@ -3132,10 +3179,8 @@ public class Facebook {
         if (exitStatus.equals("INCONCLUSIVE")) {
             exitStatus = "SUCCESS";
         }
-
-        try { statistics.put("proceedOnThis", proceedOnThis); } catch (Exception e2) {}
-        try { statistics.put("exitStatus", exitStatus); } catch (Exception e) {}
-
+        statistics.set("proceedOnThis", proceedOnThis);
+        statistics.set("exitStatus", exitStatus);
         return statistics;
     }
 
@@ -3148,6 +3193,18 @@ public class Facebook {
         createDirectory(tempFacebookFrameSnippetsMasterDirectory, false);
         File tempFacebookFrameSnippetsDirectory = new File(tempFacebookFrameSnippetsMasterDirectory, thisInterpretation.get("filename"));
         deleteRecursive(tempFacebookFrameSnippetsDirectory);
+    }
+
+    public static void facebookComprehensiveReadingOffsetChainsRollback(File rootDirectory, HashMap<String, String> thisInterpretation) {
+        Log.i(TAG, "PERFORMING ROLLBACK!");
+        // Delete the serialXObject's record
+        serialObjectDelete(rootDirectory, thisInterpretation, "offsetChains");
+        serialObjectDelete(rootDirectory, thisInterpretation, "frameSampleMetadata");
+        // Delete the tangible files that were generated in this step
+        File tempFacebookComprehensiveSampleMasterDirectory = new File(rootDirectory, "tempFacebookComprehensiveSample");
+        createDirectory(tempFacebookComprehensiveSampleMasterDirectory, false);
+        File tempFacebookComprehensiveSampleDirectory = new File(tempFacebookComprehensiveSampleMasterDirectory, thisInterpretation.get("filename"));
+        deleteRecursive(tempFacebookComprehensiveSampleDirectory);
     }
 
 
@@ -3471,8 +3528,8 @@ public class Facebook {
             frameSnippetIDsByOffsetChain = serialObjectPassthrough(
                     (() -> offsetChainsToFrameSnippets(
                             finalOffsetChains, frameSampleMetadata, tempFacebookComprehensiveSampleDirectory, tempFacebookFrameSnippetsDirectory,
-                            fitterFacebookAdHeader, pictogramsReference, DEBUG, finalWsColor, finalDenotedMode)),
-                    rootDirectory, thisInterpretation.get("filename"), "frameSnippetIDsByOffsetChain");
+                            fitterFacebookAdHeader, pictogramsReference, DEBUG, finalWsColor, finalDenotedMode).internalJSONObject),
+                    rootDirectory, thisInterpretation.get("filename"), "frameSnippetIDsByOffsetChain"); // This has been examined for errors
 
 
             try {
@@ -3484,6 +3541,22 @@ public class Facebook {
                 proceedable = false;
             }
 
+            try {
+                if (!((Boolean) frameSnippetIDsByOffsetChain.get("proceedOnThis"))) {
+                    offsetChainsToFrameSnippetsRollback(rootDirectory, thisInterpretation);
+                }
+
+                // A frame signature adding error
+                if (((String) frameSnippetIDsByOffsetChain.get("exitStatus")).contains("ERROR_AT_FRAME_SNIPPETS_FRAME_SIGNATURES_ADD")) {
+                    facebookComprehensiveReadingOffsetChainsRollback(rootDirectory, thisInterpretation);
+                }
+
+                // A missing frame error
+                if (((String) frameSnippetIDsByOffsetChain.get("exitStatus")).contains("MISSING_FRAME")) {
+                    facebookComprehensiveReadingOffsetChainsRollback(rootDirectory, thisInterpretation);
+                }
+            } catch (Exception e) {}
+
             // Isolate ad content
             try {
                 analysisData.put("timestampOfDerivingScreenRecording", thisScreenRecordingTimestamp);
@@ -3493,7 +3566,10 @@ public class Facebook {
             } catch (Exception e) {
                 logger.error(e);}
             // Prepare the ad content for upload (if it exists)
-            String adContentResult = prepareAdContentForUpload(analysisData, adsFromDispatchDirectory, tempFacebookFrameSnippetsDirectory);
+            String adContentResult = "INCONCLUSIVE";
+            if (proceedable) {
+                adContentResult = prepareAdContentForUpload(analysisData, adsFromDispatchDirectory, tempFacebookFrameSnippetsDirectory);
+            }
             try {
                 if (!adContentResult.contains("SUCCESSFUL")) {
                     proceedable = false;

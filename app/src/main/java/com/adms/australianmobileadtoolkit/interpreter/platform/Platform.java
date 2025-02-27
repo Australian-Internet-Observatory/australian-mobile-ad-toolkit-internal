@@ -600,6 +600,9 @@ public class Platform {
                         deleteRecursive(thisAdDirectory);
                     }
                 } else {
+                    deleteRecursive(thisAdDirectory);
+                    Log.i(TAG, "Deleting incomplete directory.");
+                    /*
                     // If the folder is empty, delete it
                     if (thisAdDirectory.listFiles().length == 0) {
                         deleteRecursive(thisAdDirectory);
@@ -607,7 +610,7 @@ public class Platform {
                     } else {
                         // Naively, we might assume that the upload of ad content is
                         Log.i(TAG, "Bypassing upload of ad content as not ready yet.");
-                    }
+                    }*/
                 }
             }
         }
@@ -649,13 +652,22 @@ public class Platform {
 
     private static File appStorageRecordingsDirectory;
 
+    public static void platformInterpretationRoutine(Context context, File rootDirectory,
+                              Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
+                              Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid) {
+
+        ImageClassifier xxx = new ImageClassifier(context);
+        Bitmap thisBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.cup);
+        xxx.detectAndCallback(thisBitmap);
+    }
+
     /*
     *
     * This is the entry point method for all advanced functionality within the app - all on-device image analysis
     * processing for the identification of ads is facilitated here.
     *
     * */
-    public static void platformInterpretationRoutine(Context context, File rootDirectory,
+    public static void platformInterpretationRoutineB(Context context, File rootDirectory,
                                                      Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
                                                      Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid) {
 
@@ -834,6 +846,7 @@ public class Platform {
         // Then for each individual interpretation, run the deeper analysis
         for (HashMap<String, String> thisInterpretation : recordingsClassified) {
             System.out.println(thisInterpretation);
+
 
             //  Conduct comprehensive analysis for Facebook
             if (thisInterpretation.get("tags").contains("facebook")) {
