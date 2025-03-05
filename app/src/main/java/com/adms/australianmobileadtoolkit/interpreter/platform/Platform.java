@@ -657,8 +657,8 @@ public class Platform {
                               Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid) {
 
         ImageClassifier xxx = new ImageClassifier(context);
-        Bitmap thisBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.cup);
-        xxx.detectAndCallback(thisBitmap);
+        //Bitmap thisBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.silver_tabby_cat_sitting_on_green_background_free_photo);//cup);
+        //xxx.detectAndCallback(thisBitmap);
     }
 
     /*

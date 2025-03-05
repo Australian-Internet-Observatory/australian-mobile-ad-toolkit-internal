@@ -1,5 +1,7 @@
 package com.adms.australianmobileadtoolkit.interpreter.platform;
 
+import static com.adms.australianmobileadtoolkit.interpreter.detector.Constants.MODEL_PATH;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -13,6 +15,8 @@ import androidx.annotation.OptIn;
 
 
 import com.adms.australianmobileadtoolkit.R;
+import com.adms.australianmobileadtoolkit.interpreter.detector.BoundingBox;
+import com.adms.australianmobileadtoolkit.interpreter.detector.Detector;
 
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -22,6 +26,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import kotlin.Result;
 import kotlin.Unit;
@@ -65,6 +70,26 @@ public class ImageClassifier {
     private CoroutineContext parentContext;
 
     public ImageClassifier(Context context) {
+        Detector.DetectorListener thisDetectorListener = new Detector.DetectorListener() {
+            @Override
+            public void onEmptyDetect() {
+                Log.i(TAG, "Nothing found!");
+
+            }
+
+            @Override
+            public void onDetect(@NonNull List<BoundingBox> boundingBoxes, long inferenceTime) {
+                Log.i(TAG, boundingBoxes.toString());
+            }
+        };
+
+        Detector thisDetector = new Detector(context, MODEL_PATH, "fdsfsdf", thisDetectorListener);
+        Bitmap thisBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.silver_tabby_cat_sitting_on_green_background_free_photo);//cup);
+        Bitmap testImage1 = BitmapFactory.decodeResource(context.getResources(), R.drawable.test_image_1);//cup);
+        thisDetector.detect(thisBitmap);
+        thisDetector.detect(testImage1);
+        thisDetector.close();
+        /*
         parentContext = EmptyCoroutineContext.INSTANCE;
         Continuation<Unit> setupWrapper = suspendedWrapper(parentContext);
         classifier = new ObjectDetectorHelper(
@@ -73,7 +98,7 @@ public class ImageClassifier {
                 ObjectDetectorHelper.MAX_RESULTS_DEFAULT,
                 ObjectDetectorHelper.Delegate.CPU,
                 ObjectDetectorHelper.Model.EfficientDetLite2);
-        classifier.setupObjectDetector(setupWrapper);
+        classifier.setupObjectDetector(setupWrapper);*/
     }
 
 
@@ -106,7 +131,7 @@ public class ImageClassifier {
                 return null;
             }
         };
-
+        Log.i(TAG, "detection");
         classifier.detect(thisBitmap, 0, detectionWrapperA);
        // classifier.detect(thisBitmap, 0, detectionWrapperA);
         //classifier.detectImageObject(thisBitmap, 0);

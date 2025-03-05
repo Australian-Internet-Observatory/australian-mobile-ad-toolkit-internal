@@ -61,6 +61,7 @@ dependencies {
     implementation 'com.google.ai.edge.litert:litert:1.1.2'
     implementation 'com.google.ai.edge.litert:litert-support-api:1.1.2'
     implementation 'com.google.ai.edge.litert:litert-metadata:1.1.2'
+    implementation 'com.google.ai.edge.litert:litert-gpu:1.1.2'
     testImplementation('androidx.test.espresso:espresso-core:3.1.0', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
