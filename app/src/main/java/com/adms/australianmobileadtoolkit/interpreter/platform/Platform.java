@@ -6,6 +6,7 @@ import static com.adms.australianmobileadtoolkit.Common.optionalGetDouble;
 import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
 import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE;
 import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
+import static com.adms.australianmobileadtoolkit.interpreter.platform.Facebook.comprehensiveReading;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Facebook.facebookInterpretation;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Facebook.fitterGenerate;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Facebook.facebookGenerateQuickReading;
@@ -76,6 +77,19 @@ import java.util.stream.Stream;
 class SortByLastFrame implements Comparator<JSONObject>
 {
     public int compare(JSONObject a, JSONObject b)
+    {
+        try {
+            return (((Integer) a.get("lastFrame")) - ((Integer) b.get("lastFrame")));
+        } catch (Exception e) {
+            Platform.logger.error(e);
+            return 0;
+        }
+    }
+}
+
+class SortByXLastFrame implements Comparator<JSONXObject>
+{
+    public int compare(JSONXObject a, JSONXObject b)
     {
         try {
             return (((Integer) a.get("lastFrame")) - ((Integer) b.get("lastFrame")));
@@ -656,7 +670,57 @@ public class Platform {
                               Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
                               Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid) {
 
-        ImageClassifier xxx = new ImageClassifier(context);
+        List<HashMap<String,String>> recordingsClassified = new ArrayList<>();
+        List<HashMap<String,String>> recordingsToDelete = new ArrayList<>();
+
+        appStorageRecordingsDirectory = (new File (rootDirectory.getAbsolutePath(), "videos"));
+        for (File thisFile : appStorageRecordingsDirectory.listFiles()) {
+            Log.i(TAG, thisFile.getAbsolutePath());
+            try {
+                HashMap<String, String> thisInterpretation = interpretRecordingFileName(thisFile.getName());
+                if (thisInterpretation != null) {
+                    if ((!thisInterpretation.containsKey("orientation")) || (Objects.equals(thisInterpretation.get("orientation"), "landscape"))) {
+                        recordingsToDelete.add(thisInterpretation);
+                    } else {
+                        if (!Objects.equals(thisInterpretation.get("tags"), "unclassified")) {
+                            recordingsClassified.add(thisInterpretation);
+                        }
+                    }
+                } else {
+                    recordingsToDelete.add(thisInterpretation);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error(e); // TODO
+            }
+        }
+
+        Log.i(TAG, recordingsClassified.toString());
+        // Run the comprehensive sampling process
+        for (HashMap<String, String> thisInterpretation : recordingsClassified) {
+            if (Objects.equals(thisInterpretation.get("tags"), "com_zhiliaoapp_musically")) {
+                // Will grab comprehensive reading using image hashing to determine differences between frames
+                // works sequentially to avoid issues with periodic workers stopping
+                // uses checkpoint to load up past execution if its already been compiled
+                // TODO - check edge case errors
+                JSONXObject thisComprehensiveReading = comprehensiveReading(context, rootDirectory, (new File(appStorageRecordingsDirectory, thisInterpretation.get("filename"))), getVideoMetadataFunction, frameGrabFunction);
+                // Undertake TikTok inference
+                Log.i(TAG, (thisComprehensiveReading.get("retainedFrames")).toString());
+            }
+
+        }
+
+        /*
+        *
+        * comprehensive readings are taken
+        *
+        * sponsored texts are checked across frames
+        *
+        * */
+
+        // TODO - dispatch ads
+
+        //ImageClassifier xxx = new ImageClassifier(context);
         //Bitmap thisBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.silver_tabby_cat_sitting_on_green_background_free_photo);//cup);
         //xxx.detectAndCallback(thisBitmap);
     }

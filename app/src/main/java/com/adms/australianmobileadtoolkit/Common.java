@@ -249,7 +249,7 @@ public class Common {
    public static void writeToFile(File thisFile, String contents) {
       try {
          PrintWriter writer = new PrintWriter(thisFile, "UTF-8");
-         writer.println(contents);
+         writer.print(contents);
          writer.close();
       } catch (Exception e) { }
    }

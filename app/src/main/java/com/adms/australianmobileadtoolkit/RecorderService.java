@@ -81,6 +81,7 @@ public final class RecorderService extends Service {
     private int dispatchCooldown = dispatchCooldownResetValue;
     private String previousRecordingFilename;
     private String tentativeRecordingFilename;
+    private String appPackageName = "";
     private static final String TAG = "RecorderService";
     // The extra result code associated with the intent of the recording service
     private static final String EXTRA_DATA = appSettings.RECORD_SERVICE_EXTRA_DATA;
@@ -335,15 +336,20 @@ public final class RecorderService extends Service {
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_NEXT_OUTPUT_FILE_STARTED) {
                     //Log.i(TAG, );
                     if (previousRecordingFilename != null) {
+                        String tentativeAppPackageName = "";
                         Boolean withinTargetPlatform = true;
 
                         // By default (if the user has not yet accepted to accessibility services), we do not conduct a check on the target platform
                         if (isAccessibilityServiceEnabled(getApplicationContext(), AccessibilityService.class)) {
                             // There is a possibility that the value may've not been written.
                             try {
-                                withinTargetPlatform = (readStringFromFile(new File(MainActivity.getMainDir(this), "withinTargetApplication")).contains("true"));
+                                tentativeAppPackageName = readStringFromFile(new File(MainActivity.getMainDir(this), "withinTargetApplication"));
+                                assert tentativeAppPackageName != null;
+                                withinTargetPlatform = (!(tentativeAppPackageName.contains("NULL")));
                             } catch (Exception e) {}
+
                             if (withinTargetPlatform) {
+                                appPackageName = tentativeAppPackageName;
                                 dispatchCooldown = dispatchCooldownResetValue;
                             } else {
                                 dispatchCooldown --;
@@ -353,6 +359,14 @@ public final class RecorderService extends Service {
 
                         if (dispatchCooldown <= 0) {
                             (new File(previousRecordingFilename)).delete();
+                        } else {
+                            if (appPackageName.isEmpty()) {
+                                (new File(previousRecordingFilename)).delete();
+                            } else {
+                                // Apply the app package name to the recording
+                                (new File(previousRecordingFilename)).renameTo(
+                                        new File(previousRecordingFilename.replace("unclassified", appPackageName.replaceAll("\n", "").replaceAll("\\.","_"))));
+                            }
                         }
 
                         // Delete the previous recording

@@ -54,7 +54,6 @@ import androidx.work.WorkManager;
 import com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager;
 import com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker;
 import com.adms.australianmobileadtoolkit.interpreter.platform.ImageClassifier;
-import com.adms.australianmobileadtoolkit.interpreter.platform.ObjectDetectorHelper;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
 

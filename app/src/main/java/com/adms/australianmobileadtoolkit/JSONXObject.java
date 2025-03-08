@@ -57,8 +57,22 @@ public class JSONXObject implements Serializable {
         }
     }
 
+    public Object get(int key) {
+        return this.get(String.valueOf(key));
+    }
+
+    public Object get(Integer key) {
+        return this.get(String.valueOf(key));
+    }
+
     public Boolean has(String key) {
         return internalJSONObject.has(key);
+    }
+    public Boolean has(int key) {
+        return internalJSONObject.has(String.valueOf(key));
+    }
+    public Boolean has(Integer key) {
+        return internalJSONObject.has(String.valueOf(key));
     }
 
     public Object get(String ...keys) {
@@ -94,6 +108,16 @@ public class JSONXObject implements Serializable {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public JSONXObject set(int key, Object value) {
+        this.set(String.valueOf(key), value);
+        return this;
+    }
+
+    public JSONXObject set(Integer key, Object value) {
+        this.set(String.valueOf(key), value);
+        return this;
     }
 
     public List<String> keys() {

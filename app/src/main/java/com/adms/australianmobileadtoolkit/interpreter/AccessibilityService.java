@@ -23,8 +23,9 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
     );
 
     private static final List<String> triggerableAppPackageNames = Arrays.asList(
-            "com.facebook.",
-            "com.instagram."
+            "com.facebook.", // Facebook
+            "com.instagram.", // Instagram
+            "com.zhiliaoapp.musically" // TikTok
     );
 
     @Override
@@ -41,8 +42,7 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
 
                 Log.d("Pkg",accessibilityEvent.getPackageName().toString());
                 File rootDirectoryPath = MainActivity.getMainDir(this);
-                writeToFile(new File(rootDirectoryPath, "withinTargetApplication"),
-                        String.valueOf(isTargetPlatform(accessibilityEvent.getPackageName().toString())));
+                writeToFile(new File(rootDirectoryPath, "withinTargetApplication"),isTargetPlatform(accessibilityEvent.getPackageName().toString()));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,11 +61,11 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
         }
     }
 
-    public static boolean isTargetPlatform(String packageName) {
+    public static String isTargetPlatform(String packageName) {
         if (triggerableAppPackageNames.stream().anyMatch(packageName::contains)) {
-            return true;
+            return packageName;
         }
-        return false;
+        return "NULL";
     }
 }
 
