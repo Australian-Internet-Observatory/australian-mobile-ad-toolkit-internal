@@ -2,6 +2,7 @@ package com.adms.australianmobileadtoolkit.interpreter.platform;
 
 import static com.adms.australianmobileadtoolkit.Arguments.A;
 import static com.adms.australianmobileadtoolkit.Arguments.Args;
+import static com.adms.australianmobileadtoolkit.Common.makeDirectory;
 import static com.adms.australianmobileadtoolkit.Common.optionalGetDouble;
 import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
 import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE;
@@ -26,6 +27,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
 import android.util.Pair;
@@ -34,6 +36,8 @@ import com.adms.australianmobileadtoolkit.Arguments;
 import com.adms.australianmobileadtoolkit.JSONXObject;
 import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.appSettings;
+import com.adms.australianmobileadtoolkit.checkPoint;
+import com.adms.australianmobileadtoolkit.interpreter.detector.BoundingBox;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -67,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -118,6 +123,22 @@ public class Platform {
         return Math.max(0, Math.min(aMax, bMax) - Math.max(aMin, bMin) + 1);
     }
 
+    public static Double rectangularArea(JSONXObject a) {
+        return (((double) a.get("w")) * ((double) a.get("h")));
+    }
+
+    public static Double rectangularAreaOverlap(JSONXObject a, JSONXObject b) {
+        Double aX1 = (double) a.get("x1");
+        Double aX2 = (double) a.get("x2");
+        Double aY1 = (double) a.get("y1");
+        Double aY2 = (double) a.get("y2");
+        Double bX1 = (double) b.get("x1");
+        Double bX2 = (double) b.get("x2");
+        Double bY1 = (double) b.get("y1");
+        Double bY2 = (double) b.get("y2");
+        return Math.max(0, Math.min(aX2, bX2) - Math.max(aX1, bX1)) * Math.max(0, Math.min(aY2, bY2) - Math.max(aY1, bY1));
+    }
+
     public static Pair<Integer, Integer> orderRange(List<Integer> thisRange) {
         Integer thisMin = Math.min(thisRange.get(0), thisRange.get(1));
         Integer thisMax = Math.max(thisRange.get(0), thisRange.get(1));
@@ -165,16 +186,16 @@ public class Platform {
         List<Integer> currentRange = null;
         for (Integer thisRangeValue : intervalsSorted) {
             if (currentRange == null) {
-                currentRange = Arrays.asList(thisRangeValue);
+                currentRange = asList(thisRangeValue);
             } else {
                 if (Math.abs(currentRange.get(currentRange.size() - 1) - thisRangeValue) <= interval) {
-                    currentRange = Arrays.asList(currentRange.get(0), thisRangeValue);
+                    currentRange = asList(currentRange.get(0), thisRangeValue);
                     if (thisRangeValue.equals(intervalsSorted.get(intervalsSorted.size() - 1))) {
                         intervalsSortedAsRanges.add(new ArrayList<>(currentRange));
                     }
                 } else {
                     intervalsSortedAsRanges.add(new ArrayList<>(currentRange));
-                    currentRange = Arrays.asList(thisRangeValue);
+                    currentRange = asList(thisRangeValue);
                     // We don't have to worry about retaining the last value to come into range as the code block is never reached
                     // where it is incorrectly discarded
                 }
@@ -186,7 +207,7 @@ public class Platform {
         System.out.println(intervalsSorted);
         System.out.println(intervalsSortedAsRanges);
         for (List<Integer> aRange : intervalsSortedAsRanges) {
-            consistentListAsRangesUpdated.add(Arrays.asList(aRange.get(0)-interval, aRange.get(1)+interval));
+            consistentListAsRangesUpdated.add(asList(aRange.get(0)-interval, aRange.get(1)+interval));
         }
         return consistentListAsRangesUpdated;
     }
@@ -212,17 +233,17 @@ public class Platform {
         List<List<Integer>> output = new ArrayList<>();
 
         if (partialOverlapASmaller) {
-            output.add(Arrays.asList(aMin, bMin));
+            output.add(asList(aMin, bMin));
         } else
         if (partialOverlapBSmaller) {
-            output.add(Arrays.asList(bMax, aMax));
+            output.add(asList(bMax, aMax));
         } else
         if (aInsideOrEqualToB) {
             // Do not add anything
         } else
         if (bInsideOrEqualToA) {
-            output.add(Arrays.asList(aMin, bMin));
-            output.add(Arrays.asList(bMax, aMax));
+            output.add(asList(aMin, bMin));
+            output.add(asList(bMax, aMax));
         }
         output = output.stream().filter(x -> Math.abs(x.get(0) - x.get(1)) >= minimumRangeSize).collect(Collectors.toList());
         return output;
@@ -666,65 +687,6 @@ public class Platform {
 
     private static File appStorageRecordingsDirectory;
 
-    public static void platformInterpretationRoutine(Context context, File rootDirectory,
-                              Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
-                              Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid) {
-
-        List<HashMap<String,String>> recordingsClassified = new ArrayList<>();
-        List<HashMap<String,String>> recordingsToDelete = new ArrayList<>();
-
-        appStorageRecordingsDirectory = (new File (rootDirectory.getAbsolutePath(), "videos"));
-        for (File thisFile : appStorageRecordingsDirectory.listFiles()) {
-            Log.i(TAG, thisFile.getAbsolutePath());
-            try {
-                HashMap<String, String> thisInterpretation = interpretRecordingFileName(thisFile.getName());
-                if (thisInterpretation != null) {
-                    if ((!thisInterpretation.containsKey("orientation")) || (Objects.equals(thisInterpretation.get("orientation"), "landscape"))) {
-                        recordingsToDelete.add(thisInterpretation);
-                    } else {
-                        if (!Objects.equals(thisInterpretation.get("tags"), "unclassified")) {
-                            recordingsClassified.add(thisInterpretation);
-                        }
-                    }
-                } else {
-                    recordingsToDelete.add(thisInterpretation);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.error(e); // TODO
-            }
-        }
-
-        Log.i(TAG, recordingsClassified.toString());
-        // Run the comprehensive sampling process
-        for (HashMap<String, String> thisInterpretation : recordingsClassified) {
-            if (Objects.equals(thisInterpretation.get("tags"), "com_zhiliaoapp_musically")) {
-                // Will grab comprehensive reading using image hashing to determine differences between frames
-                // works sequentially to avoid issues with periodic workers stopping
-                // uses checkpoint to load up past execution if its already been compiled
-                // TODO - check edge case errors
-                JSONXObject thisComprehensiveReading = comprehensiveReading(context, rootDirectory, (new File(appStorageRecordingsDirectory, thisInterpretation.get("filename"))), getVideoMetadataFunction, frameGrabFunction);
-                // Undertake TikTok inference
-                Log.i(TAG, (thisComprehensiveReading.get("retainedFrames")).toString());
-            }
-
-        }
-
-        /*
-        *
-        * comprehensive readings are taken
-        *
-        * sponsored texts are checked across frames
-        *
-        * */
-
-        // TODO - dispatch ads
-
-        //ImageClassifier xxx = new ImageClassifier(context);
-        //Bitmap thisBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.silver_tabby_cat_sitting_on_green_background_free_photo);//cup);
-        //xxx.detectAndCallback(thisBitmap);
-    }
-
     /*
     *
     * This is the entry point method for all advanced functionality within the app - all on-device image analysis
@@ -943,6 +905,422 @@ public class Platform {
 
     }
 
+    public static Double tiktokLowerMostY(List<JSONXObject> boundingBoxes, JSONXObject boundingBoxSponsored) {
+        List<JSONXObject> boundingBoxEngagementButtonsTentative = boundingBoxes.stream().filter(x ->
+                x.get("className").equals("ENGAGEMENT_BUTTONS")).collect(Collectors.toList());
+        Double lowerMostY = (boundingBoxEngagementButtonsTentative.isEmpty()) ? (double) boundingBoxSponsored.get("y2") :
+                Math.max((double) boundingBoxEngagementButtonsTentative.get(0).get("y2"), (double) boundingBoxSponsored.get("y2"));
+        return lowerMostY;
+    }
 
+    public static JSONXObject tiktokCompositeBoundingBox(double upperMostY, double lowerMostY) {
+        return (new JSONXObject())
+                .set("x1", 0.0)
+                .set("x2", 1.0)
+                .set("y1", upperMostY)
+                .set("y2", lowerMostY)
+                .set("cx", 0.5)
+                .set("cy", ((upperMostY + lowerMostY) / 2))
+                .set("w", 1.0)
+                .set("h", lowerMostY - upperMostY)
+                .set("confidence", null)
+                .set("className", "COMPOSITE");
+    }
+
+    public static void platformInterpretationRoutine(Context context, File rootDirectory,
+                                                     Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
+                                                     Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid, Function<JSONXObject, JSONXObject> objectDetectorFunction) {
+
+        List<HashMap<String,String>> recordingsClassified = new ArrayList<>();
+        List<HashMap<String,String>> recordingsToDelete = new ArrayList<>();
+
+        appStorageRecordingsDirectory = (new File (rootDirectory.getAbsolutePath(), "videos"));
+        for (File thisFile : appStorageRecordingsDirectory.listFiles()) {
+            Log.i(TAG, thisFile.getAbsolutePath());
+            try {
+                HashMap<String, String> thisInterpretation = interpretRecordingFileName(thisFile.getName());
+                if (thisInterpretation != null) {
+                    if ((!thisInterpretation.containsKey("orientation")) || (Objects.equals(thisInterpretation.get("orientation"), "landscape"))) {
+                        recordingsToDelete.add(thisInterpretation);
+                    } else {
+                        if (!Objects.equals(thisInterpretation.get("tags"), "unclassified")) {
+                            recordingsClassified.add(thisInterpretation);
+                        }
+                    }
+                } else {
+                    recordingsToDelete.add(thisInterpretation);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error(e); // TODO
+            }
+        }
+
+        Log.i(TAG, recordingsClassified.toString());
+        // Run the comprehensive sampling process
+        // TODO - sort alphabetically to stop randomly starting differing entries
+        for (HashMap<String, String> thisInterpretation : recordingsClassified) {
+
+            File analysisDirectory = new File(rootDirectory, "analysis");
+            File screenRecordingAnalysisDirectory = new File(analysisDirectory, thisInterpretation.get("filename") + ".analysis");
+
+
+            if (Objects.equals(thisInterpretation.get("tags"), "com_zhiliaoapp_musically")) {
+                // TODO - fresh passes upstream have to trigger fresh passes downstream
+                // Will grab comprehensive reading using image hashing to determine differences between frames
+                // works sequentially to avoid issues with periodic workers stopping
+                // uses checkpoint to load up past execution if its already been compiled
+                // TODO - check edge case errors
+                File screenRecordingFile = (new File(appStorageRecordingsDirectory, thisInterpretation.get("filename")));
+                JSONXObject thisComprehensiveReading = comprehensiveReading(context, rootDirectory, screenRecordingAnalysisDirectory,
+                        screenRecordingFile, getVideoMetadataFunction, frameGrabFunction);
+                // Undertake preliminary inference
+                Log.i(TAG, "a");
+                // TODO - improve nano reading model
+                List<Integer> retainedFrames = (List<Integer>) thisComprehensiveReading.get("retainedFrames");
+                List<String> retainedFramesAsFiles = (List<String>) thisComprehensiveReading.get("retainedFramesAsFiles");
+
+                JSONXObject inferenceResultShallow = objectDetectorFunction.apply((new JSONXObject())
+                        .set("context", context)
+                        .set("analysisDirectory", screenRecordingAnalysisDirectory)
+                        .set("thisScreenRecordingFile", screenRecordingFile)
+                        .set("retainedFrameFiles", retainedFramesAsFiles)
+                        .set("retainedFrames", retainedFrames)
+                        .set("modelName", "float32_tiktok_sponsored.tflite")
+                        .set("thisCase", "Shallow")
+                    );
+
+                // Form groups for adjacent retained frames that contain 'Sponsored' text
+                // TODO - note that this assumes that any bounding box retrieved from the shallow inference is an indication of sponsorship (which is the general case)
+                List<Integer> retainedFramesForDeepInference = new ArrayList<>();
+                List<String> retainedFramesAsFilesForDeepInference = new ArrayList<>();
+                List<List<Integer>> groupsOfAdFrames = new ArrayList<>();
+                List<Integer> currentAdFrames = new ArrayList<>();
+                JSONXObject inferencesByFrames = (new JSONXObject((JSONObject) inferenceResultShallow.get("inferencesByFrames"), true));
+                Integer cursorFrameFile = 0;
+                for (Integer thisFrame : retainedFrames) {
+                    String thisFrameFile = retainedFramesAsFiles.get(cursorFrameFile);
+                    List<JSONXObject> boundingBoxes = (List<JSONXObject>) inferencesByFrames.get(thisFrame);
+                    if (!boundingBoxes.isEmpty()) {
+                        currentAdFrames.add(thisFrame);
+                        retainedFramesAsFilesForDeepInference.add(thisFrameFile);
+                        retainedFramesForDeepInference.add(thisFrame);
+                    }
+                    // If the current frame has no reading, or we are at the end of the retained frames
+                    if ((boundingBoxes.isEmpty()) || (thisFrame.equals(retainedFrames.get(retainedFrames.size() - 1)))) {
+                        if (!currentAdFrames.isEmpty()) {
+                            // Dispatch and start anew
+                            groupsOfAdFrames.add(new ArrayList<>(currentAdFrames));
+                            currentAdFrames = new ArrayList<>();
+                        }
+                    }
+                    cursorFrameFile ++;
+                }
+                Log.i(TAG, groupsOfAdFrames.toString());
+
+                if (groupsOfAdFrames.isEmpty()) {
+                    Log.i(TAG, "Deleting empty video");
+                    Log.i(TAG, screenRecordingFile.getName());
+                    if (implementedOnAndroid) {
+                        deleteRecursive(screenRecordingAnalysisDirectory);
+                        screenRecordingFile.delete();
+                    }
+                } else {
+
+                    // Undertake the deep-pass on all retained frames that contained 'Sponsored' texts
+                    JSONXObject inferenceResultDeep = objectDetectorFunction.apply((new JSONXObject())
+                            .set("context", context)
+                            .set("analysisDirectory", screenRecordingAnalysisDirectory)
+                            .set("thisScreenRecordingFile", screenRecordingFile)
+                            .set("retainedFrameFiles", retainedFramesAsFilesForDeepInference)
+                            .set("retainedFrames", retainedFramesForDeepInference)
+                            .set("modelName", "float32_tiktok_elements.tflite")
+                            .set("thisCase", "Deep")
+                        );
+
+                    // TODO - note: This part requires a logic that is specialised to tiktok, and should be represented as such
+                    // There are three kinds of ads that we have observed in TikTok - thumbnail ads, home ads, and search ads
+                    // for each frame, bounding boxes are assessed to determine the kind of ad we are dealing with...
+
+
+                    // thumbnail ads - go over each thumbnail, and check if it encases the majority of a sponsored text - if so, its an ad
+
+                    // home ads - take upper most y of live and search buttons, and lowermost y of sponsored text and engagement buttons
+
+                    // search reel ads - take upper most y of serach reel input and lowermost y of sponsored text and engagmeent buttons
+
+                    // Crop out ad images
+
+
+                    // TODO - unclassified ads are currently being ignored in processing
+
+                    // TODO - currently there is an error experienced where two frames both have sponsored text but belong to different ads, however are grouped
+
+                    // TODO - functionalize
+                    // Construct ad objects
+
+                    File checkPointDirectory = new File(screenRecordingAnalysisDirectory, "checkpoint");
+                    checkPoint.setTargetDirectory(checkPointDirectory);
+                    checkPoint thisCheckPoint = new checkPoint(screenRecordingFile.getName());
+
+                    // TODO - Confirm that the ad frames belong to the same ads
+                    // There are two giveaways for this -
+                    //  1. whether the crop areas have any degree of overlap between frames
+                    //  2. Whether the frames have the same classname
+
+                    if (thisCheckPoint.container.has("inferenceDeep")) {
+                        Log.i(TAG, "Proceeding with ad object construction");
+                        List<JSONXObject> thisAdFrameGroupMetadatasUnseparated = new ArrayList<>();
+                        JSONXObject inferencesDeepByFrames = (new JSONXObject((JSONObject) inferenceResultDeep.get("inferencesByFrames"), true));
+                        for (List<Integer> adFrameGroup : groupsOfAdFrames) {
+                            JSONXObject thisAdFrameGroupMetadata = new JSONXObject();
+                            for (Integer adFrame : adFrameGroup) {
+                                JSONXObject thisAdFrameData = new JSONXObject();
+                                List<JSONXObject> boundingBoxesShallow = ((List<JSONObject>) inferencesByFrames.get(adFrame)).stream().map(x -> (new JSONXObject(x, true))).collect(Collectors.toList());
+                                List<JSONXObject> boundingBoxesDeep = ((List<JSONObject>) inferencesDeepByFrames.get(adFrame)).stream().map(x -> (new JSONXObject(x, true))).collect(Collectors.toList());
+
+
+                                // Determine the type of ad we are dealing with...
+                                String tentativeAdType = null;
+                                // Note that a thumbnail ad supercedes all other alternatives
+                                // if there is at least one thumbnail - then we are dealing with a thumbnail
+                                // otherwise
+                                // if there is a serach reel inpuit - we are dealing with a search
+                                // otherwise
+                                // if there is either a live or search button, we are dealing with a home ad
+                                if (!boundingBoxesDeep.isEmpty()) { // TODO - only proceed for this frame if there are 'deep' bounding boxes - note that if there are no bounding boxes, we can't determine where the contents of the ad is
+                                    for (JSONXObject boundingBox : boundingBoxesDeep) {
+                                        if (boundingBox.get("className").equals("POST_THUMBNAIL")) {
+                                            tentativeAdType = "THUMBNAIL";
+                                            break;
+                                        } else {
+                                            if (boundingBox.get("className").equals("REEL_SEARCH_INPUT")) {
+                                                tentativeAdType = "REEL_FROM_SEARCH";
+                                            } else if (((boundingBox.get("className").equals("LIVE_BUTTON")) || (boundingBox.get("className").equals("SEARCH_BUTTON"))) && (tentativeAdType == null)) {
+                                                tentativeAdType = "REEL_FROM_HOME";
+                                            }
+                                        }
+                                    }
+                                    thisAdFrameData.set("adType", tentativeAdType);
+                                    Double SPONSORSHIP_INTERSECTION_THRESHOLD = 0.8;
+                                    List<String> sponsoredAdTexts = asList("SPONSORED_TEXT", "PROMOTIONAL_CONTENT_TEXT", "PAID_PARTNERSHIP_TEXT");
+
+                                    // We assert that there is only ever one bounding box for a Sponsored text on any ad
+                                    JSONXObject boundingBoxSponsored = boundingBoxesShallow.stream().filter(x ->
+                                            sponsoredAdTexts.contains((String) x.get("className"))).collect(Collectors.toList()).get(0);
+
+                                    // Evaluate thumbnail ads
+                                    if (Objects.equals(tentativeAdType, "THUMBNAIL")) {
+                                        // Retrieve the first thumbnail that significantly intersects a Sponsored text (we note that we only ever expect
+                                        // to see one at any given time
+                                        for (JSONXObject boundingBoxThumbnail : boundingBoxesDeep) {
+                                            if (boundingBoxThumbnail.get("className").equals("POST_THUMBNAIL")) {
+                                                Double intersectionPercentage = (rectangularAreaOverlap(boundingBoxThumbnail, boundingBoxSponsored)
+                                                        / rectangularArea(boundingBoxSponsored));
+                                                if (intersectionPercentage >= SPONSORSHIP_INTERSECTION_THRESHOLD) {
+                                                    thisAdFrameData.set("inference", (new JSONXObject())
+                                                            .set("boundingBoxCropped", boundingBoxThumbnail)
+                                                            .set("boundingBoxSponsored", boundingBoxSponsored)
+                                                            .set("boundingBoxes", boundingBoxesDeep));
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        Double lowerMostY = tiktokLowerMostY(boundingBoxesDeep, boundingBoxSponsored);
+                                        Double upperMostY = 0.0;
+
+                                        if (Objects.equals(tentativeAdType, "REEL_FROM_SEARCH")) {
+                                            // Identify the comprising bounding boxes
+                                            JSONXObject boundingBoxSearchInput = boundingBoxesDeep.stream().filter(x ->
+                                                    x.get("className").equals("REEL_SEARCH_INPUT")).collect(Collectors.toList()).get(0);
+                                            upperMostY = (double) boundingBoxSearchInput.get("y1");
+                                        } else if (Objects.equals(tentativeAdType, "REEL_FROM_HOME")) {
+                                            List<JSONXObject> boundingBoxLiveButtonsTentative = boundingBoxesDeep.stream().filter(x ->
+                                                    x.get("className").equals("LIVE_BUTTON")).collect(Collectors.toList());
+                                            List<JSONXObject> boundingBoxSearchButtonsTentative = boundingBoxesDeep.stream().filter(x ->
+                                                    x.get("className").equals("SEARCH_BUTTON")).collect(Collectors.toList());
+                                            Double y1LiveButton = (!boundingBoxLiveButtonsTentative.isEmpty()) ? (double) boundingBoxLiveButtonsTentative.get(0).get("y1") : 1.0;
+                                            Double y1SearchButton = (!boundingBoxSearchButtonsTentative.isEmpty()) ? (double) boundingBoxSearchButtonsTentative.get(0).get("y1") : 1.0;
+                                            upperMostY = Math.min(y1LiveButton, y1SearchButton);
+                                        }
+
+                                        JSONXObject boundingBoxCropped = tiktokCompositeBoundingBox(upperMostY, lowerMostY);
+                                        thisAdFrameData.set("inference", (new JSONXObject())
+                                                .set("boundingBoxCropped", boundingBoxCropped)
+                                                .set("boundingBoxSponsored", boundingBoxSponsored)
+                                                .set("boundingBoxes", boundingBoxesDeep));
+                                    }
+                                    if (thisAdFrameData.has("inference")) {
+                                        thisAdFrameGroupMetadata.set(adFrame, thisAdFrameData);
+                                    }
+                                }
+                            }
+                            thisAdFrameGroupMetadatasUnseparated.add(thisAdFrameGroupMetadata);
+                        }
+
+
+                        // For each group of frames - go through, and separate them even further, based on overlaps
+                        List<JSONXObject> advertisementObjects = new ArrayList<>(0);
+                        for (JSONXObject thisAdFrameGroupMetadata : thisAdFrameGroupMetadatasUnseparated) {
+                            List<String> orderedFrames = thisAdFrameGroupMetadata.keys().stream().sorted().collect(Collectors.toList());
+                            Integer adFrameI = 0;
+                            JSONXObject currentAdObject = new JSONXObject();
+                            for (String thisFrame : orderedFrames) {
+                                boolean retain = true;
+                                if (adFrameI != 0) {
+                                    String lastFrame = orderedFrames.get(adFrameI-1);
+                                    JSONXObject lastFrameObject = ((JSONXObject) thisAdFrameGroupMetadata.get(lastFrame));
+                                    JSONXObject thisFrameObject = ((JSONXObject) thisAdFrameGroupMetadata.get(thisFrame));
+                                    // Assess for likeness to previous frame
+                                    String lastFrameAdType = ((String) lastFrameObject.get("adType"));
+                                    String thisFrameAdType = ((String) thisFrameObject.get("adType"));
+                                    if (!Objects.equals(lastFrameAdType, thisFrameAdType)) {
+                                        retain = false;
+                                    }
+
+                                    if (retain) {
+                                        if (rectangularAreaOverlap((JSONXObject) ((JSONXObject) lastFrameObject.get("inference")).get("boundingBoxCropped"),
+                                                                (JSONXObject) ((JSONXObject) thisFrameObject.get("inference")).get("boundingBoxCropped")) <= 0.0) {
+                                            retain = false;
+                                        }
+                                    }
+                                }
+                                if (!retain) {
+                                    advertisementObjects.add(new JSONXObject(currentAdObject.internalJSONObject, true));
+                                    currentAdObject = new JSONXObject();
+                                }
+                                currentAdObject.set(thisFrame, thisAdFrameGroupMetadata.get(thisFrame));
+
+                                if (adFrameI == orderedFrames.size()-1) {
+                                    advertisementObjects.add(currentAdObject);
+                                }
+                                adFrameI ++;
+                            }
+                        }
+
+                        // TODO - note : we don't retain data after the above block, as the logic execution is almost instantaneous
+
+                        // Prepare for dispatch
+                        Integer w = null;
+                        Integer h = null;
+                        File dispatchDirectory = new File(rootDirectory, "dispatch");
+                        File screenRecordingDispatchDirectory = new File(dispatchDirectory, thisInterpretation.get("filename") + ".dispatch");
+                        createDirectory(screenRecordingDispatchDirectory, true); // Force re-creation to avoid doubling up on submissions
+                        try {
+                            for (JSONXObject thisAdFrameGroupMetadata : advertisementObjects) {
+                                //
+                                // Procure a UUID for this advertisement
+                                String advertisementUUID = UUID.randomUUID().toString();
+                                File advertisementDirectory = new File(screenRecordingDispatchDirectory, advertisementUUID);
+                                makeDirectory(advertisementDirectory);
+                                for (String thisFrame : thisAdFrameGroupMetadata.keys()) {
+                                    JSONXObject boundingBoxCropped = (JSONXObject) ((JSONXObject) ((JSONXObject) thisAdFrameGroupMetadata.get(thisFrame)).get("inference")).get("boundingBoxCropped");
+                                    // Retrieve the frame to crop
+                                    Bitmap bitmapToCrop = BitmapFactory.decodeFile(new File(new File(screenRecordingAnalysisDirectory, "frames"), thisFrame + ".jpg").getAbsolutePath());
+                                    w = bitmapToCrop.getWidth();
+                                    h = bitmapToCrop.getHeight();
+                                    Integer cropX = Math.min((int) Math.floor(((Double) boundingBoxCropped.get("x1")) * w), w-1);
+                                    Integer cropY = Math.min((int) Math.floor(((Double) boundingBoxCropped.get("y1")) * h), h-1);
+                                    Integer cropW = Math.max(Math.min((int) Math.floor(((Double) boundingBoxCropped.get("w")) * w), (w - cropX)),1);
+                                    Integer cropH = Math.max(Math.min((int) Math.floor(((Double) boundingBoxCropped.get("h")) * h), (h - cropY)),1);
+                                    saveBitmap(Bitmap.createBitmap(bitmapToCrop, cropX, cropY, cropW, cropH), new File(advertisementDirectory, thisFrame + ".jpg").getAbsolutePath());
+                                }
+                                // frames go into metadata as key
+                                // observer uuid
+                                // time of screen recording
+                                // basic stats about fps and inference
+                                // platform from which details are retriveed
+                                String observerID = sharedPreferenceGet(context, "SHARED_PREFERENCE_OBSERVER_ID", SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE);
+
+                                JSONXObject dispatchObject = (new JSONXObject())
+                                        .set("observerUUID", observerID)
+                                        .set("observedAt", thisInterpretation.get("timestamp"))
+                                        .set("preparedAt", ((int) Math.floor(System.currentTimeMillis() / (double) 1000)))
+                                        .set("systemInformation", (new JSONXObject())
+                                                .set("operatingSystemVersion", System.getProperty("os.version") + "(" + Build.VERSION.INCREMENTAL + ")")
+                                                .set("apiLevel", Build.VERSION.SDK_INT)
+                                                .set("device", Build.DEVICE)
+                                                .set("screenDimensions", (new JSONXObject())
+                                                        .set("w", w.toString())
+                                                        .set("h", h.toString())
+                                                )
+                                                .set("model", Build.MODEL + " (" + Build.PRODUCT + ")")
+                                        )
+                                        .set("recordingInformation", (new JSONXObject())
+                                                .set("FPS", thisComprehensiveReading.get("fps"))
+                                                .set("nFrames", thisComprehensiveReading.get("nFrames"))
+                                                .set("durationInMilliseconds", thisComprehensiveReading.get("durationInMilliseconds"))
+                                        )
+                                        .set("processingStatistics", (new JSONXObject())
+                                                .set("comprehensiveReading", (new JSONXObject())
+                                                        .set("nFramesSampled", thisComprehensiveReading.get("nFramesSampled"))
+                                                        .set("nFramesSampledAtLastCall", thisComprehensiveReading.get("nFramesSampledAtLastCall"))
+                                                        .set("elapsedTimePerFrameAtLastCall", (Double) thisComprehensiveReading.get("elapsedTime") / (Integer) thisComprehensiveReading.get("nFramesSampled"))
+                                                        .set("elapsedTimeAtLastCall", thisComprehensiveReading.get("elapsedTime"))
+
+
+                                                )
+                                                .set("inferenceShallow", (new JSONXObject())
+                                                        .set("nFramesAnalyzed", inferenceResultShallow.get("nFramesAnalyzed"))
+                                                        .set("elapsedTimePerFrame", ((Double) inferenceResultShallow.get("elapsedTime") * 1000 / (Integer) inferenceResultShallow.get("nFramesAnalyzed")))
+                                                        .set("elapsedTime", (Double) inferenceResultShallow.get("elapsedTime") * 1000))
+                                                .set("inferenceDeep", (new JSONXObject())
+                                                        .set("nFramesAnalyzed", inferenceResultDeep.get("nFramesAnalyzed"))
+                                                        .set("elapsedTimePerFrame", ((Double) inferenceResultDeep.get("elapsedTime") * 1000 / (Integer) inferenceResultDeep.get("nFramesAnalyzed")))
+                                                        .set("elapsedTime", (Double) inferenceResultDeep.get("elapsedTime") * 1000))
+                                        )
+                                        .set("frameMetadata", thisAdFrameGroupMetadata);
+
+                                writeToJSON((new File(advertisementDirectory, "metadata.json")), dispatchObject.internalJSONObject);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        // Completion is concluded by deleting the screen recording, and the analysis folder
+                        if (implementedOnAndroid) {
+                            deleteRecursive(screenRecordingAnalysisDirectory);
+                            screenRecordingFile.delete();
+                        }
+                    }
+                }
+
+                // Undertake comprehensive inference
+
+                // assume y axis is point of shift
+                // let a strong overlap between two frames be defined as some offset where the elements link share a union of
+
+                // the union is more than the symmetric difference
+
+                // union is part where elements are identical
+                // differenec is part where elements are unidentical or dont overlap
+
+
+                // it is very possible that two frames can be for two completely different posts
+
+                // invent a really strict criteria
+                    // for two adjacent frames - if the sponsored text appears in both, align them and their posts and perform the cropouts
+
+
+                // Consider from the retained frames those that have been flagged as containing the 'Sponsored Text' and that are adjacent - these can be
+                // grouped into a single ad reading
+            }
+
+        }
+
+        /*
+         *
+         * comprehensive readings are taken
+         *
+         * sponsored texts are checked across frames
+         *
+         * */
+
+        // TODO - dispatch ads
+
+        //ImageClassifier xxx = new ImageClassifier(context);
+        //Bitmap thisBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.silver_tabby_cat_sitting_on_green_background_free_photo);//cup);
+        //xxx.detectAndCallback(thisBitmap);
+    }
 
 }

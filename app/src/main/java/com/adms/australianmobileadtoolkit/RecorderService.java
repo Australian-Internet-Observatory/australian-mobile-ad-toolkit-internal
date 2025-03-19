@@ -1,9 +1,9 @@
 /*
-*
-* This class deals with the recording service, responsible for managing the creation of
-* screen recording video files
-*
-* */
+ *
+ * This class deals with the recording service, responsible for managing the creation of
+ * screen recording video files
+ *
+ * */
 
 package com.adms.australianmobileadtoolkit;
 
@@ -17,6 +17,7 @@ import static com.adms.australianmobileadtoolkit.Common.writeToFile;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNotification;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNotificationForward;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
+import static com.adms.australianmobileadtoolkit.InactivityReceiver.sendScreenLockNotification;
 import static com.adms.australianmobileadtoolkit.MainActivity.SCREEN_RECORDING_PERMISSION_CODE;
 import static com.adms.australianmobileadtoolkit.MainActivity.mProjectionManager;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION;
@@ -26,8 +27,11 @@ import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RE
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.get_RECORD_SERVICE_EXTRA_RESULT_CODE;
 import static com.adms.australianmobileadtoolkit.appSettings.maxNumberOfVideos;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
+import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
 
+import android.app.Activity;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -58,6 +62,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.adms.australianmobileadtoolkit.interpreter.AccessibilityService;
+import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,6 +88,7 @@ public final class RecorderService extends Service {
     private String tentativeRecordingFilename;
     private String appPackageName = "";
     private static final String TAG = "RecorderService";
+
     // The extra result code associated with the intent of the recording service
     private static final String EXTRA_DATA = appSettings.RECORD_SERVICE_EXTRA_DATA;
     // The ID of the notification associated with the recording service
@@ -97,19 +103,21 @@ public final class RecorderService extends Service {
     // will be stored
     private String videoDir;
 
+    private static Intent recorderIntent;
+
     /*
-    *
-    * This method generates a new intent for the recording service
-    *
-    * */
+     *
+     * This method generates a new intent for the recording service
+     *
+     * */
     static Intent newIntent(Context context, int resultCode, Intent data) {
-        Intent intent = new Intent(context, RecorderService.class);  // TODO - checked for API migration
-        intent.putExtra(get_RECORD_SERVICE_EXTRA_RESULT_CODE(context), resultCode);
-        intent.putExtra(EXTRA_DATA, data);
-        return intent;
+        recorderIntent = new Intent(context, RecorderService.class);  // TODO - checked for API migration
+        recorderIntent.putExtra(get_RECORD_SERVICE_EXTRA_RESULT_CODE(context), resultCode);
+        recorderIntent.putExtra(EXTRA_DATA, data);
+        return recorderIntent;
     }
 
-    public static void createIntentForScreenRecording(FragmentActivity fragmentActivity) {
+    public static void createIntentForScreenRecording(Activity fragmentActivity) {
         Intent screenRecordingIntent;
         // In Android API version 14, configurations are introduced for screen recordings - this code
         // ensures that the default configuration is selected for the display when the dialog is shown
@@ -118,7 +126,7 @@ public final class RecorderService extends Service {
             /*screenRecordingIntent = mProjectionManager.createScreenCaptureIntent(
                     MediaProjectionConfig.createConfigForUserChoice());*/
             screenRecordingIntent = mProjectionManager.createScreenCaptureIntent(
-                                    MediaProjectionConfig.createConfigForDefaultDisplay()); // TODO - desired effect was not observed
+                    MediaProjectionConfig.createConfigForDefaultDisplay()); // TODO - desired effect was not observed
 
         } else {
             screenRecordingIntent = mProjectionManager.createScreenCaptureIntent();
@@ -127,46 +135,42 @@ public final class RecorderService extends Service {
     }
 
     /*
-    *
-    * The broadcast receiver is responsible for identifying when the device enters various states,
-    * and handling the corresponding functionality
-    *
-    * */
+     *
+     * The broadcast receiver is responsible for identifying when the device enters various states,
+     * and handling the corresponding functionality
+     *
+     * */
     public class MyBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             switch(intent.getAction()) {
                 case Intent.ACTION_SCREEN_ON:
                     System.out.println( "The device's screen is on: start recording");
-                    mMediaRecorder.resume();/*
-                    try {
+                    if (android.os.Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                         mMediaRecorder.resume();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }*/
-                    //startRecording(resultCode, data); // TODO - edited
+                    }
                     screenOff = false;
                     sendBroadcast(new Intent(context, InactivityReceiver.class)
-                          .putExtra("INTENT_ACTION", "SCREEN_IS_ON"));  // TODO - checked for API migration
+                            .putExtra("INTENT_ACTION", "SCREEN_IS_ON"));  // TODO - checked for API migration
                     break;
                 case Intent.ACTION_SCREEN_OFF:
                     System.out.println( "The device's screen is off: stop recording and schedule the ..");
                     screenOff = true;
                     sendBroadcast(new Intent(context, InactivityReceiver.class)
-                          .putExtra("INTENT_ACTION", "SCREEN_IS_OFF"));  // TODO - checked for API migration
-                    //stopRecording(); // TODO - edited
-                    mMediaRecorder.pause();/*
-                    try {
+                            .putExtra("INTENT_ACTION", "SCREEN_IS_OFF"));  // TODO - checked for API migration
+                    if (android.os.Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                         mMediaRecorder.pause();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }*/
+                    }
                     break;
                 case Intent.ACTION_CONFIGURATION_CHANGED:
-                    System.out.println( "The device's configuration has changed: restarting recording");
-                    if (!screenOff) {
+                    if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                         stopRecording();
-                        startRecording(resultCode, data);
+                    } else {
+                        if (!screenOff) {
+                            System.out.println( "The device's configuration has changed: restarting recording");
+                            stopRecording();
+                            startRecording(resultCode, data);
+                        }
                     }
                     break;
                 case Intent.ACTION_BATTERY_CHANGED:
@@ -176,10 +180,10 @@ public final class RecorderService extends Service {
     }
 
     /*
-    *
-    * This method determines if the device is charging
-    *
-    * */
+     *
+     * This method determines if the device is charging
+     *
+     * */
     public static boolean deviceIsCharging(Context context) {
         Intent intent;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -187,19 +191,19 @@ public final class RecorderService extends Service {
                     null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED), Context.RECEIVER_NOT_EXPORTED);
         } else {
             intent = context.registerReceiver(
-                            null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                    null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         }
         int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
         return (plugged == BatteryManager.BATTERY_PLUGGED_AC
-                    || plugged == BatteryManager.BATTERY_PLUGGED_USB);
+                || plugged == BatteryManager.BATTERY_PLUGGED_USB);
     }
 
     /*
-    *
-    * The ServiceHandler is here applied to assist with messages involved in starting the recording
-    * service
-    *
-    * */
+     *
+     * The ServiceHandler is here applied to assist with messages involved in starting the recording
+     * service
+     *
+     * */
     private final class ServiceHandler extends Handler {
         public ServiceHandler(Looper looper) {
             super(looper);
@@ -215,10 +219,10 @@ public final class RecorderService extends Service {
     PowerManager.WakeLock wakeLock;
 
     /*
-    *
-    * This method deals with the initiation events of the recording service
-    *
-    * */
+     *
+     * This method deals with the initiation events of the recording service
+     *
+     * */
     @Override
     public void onCreate() {
         super.onCreate();
@@ -230,16 +234,16 @@ public final class RecorderService extends Service {
         // app is closed
         Intent notificationIntent = new Intent(this, RecorderService.class);  // TODO - checked for API migration
         PendingIntent pendingIntent = PendingIntent.getActivity(
-              this, 0, notificationIntent, PendingIntent.FLAG_MUTABLE);
+                this, 0, notificationIntent, PendingIntent.FLAG_MUTABLE);
         // Attempt to generate the notification channel
         generateNotificationChannel(this, get_NOTIFICATION_RECORDING_CHANNEL_ID(this),
-              get_NOTIFICATION_RECORDING_CHANNEL_ID_NAME(this), get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION(this));
+                get_NOTIFICATION_RECORDING_CHANNEL_ID_NAME(this), get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION(this));
         // Send the notification
         NotificationCompat.Builder builderPeriodicNotification = constructNotification(this,
-              get_NOTIFICATION_RECORDING_CHANNEL_ID(this),
-              get_NOTIFICATION_RECORDING_TITLE(this),
-              get_NOTIFICATION_RECORDING_DESCRIPTION(this), null)
-              .setContentIntent(pendingIntent);
+                get_NOTIFICATION_RECORDING_CHANNEL_ID(this),
+                get_NOTIFICATION_RECORDING_TITLE(this),
+                get_NOTIFICATION_RECORDING_DESCRIPTION(this), null)
+                .setContentIntent(pendingIntent);
         Notification notification = constructNotificationForward(this, builderPeriodicNotification);
         // Configure and start the service
         // Forward/backwards compatibility
@@ -268,14 +272,14 @@ public final class RecorderService extends Service {
         mServiceHandler = new ServiceHandler(mServiceLooper);
         // The videoDir variable is set here
         videoDir = MainActivity.getMainDir(this.getApplicationContext()).getAbsolutePath()
-                                            + (File.separatorChar + "videos" + File.separatorChar);
+                + (File.separatorChar + "videos" + File.separatorChar);
     }
 
     /*
-    *
-    * This method is executed when the service is started
-    *
-    * */
+     *
+     * This method is executed when the service is started
+     *
+     * */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Get the intent
@@ -297,12 +301,12 @@ public final class RecorderService extends Service {
     private String recordingFilename(String videoDir, String orientation) {
         return (videoDir + File.separatorChar + "unclassified" + "." + ((int) Math.floor(System.currentTimeMillis() / (double) 1000)) + "." + UUID.randomUUID().toString() + "." + orientation + ".mp4");
     }
-    
+
     /*
-    * 
-    * This method starts the media recorder, and generates the resulting video files
-    * 
-    * */
+     *
+     * This method starts the media recorder, and generates the resulting video files
+     *
+     * */
     private void startRecording(int resultCode, Intent data) {
         int videoRecordingMaximumFileSize = appSettings.videoRecordingMaximumFileSize;
 
@@ -313,7 +317,7 @@ public final class RecorderService extends Service {
         if(!recordingInProgress) {
             // Set up a new MediaProjectionManager for the recording process
             MediaProjectionManager mProjectionManager = (MediaProjectionManager)
-                  getApplicationContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+                    getApplicationContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
             mMediaRecorder = new MediaRecorder();
 
             DisplayMetrics metrics = new DisplayMetrics();
@@ -335,6 +339,7 @@ public final class RecorderService extends Service {
                 // If the maximum file size has been reached
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_NEXT_OUTPUT_FILE_STARTED) {
                     //Log.i(TAG, );
+
                     if (previousRecordingFilename != null) {
                         String tentativeAppPackageName = "";
                         Boolean withinTargetPlatform = true;
@@ -370,26 +375,26 @@ public final class RecorderService extends Service {
                         }
 
                         // Delete the previous recording
-                        /* Note: There is an instance where accessibilityService may observe that the user leaves a target platform before the current
-                        * recording has finished dispatching - when the recorderService then checks the accessibilityService
-                        * for the current app, it will return to it that the last reading was not in the target platform, causing it
-                        * to discard the recording (which would still contain portion thereof the target platform.
-                        *
-                        * To get around this, we can set a cooldown that requires that at least one recording containing non-target apps
-                        * be retained (after leaving a target app). This can't guarantee desired functionality, but it should catch
-                        * most issues.
-                        *
-                        * */
+                        // Note: There is an instance where accessibilityService may observe that the user leaves a target platform before the current
+                        // recording has finished dispatching - when the recorderService then checks the accessibilityService
+                        // for the current app, it will return to it that the last reading was not in the target platform, causing it
+                        // to discard the recording (which would still contain portion thereof the target platform.
+                        //
+                        // To get around this, we can set a cooldown that requires that at least one recording containing non-target apps
+                        // be retained (after leaving a target app). This can't guarantee desired functionality, but it should catch
+                        // most issues.
+
+
                     }
                     previousRecordingFilename = tentativeRecordingFilename;
                 }
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_APPROACHING) {
                     System.out.println("The media recorder has identified that the maximum file size has"
-                          + " been reached; setting new output file.");
+                            + " been reached; setting new output file.");
                     // Write out a new file
                     tentativeRecordingFilename = recordingFilename(videoDir, finalOrientation);
                     try (RandomAccessFile newRandomAccessFile =
-                               new RandomAccessFile(tentativeRecordingFilename,"rw")) {
+                                 new RandomAccessFile(tentativeRecordingFilename,"rw")) {
                         mMediaRecorder.setNextOutputFile(newRandomAccessFile.getFD());
                         File thisVideoFolder = filePath(Arrays.asList((videoDir))); // TODO - inserted
 
@@ -398,7 +403,7 @@ public final class RecorderService extends Service {
                         List<String> filesPositive = files.stream().filter(x -> x.contains("positive")).collect(Collectors.toList());
                         List<String> filesLandscape = files.stream().filter(x -> x.contains("landscape")).collect(Collectors.toList());
                         List<String> filesUnsifted = files.stream().filter(x ->
-                                                        (!(x.contains("positive") || x.contains("landscape")))).collect(Collectors.toList());
+                                (!(x.contains("positive") || x.contains("landscape")))).collect(Collectors.toList());
                         Collections.sort(filesPositive);
                         Collections.sort(filesLandscape);
                         Collections.sort(filesUnsifted);
@@ -437,7 +442,7 @@ public final class RecorderService extends Service {
             mMediaRecorder.setVideoSize(displayWidth, displayHeight);
             mMediaRecorder.setMaxFileSize(videoRecordingMaximumFileSize); // 5mb (4.7mb)
             mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-            mMediaRecorder.setVideoEncodingBitRate(25000);
+            //mMediaRecorder.setVideoEncodingBitRate(25000);
             mMediaRecorder.setCaptureRate(30); // success with 1 - 30
             mMediaRecorder.setVideoFrameRate(30);
             // Set the preliminary output file
@@ -461,11 +466,31 @@ public final class RecorderService extends Service {
                     // TODO - fix hander to do something when stopped : https://github.com/mtsahakis/MediaProjectionDemo/blob/3a98fc8e5e86da4dc75c3c048d27ddcd4f2925e9/app/src/main/java/com/mtsahakis/mediaprojectiondemo/ScreenCaptureService.java#L49
                     mMediaProjection.registerCallback(new MediaProjection.Callback() {
                         // Implement callback methods here
+                        @Override
+                        public void onStop() {
+                            super.onStop();
+                            sharedPreferencePut(getApplicationContext(), "RECORDING_STATUS", "false");
+                            sharedPreferencePut(getApplicationContext(), "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_LAST_CALL", String.valueOf(System.currentTimeMillis()));
+                            Log.i(TAG, "RecorderService was possibly stopped prematurely.");
+                            // This event is triggered one of a few ways - either from the status bar chip,
+                            // from the screen lock 'auto stop' functionality, or from manually stopping the Media Projection
+                            // In any case, we make it also stop the service.
+                            try {
+                                MainActivity.safelySetToggleInViewModel(false);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            try {
+                                stopSelf();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }, mHandler);
                     mVirtualDisplay = mMediaProjection.createVirtualDisplay("MainActivity",
-                          displayWidth, displayHeight, mScreenDensity,
-                          VIRTUAL_DISPLAY_FLAG_PRESENTATION,
-                          surface, null, null);
+                            displayWidth, displayHeight, mScreenDensity,
+                            VIRTUAL_DISPLAY_FLAG_PRESENTATION,
+                            surface, null, null);
                     // Start the recording
                     mMediaRecorder.start();
                     didStart = true;
@@ -477,19 +502,20 @@ public final class RecorderService extends Service {
             if (didStart) {
                 recordingInProgress = true;
                 sendBroadcast(new Intent(this, InactivityReceiver.class)
-                      .putExtra("INTENT_ACTION", "RECORDING_HAS_STARTED"));  // TODO - checked for API migration
+                        .putExtra("INTENT_ACTION", "RECORDING_HAS_STARTED"));  // TODO - checked for API migration
                 //MainActivity.safelySetToggleInViewModel(true);
             }
         }
     }
 
     /*
-    *
-    * This method stops the recording service
-    *
-    * */
+     *
+     * This method stops the recording service
+     *
+     * */
     private void stopRecording() {
         // If the recording is in progress
+        System.out.println( "Recording has been forced to stop.");
         System.out.println( "Service is running: "+recordingInProgress);
         if (recordingInProgress) {
             // Attempt to stop the service
@@ -519,19 +545,19 @@ public final class RecorderService extends Service {
                 Log.e(TAG, "Failed on stopRecording: ", e);
             }
             //if (actionedStop) { // TODO
-                recordingInProgress = false;
-                sendBroadcast(new Intent(this, InactivityReceiver.class)
-                      .putExtra("INTENT_ACTION", "RECORDING_HAS_STOPPED"));  // TODO - checked for API migration
-                //MainActivity.safelySetToggleInViewModel(false);
+            recordingInProgress = false;
+            sendBroadcast(new Intent(this, InactivityReceiver.class)
+                    .putExtra("INTENT_ACTION", "RECORDING_HAS_STOPPED"));  // TODO - checked for API migration
+            //MainActivity.safelySetToggleInViewModel(false);
             //}
         }
     }
 
     /*
-    *
-    * This method is executed on binding the recording service
-    *
-    * */
+     *
+     * This method is executed on binding the recording service
+     *
+     * */
     @Override
     public IBinder onBind(Intent intent) {
         // There is no binding, so return null
@@ -539,17 +565,15 @@ public final class RecorderService extends Service {
     }
 
     /*
-    *
-    * This method is executed on destroying the service
-    *
-    * */
+     *
+     * This method is executed on destroying the service
+     *
+     * */
     @Override
     public void onDestroy() {
-        super.onDestroy();
         stopRecording();
         unregisterReceiver(mScreenStateReceiver);
-        stopSelf();
-
         wakeLock.release();
+        super.onDestroy();
     }
 }

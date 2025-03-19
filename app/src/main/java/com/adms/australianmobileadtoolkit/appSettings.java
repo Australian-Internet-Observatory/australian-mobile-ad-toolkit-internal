@@ -21,7 +21,15 @@ public class appSettings {
    public static boolean USING_DEMOGRAPHIC_QUESTIONS = false;
    // Maximum file size for video recordings (5MB)
 
-   public static int videoRecordingMaximumFileSize = 1000000; // TODO - setting down from 2mb as sometimes the
+   public static int videoRecordingMaximumFileSize = 2000000;
+   // Originally, we had set that the maximum video file size to be set to 2MB - later we found that this size
+   // affected processing, as it was too large (and time-intensive as a consequence) to maintain a serializeable
+   // object that could be persisted for the sequential background processing aspects of the apps functionality.
+   // So we reduced the size to 1MB, and found that while it improved the processing, it had negative effects on
+   // devices that would quickly populate files due to large video encoding scripts (such as the Oppo). This would
+   // result in errors, causing the devices to lock up - instead we have now opted to return it to 2MB, which shouldn't
+   // be a problem for the processing, given that since the original changes, we've moved from a semantic pipeline to
+   // an ML pipeline, which is technically more capable of dealing with data persistence.
 
    // Video recording encoding bit rate
    public static int videoRecordingEncodingBitRate = 10000; // 400000 on hpd -
@@ -128,6 +136,14 @@ public class appSettings {
    public static String get_ACTIVATION_CODE_PREFIX_STRING(Context context) {
       return context.getString(R.string.activation_code_prefix);
    }
+
+   public static String get_ACTIVATION_CODE_SHORT_DEFAULT(Context context) {
+      return context.getString(R.string.activation_code_short_default);
+   }
+
+   public static String get_ACTIVATION_SHORT_CODE_PREFIX_STRING(Context context) {
+      return context.getString(R.string.activation_code_short_prefix);
+   }
    public static String get_NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED(Context context) {
       return context.getString(R.string.notification_periodic_description_unregistered);
    }
@@ -201,4 +217,17 @@ public class appSettings {
    // if its instantiated, get the object associated with it, whereas if not, load in the value from shared preferences
 
    // change added from repo 1 - another change
+
+
+
+   public static String get_NOTIFICATION_SCREEN_LOCK_TITLE(Context context) {
+      return context.getString(R.string.notification_screen_lock_title);
+   }
+
+
+   // The description of the notification that is sent off periodically, when the device is not observing ads
+   public static String get_NOTIFICATION_SCREEN_LOCK_DESCRIPTION(Context context) {
+      return context.getString(R.string.notification_screen_lock_description);
+   }
+
 }

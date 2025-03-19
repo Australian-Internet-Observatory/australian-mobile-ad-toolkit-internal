@@ -29,6 +29,7 @@ public class checkPoint {
     public JSONXObject preContainer;
     HashMap<String, Boolean> initialized;
     public static File outputDirectory;
+    private boolean malformationFlag = false;
 
     Map<Class, String> primitiveClassMappings = Map.of(
             String.class,"STRING",
@@ -49,83 +50,94 @@ public class checkPoint {
     }
 
     public Object assess(String k) {
-        Object v = flats.get(k);
-        String thisType = (String) types.get(k);
-        if (thisType == null) {
-            System.out.println(k);
-        }
-        if (thisType.equals("STRING")) {
-            initialized.put(k, true);
-            return (String) v;
-        } else if (thisType.equals("INTEGER")) {
-            initialized.put(k, true);
-            return (Integer) v;
-        } else if (thisType.equals("DOUBLE")) {
-            initialized.put(k, true);
-            if (v.getClass().equals(String.class)) {
-                return Double.parseDouble((String) v);
-            } else if (v.getClass().equals(Integer.class)) {
-                return ((Integer) v).doubleValue();
-            } else if (v.getClass().equals(Double.class)) {
-                return (Double) v;
-            }
-        } else if (thisType.equals("BOOLEAN")) {
-            initialized.put(k, true);
-            return (Boolean) v;
-        } else if (thisType.equals("NULL")) {
-            initialized.put(k, true);
-            return null;
-        } else {
-            if (thisType.equals("LIST")) {
-                Gson gson = new Gson();
-                List<String> keysToCheck = (List<String>) gson.fromJson((String) v, List.class);
-                if (keysToCheck.stream().allMatch(initialized::get)) {
-                    List<Object> tentativeList = new ArrayList<>();
-                    for (String thisListKey : keysToCheck) {
-                        tentativeList.add(this.assess(thisListKey));
-                    }
+        if (!malformationFlag) {
+            try {
+                Object v = flats.get(k);
+                String thisType = (String) types.get(k);
+                if (thisType == null) {
+                    System.out.println(k);
+                }
+                if (thisType.equals("STRING")) {
                     initialized.put(k, true);
-                    return tentativeList;
-                }
-            } else if (thisType.equals("HASHMAP")) {
-                Gson gson = new Gson();
-                HashMap<String, String> keysToCheck = (HashMap<String, String>) gson.fromJson((String) v, HashMap.class);
-                if (keysToCheck.values().stream().allMatch(initialized::get)) {
-                    try {
-                        HashMap<Integer, Object> tentativeHashMap = new HashMap<>();
-                        for (String thisHashMapKey : keysToCheck.keySet()) {
-                            String thisHashMapKeyValue = keysToCheck.get(thisHashMapKey);
-                            tentativeHashMap.put(Integer.parseInt(thisHashMapKey), this.assess(thisHashMapKeyValue));
-                        }
-                        initialized.put(k, true);
-                        return tentativeHashMap;
-                    } catch (Exception ignored) {
-                        HashMap<String, Object> tentativeHashMap = new HashMap<>();
-                        for (String thisHashMapKey : keysToCheck.keySet()) {
-                            String thisHashMapKeyValue = keysToCheck.get(thisHashMapKey);
-                            tentativeHashMap.put(thisHashMapKey, this.assess(thisHashMapKeyValue));
-                        }
-                        initialized.put(k, true);
-                        return tentativeHashMap;
+                    return (String) v;
+                } else if (thisType.equals("INTEGER")) {
+                    initialized.put(k, true);
+                    return (Integer) v;
+                } else if (thisType.equals("DOUBLE")) {
+                    initialized.put(k, true);
+                    if (v.getClass().equals(String.class)) {
+                        return Double.parseDouble((String) v);
+                    } else if (v.getClass().equals(Integer.class)) {
+                        return ((Integer) v).doubleValue();
+                    } else if (v.getClass().equals(Double.class)) {
+                        return (Double) v;
                     }
-                }
+                } else if (thisType.equals("BOOLEAN")) {
+                    initialized.put(k, true);
+                    return (Boolean) v;
+                } else if (thisType.equals("NULL")) {
+                    initialized.put(k, true);
+                    return null;
+                } else {
+                    if (thisType.equals("LIST")) {
+                        Gson gson = new Gson();
+                        List<String> keysToCheck = (List<String>) gson.fromJson((String) v, List.class);
+                        if (keysToCheck.stream().allMatch(initialized::get)) {
+                            List<Object> tentativeList = new ArrayList<>();
+                            for (String thisListKey : keysToCheck) {
+                                tentativeList.add(this.assess(thisListKey));
+                            }
+                            initialized.put(k, true);
+                            return tentativeList;
+                        }
+                    } else if (thisType.equals("HASHMAP")) {
+                        Gson gson = new Gson();
+                        HashMap<String, String> keysToCheck = (HashMap<String, String>) gson.fromJson((String) v, HashMap.class);
+                        if (keysToCheck.values().stream().allMatch(initialized::get)) {
+                            try {
+                                HashMap<Integer, Object> tentativeHashMap = new HashMap<>();
+                                for (String thisHashMapKey : keysToCheck.keySet()) {
+                                    String thisHashMapKeyValue = keysToCheck.get(thisHashMapKey);
+                                    tentativeHashMap.put(Integer.parseInt(thisHashMapKey), this.assess(thisHashMapKeyValue));
+                                }
+                                initialized.put(k, true);
+                                return tentativeHashMap;
+                            } catch (Exception ignored) {
+                                HashMap<String, Object> tentativeHashMap = new HashMap<>();
+                                for (String thisHashMapKey : keysToCheck.keySet()) {
+                                    String thisHashMapKeyValue = keysToCheck.get(thisHashMapKey);
+                                    tentativeHashMap.put(thisHashMapKey, this.assess(thisHashMapKeyValue));
+                                }
+                                initialized.put(k, true);
+                                return tentativeHashMap;
+                            }
+                        }
 
-            } else if (thisType.equals("JSONOBJECT")) {
-                Gson gson = new Gson();
-                HashMap<String, String> keysToCheck = (HashMap<String, String>) gson.fromJson((String) v, HashMap.class);
-                if (keysToCheck.values().stream().allMatch(initialized::get)) {
-                    JSONObject tentativeJSONObject = new JSONObject();
-                    for (String thisHashMapKey : keysToCheck.keySet()) {
-                        String thisHashMapKeyValue = keysToCheck.get(thisHashMapKey);
-                        try {
-                            tentativeJSONObject.put(thisHashMapKey, this.assess(thisHashMapKeyValue));
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    } else if (thisType.equals("JSONOBJECT")) {
+                        Gson gson = new Gson();
+                        HashMap<String, String> keysToCheck = (HashMap<String, String>) gson.fromJson((String) v, HashMap.class);
+                        if (keysToCheck.values().stream().allMatch(initialized::get)) {
+                            JSONObject tentativeJSONObject = new JSONObject();
+                            for (String thisHashMapKey : keysToCheck.keySet()) {
+                                String thisHashMapKeyValue = keysToCheck.get(thisHashMapKey);
+                                try {
+                                    tentativeJSONObject.put(thisHashMapKey, this.assess(thisHashMapKeyValue));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            initialized.put(k, true);
+                            return tentativeJSONObject;
                         }
                     }
-                    initialized.put(k, true);
-                    return tentativeJSONObject;
                 }
+            } catch (Exception e) {
+                System.out.println("Reinitiating as unstable data");
+                // Any error during assessment indicates a malformation in the data structure
+                types = new JSONXObject();
+                flats = new JSONXObject();
+                container = new JSONXObject();
+                malformationFlag = true;
             }
         }
         return null;
@@ -158,7 +170,7 @@ public class checkPoint {
 
             if (wellFormed) {
                 preContainer = new JSONXObject();
-                while (initialized.containsValue(false)) {
+                while (initialized.containsValue(false) && (!malformationFlag)) {
                     for (String thisKey : initialized.keySet()) {
                         if (!initialized.get(thisKey)) {
                             preContainer.set(thisKey, this.assess(thisKey));

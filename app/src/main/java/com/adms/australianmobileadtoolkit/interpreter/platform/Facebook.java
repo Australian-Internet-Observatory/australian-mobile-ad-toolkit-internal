@@ -854,24 +854,33 @@ public class Facebook {
         // Attempt to make the 'temp' directories if they don't already exist
         File analysisDirectory = new File(targetDirectory,"analysis");
         File screenRecordingAnalysisDirectory = new File(analysisDirectory,((File) frameGrabFunctionInput.get("thisScreenRecordingFile")).getName() + ".analysis");
-        File screenRecordingCRTDirectory = new File(screenRecordingAnalysisDirectory,"sampledFrames");
+        File screenRecordingCRTDirectory = new File(screenRecordingAnalysisDirectory,"frames");
         makeDirectory(analysisDirectory);
         makeDirectory(screenRecordingAnalysisDirectory);
         makeDirectory(screenRecordingCRTDirectory);
 
+        JSONXObject output = new JSONXObject();
+
         // Declare the file's path
+        boolean sampled = false;
         File thisFrameFile = new File(screenRecordingCRTDirectory, ((int) frameGrabFunctionInput.get("f")) + ".jpg");
         // If the file exists, reload it
         if (thisFrameFile.exists()) {
+            output.set("wellFormed", true);
             //thisSampleImage = BitmapFactory.decodeFile(thisFrameFile.getAbsolutePath());
         } else {
             // Otherwise generate it and store it for later use if necessary
-            saveBitmap(frameGrabFunction.apply(frameGrabFunctionInput), thisFrameFile.getAbsolutePath());
+            sampled = true;
+            output.set("wellFormed", false);
+            Bitmap thisSampleBitmap = frameGrabFunction.apply(frameGrabFunctionInput);
+            if (thisSampleBitmap != null) {
+                output.set("wellFormed", true);
+                saveBitmap(thisSampleBitmap, thisFrameFile.getAbsolutePath());
+            }
         }
-
-        JSONXObject output = new JSONXObject();
         //output.set("bitmap", thisSampleImage);
         output.set("file", thisFrameFile);
+        output.set("sampled", sampled);
 
         return output;
     }
@@ -883,7 +892,7 @@ public class Facebook {
     }
 
     public static JSONXObject comprehensiveReadingGetFrameRelation(JSONXObject imageSample, int lastFrame, int thisFrame) {
-        Double SIMILARITY_THRESHOLD = 0.85;
+        Double SIMILARITY_THRESHOLD = 0.90;
         Double similarityPercentage = comprehensiveReadingGetFrameSimilarityPercentage(imageSample, lastFrame, thisFrame);
         String verdict = (similarityPercentage >= SIMILARITY_THRESHOLD) ? "SIMILAR" : "DIFFERENT";
 
@@ -959,18 +968,18 @@ public class Facebook {
     // An agnostic implementatotion of the Facebook-specific function, with a few error fixes
     // TODO - make the folder delete after a successful analysis
     public static JSONXObject comprehensiveReading(Context context,
-                                                   File rootDirectory, File thisScreenRecordingFile, Function<JSONXObject, JSONXObject> videoMetadataFunction,
+                                                   File rootDirectory, File screenRecordingAnalysisDirectory, File thisScreenRecordingFile, Function<JSONXObject, JSONXObject> videoMetadataFunction,
                                                    Function<JSONXObject, Bitmap> frameGrabFunction) {
 
-        File analysisDirectory = new File(rootDirectory, "analysis");
-        File screenRecordingAnalysisDirectory = new File(analysisDirectory, thisScreenRecordingFile.getName() + ".analysis");
 
         File checkPointDirectory = new File(screenRecordingAnalysisDirectory, "checkpoint");
         checkPoint.setTargetDirectory(checkPointDirectory);
         checkPoint checkPoint = new checkPoint(thisScreenRecordingFile.getName());
 
+        Log.i(TAG, "here");
+
         if (checkPoint.container.has("comprehensiveReading")) {
-            return new JSONXObject((JSONObject) checkPoint.container.get("comprehensiveReading"));
+            return new JSONXObject((JSONObject) checkPoint.container.get("comprehensiveReading"), true);
         } else {
             JSONXObject output;
             Double elapsedTime = Long.valueOf(System.currentTimeMillis()).doubleValue();
@@ -1018,6 +1027,7 @@ public class Facebook {
             List<JSONXObject> masterFrameSimilarityReadings = new ArrayList<>();
             JSONXObject contextualisedFrameSimilarityReadings = new JSONXObject();
             Integer nFramesSampled = 0;
+            Integer nFramesSampledAtLastCall = 0;
             while ((frameSampleThreshold >= FRAME_SAMPLE_LOWER_THRESHOLD) && (!targetRanges.isEmpty())) {
 
                 // Purge any readings that already exist within the masterFrameSimilarityReadings that may overlap the target ranges
@@ -1048,6 +1058,7 @@ public class Facebook {
                     Integer lastFrame = null;
                     List<JSONXObject> thisRangeReadings = new ArrayList<>();
                     for (int _thisFrame = thisRange.get(0); _thisFrame <= thisRange.get(1)+frameSampleThreshold; _thisFrame += frameSampleThreshold) {
+                        boolean wellFormed = true;
                         int thisFrame = _thisFrame;
                         if (thisFrame >= totalFrames) {
                             thisFrame = totalFrames - 1; // TODO - check this for errors
@@ -1066,23 +1077,33 @@ public class Facebook {
                                     .set("videoFrames", totalFramesUnadjusted)
                                     .set("videoDuration", durationInMilliseconds)
                                     .set("minWidth", prescribedMinVideoWidth));
-                            try {
-                                imageSample.set(thisFrame, ((File) currentFrameObject.get("file")).getAbsolutePath());
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                            wellFormed = (boolean) currentFrameObject.get("wellFormed");
+                            if (wellFormed) {
+                                if ((boolean) currentFrameObject.get("sampled")) {
+                                    nFramesSampledAtLastCall ++;
+                                }
+                                try {
+                                    imageSample.set(thisFrame, ((File) currentFrameObject.get("file")).getAbsolutePath());
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            } else {
+                                Log.i(TAG, "Discard frame " + thisFrame);
                             }
                         }
 
-                        if (lastFrame != null) {
-                            JSONXObject thisReading = (new JSONXObject())
-                                    .set("lastFrame", lastFrame)
-                                    .set("thisFrame", thisFrame)
-                                    .set("relation", comprehensiveReadingGetFrameRelation(imageSample, lastFrame, thisFrame));
-                            frameSimilarityReadings.add(thisReading);
-                            thisRangeReadings.add(thisReading);
-                        }
+                        if (wellFormed) {
+                            if (lastFrame != null) {
+                                JSONXObject thisReading = (new JSONXObject())
+                                        .set("lastFrame", lastFrame)
+                                        .set("thisFrame", thisFrame)
+                                        .set("relation", comprehensiveReadingGetFrameRelation(imageSample, lastFrame, thisFrame));
+                                frameSimilarityReadings.add(thisReading);
+                                thisRangeReadings.add(thisReading);
+                            }
 
-                        lastFrame = thisFrame;
+                            lastFrame = thisFrame;
+                        }
                     }
 
                     // If a range is entirely similar (from all its sub-comparisons), yet has become the subject of comparison (from being different in a
@@ -1165,16 +1186,44 @@ public class Facebook {
             elapsedTime = Math.abs(Long.valueOf(System.currentTimeMillis()).doubleValue() - elapsedTime);
 
             output = (new JSONXObject())
+                    .set("nFramesSampled", nFramesSampled)
+                    .set("nFramesSampledAtLastCall", nFramesSampledAtLastCall)
                     .set("elapsedTime", elapsedTime)
                     .set("retainedFrames", retainedFrames)
                     .set("nFrames", totalFrames)
+                    .set("durationInMilliseconds", durationInMilliseconds)
                     .set("nFramesUnadjusted", totalFramesUnadjusted)
+                    .set("retainedFramesAsFiles", retainedFrames.stream().map(imageSample::get).collect(Collectors.toList()))
                     .set("fps", FPS);
             checkPoint.set("comprehensiveReading", output.internalJSONObject);
             checkPoint.save();
             return output;
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /*
      *

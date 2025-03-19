@@ -2,6 +2,7 @@ package com.adms.australianmobileadtoolkit.platform.facebook;
 
 import static com.adms.australianmobileadtoolkit.IsolatedTest.simulationsDirectory;
 import static com.adms.australianmobileadtoolkit.IsolatedTest.testScreenRecordingsDirectory;
+import static com.adms.australianmobileadtoolkit.ObjectDetector.objectDetectorMachine;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.JSONArrayToList;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.createDirectory;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.filenameUnextended;
@@ -41,15 +42,16 @@ import java.util.stream.Collectors;
 public class interpretation {
 
     public static JSONXObject screenRecordingsMetadata = new JSONXObject(readJSONFromFile(new File(simulationsDirectory, "screenRecordingsMetadata.json")));
-    public static final File testScreenRecordingsFeb2025Directory = (new File(simulationsDirectory, "screenRecordingsFeb2025Instagram"));
+    public static final File testScreenRecordingsFeb2025RootDirectory = (new File(simulationsDirectory, "titktok2025"));
 
     @Test
      public void testPlatformInterpretationRoutine() {
 
 
 
+        platformInterpretationRoutine(testContext, testScreenRecordingsFeb2025RootDirectory, getVideoMetadataMachine, frameGrabMachine, false, objectDetectorMachine);
 
-
+        /*
 
             //org.bytedeco.javacpp.av_log_set_level(avutil.AV_LOG_QUIET);
         IsolatedTest thisTest = new IsolatedTest("practicalInterpretation");
@@ -191,7 +193,7 @@ public class interpretation {
         logger.info("True Positives: " + thisTest.confusionMatrix.tpN);
         logger.info("False Positives: " + thisTest.confusionMatrix.fpN);
         logger.info("True Negatives: " + thisTest.confusionMatrix.tnN);
-        logger.info("False Negatives: " + thisTest.confusionMatrix.fnN);
+        logger.info("False Negatives: " + thisTest.confusionMatrix.fnN);*/
     }
 
 

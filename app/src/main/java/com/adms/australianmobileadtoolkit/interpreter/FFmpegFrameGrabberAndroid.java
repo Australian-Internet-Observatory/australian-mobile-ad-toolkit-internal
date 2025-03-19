@@ -14,6 +14,7 @@ import android.util.Pair;
 import com.adms.australianmobileadtoolkit.JSONXObject;
 import com.adms.australianmobileadtoolkit.MainActivity;
 import com.arthenica.ffmpegkit.FFmpegKit;
+import com.arthenica.ffmpegkit.FFmpegKitConfig;
 import com.arthenica.ffmpegkit.FFmpegSession;
 import com.arthenica.ffmpegkit.FFprobeKit;
 import com.arthenica.ffmpegkit.FFprobeSession;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -142,24 +144,44 @@ public class FFmpegFrameGrabberAndroid {
 
       File tempBitmapFile = filePath(asList(MainActivity.getMainDir(context).getAbsolutePath(), "ffmpeg_cache", identifier+".bmp"));
       String command = String.format("-ss %1$s -i %2$s -update true -frames:v 1 -s "+adjustedDimensions.first+"x"+adjustedDimensions.second+" %3$s -hide_banner -loglevel panic ", timeSignature, videoFile.getAbsolutePath(), tempBitmapFile.getAbsolutePath());
+      Log.i(TAG, command);
       FFmpegSession session = FFmpegKit.execute(command);
       if (ReturnCode.isSuccess(session.getReturnCode())) {
          Bitmap thisBitmap = BitmapFactory.decodeFile(tempBitmapFile.getAbsolutePath());
-         tempBitmapFile.delete();
          try {
-            if (thisBitmap == null) return null;
+            if (thisBitmap == null) {
+               Log.i(TAG, tempBitmapFile.getAbsolutePath());
+               try {
+                  FFmpegKit.cancel();
+                  while (!FFmpegKit.listSessions().isEmpty()) {
+                     TimeUnit.SECONDS.sleep(1);
+                     Log.i(TAG, "waiting on n sessions to close: "+ FFmpegKit.listSessions().size());
+                     FFmpegKitConfig.clearSessions();
+                  }
+               } catch (Exception e) {
+                  e.printStackTrace();
+               }
+               return null;
+            } else {
+               tempBitmapFile.delete();
+            }
+            session.cancel();
             return thisBitmap;
          } catch (Exception e) {
             // It's expected that this may occasionally produce an error (for instance, when the last or near last frame
             // doesn't exist)
             logger.error(e);
+            e.printStackTrace();
+            session.cancel();
             return null;
          }
       } else if (ReturnCode.isCancel(session.getReturnCode())) {
+         Log.i(TAG, "return code error");
          // TODO
       } else {
          Log.d(TAG, String.format("Command failed with state %s and rc %s.%s", session.getState(), session.getReturnCode(), session.getFailStackTrace()));
       }
+      session.cancel();
       return null;
    }
 }

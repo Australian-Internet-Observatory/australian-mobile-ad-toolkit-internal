@@ -19,8 +19,8 @@ android {
         multiDexEnabled  true
         minSdk 26
         targetSdk 34
-        versionCode 1018
-        versionName "1.018"
+        versionCode 1019
+        versionName "1.019"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets {
@@ -62,6 +62,9 @@ dependencies {
     implementation 'com.google.ai.edge.litert:litert-support-api:1.1.2'
     implementation 'com.google.ai.edge.litert:litert-metadata:1.1.2'
     implementation 'com.google.ai.edge.litert:litert-gpu:1.1.2'
+
+
+
     testImplementation('androidx.test.espresso:espresso-core:3.1.0', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
@@ -88,10 +91,12 @@ dependencies {
 
 
 
+
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.9'
     //testImplementation("org.bytedeco:javacv-platform:1.5.10")
     testImplementation("org.bytedeco:javacv-platform:1.5.10")
+
     //testImplementation("org.bytedeco:javacpp-platform:1.5.10")
     //testImplementation("org.bytedeco:ffmpeg:6.1.1-1.5.10")
     //testImplementation("org.bytedeco:ffmpeg-platform:6.1.1-1.5.10")

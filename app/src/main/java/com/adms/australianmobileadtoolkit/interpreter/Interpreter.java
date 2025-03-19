@@ -11,6 +11,7 @@ package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.getVideoMetadataAndroid;
+import static com.adms.australianmobileadtoolkit.interpreter.platform.ObjectDetector.objectDetectorAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.platformInterpretationRoutine;
 
 import android.annotation.SuppressLint;
@@ -40,7 +41,7 @@ public class Interpreter {
 
     // TODO - make instance have some bearing over controllability of battery optimisation
     public void run(String instance) {
-        platformInterpretationRoutine(thisContext, rootDirectoryPath, getVideoMetadataAndroid, frameGrabAndroid, true);
+        platformInterpretationRoutine(thisContext, rootDirectoryPath, getVideoMetadataAndroid, frameGrabAndroid, true, objectDetectorAndroid);
     }
 
 }

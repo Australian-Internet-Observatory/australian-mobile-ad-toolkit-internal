@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Australian Mobile Ad Toolkit</string>
-    <string name="app_descr">This app records you phone\'s screen to detect advertisement content served to you within your Meta Facebook app.</string>
+    <string name="app_descr">This app records you phone\'s screen to detect advertisement content served to you within various third-party apps.</string>
     <string name="app_preface_registered">When the switch above is flipped on, this app will detect advertisements.</string>
     <string name="recording_status">Recording Status</string>
     <string name="recording_descr">When active, your screen is being recorded.</string>
@@ -19,7 +19,7 @@
     <string name="fragment_dashboard_back_text">BACK TO MAIN</string>
 
     <string name="fragment_main_app_status_unregistered">APP STATUS: UNREGISTERED</string>
-    <string name="fragment_main_app_preface">This app records you device\'s screen to detect advertisement content served to you within your Meta Facebook app.</string>
+    <string name="fragment_main_app_preface">This app records you device\'s screen to detect advertisement content served to you within various third-party apps.</string>
     <string name="fragment_main_app_preface_unregistered">To begin detecting advertisements, you will need to register. This can be done below:</string>
     <string name="fragment_main_register_text">Register</string>
     <string name="fragment_main_footer_learn_more">To learn more about our research project, you can visit the official ADM+S website, by clicking <a href="https://www.admscentre.org.au/adobservatory/">here</a></string>
@@ -29,6 +29,10 @@
     <string name="fragment_main_app_dashboard_tooltip">Advertisements that you have already observed can be viewed at your personal dashboard.</string>
     <string name="fragment_main_app_dashboard_text">GO TO MY DASHBOARD</string>
     <string name="dashboard_observed_prefix">Observed </string>
+    <string name="notification_screen_lock_title">Ads stop being observed after locking your device</string>
+    <string name="notification_screen_lock_description">Tap to continue observing ads</string>
+
+
     <string name="notification_reboot_title">Ad observations stop after a reboot</string>
     <string name="notification_reboot_description">Tap to start observing ads again</string>
     <string name="notification_periodic_title">Ads are not being observed</string>
@@ -39,12 +43,18 @@
     <string name="demographic_failsafe_country">Research participation is not available to users outside Australia at this point.</string>
     <string name="activation_code_not_applicable">N/A</string>
     <string name="activation_code_prefix">My Activation Code: </string>
+    <string name="activation_code_short_prefix">YOUR UNIQUE ACTIVATION CODE:</string>
+    <string name="activation_code_short_default"><font color="@color/yellow_primary">LOADING...</font></string>
+
+
+
+
     <string name="notification_periodic_channel_id_name">Inactivity Reminders</string>
     <string name="notification_periodic_channel_description">This app is designed to stop collecting ads whenever your device restarts. When this happens, we\'ll need your permission to re-enable it</string>
     <string name="notification_recording_channel_id_name">Recording Reminders</string>
-    <string name="notification_recording_channel_description">Be informed of when our app has started collecting Facebook ads</string>
+    <string name="notification_recording_channel_description">Be informed of when our app has started collecting ads</string>
     <string name="notification_recording_title">Ads are being observed</string>
-    <string name="notification_recording_description">The app is now collecting Facebook ads that have been served to you</string>
+    <string name="notification_recording_description">The app is now collecting ads that have been served to you</string>
     <string name="app_underscore_code">adms_mobile_ad_observatory</string>
     <string name="app_child_directory_name">australianmobileadobservatory</string>
     <string name="app_titled_code">AustralianMobileAdObservatory</string>
@@ -82,8 +92,9 @@
     <string name="fragment_accessibility_disclosure_data_1">This app accesses data about event changes in the system windows shown on the screen, as well as changes to a visually distinct section of the user interface.\n\nUpon reading data from these events, the app accesses the application package name of the mobile application in question that the user is currently interacting with; it then checks the package name to determine whether it coincides with an app currently being examined by the Australian Mobile Ad Toolkit.\n\nPartial to the screen-recording functionality of the app, this process is done to enable the app to discard screen-recordings of apps that are not relevant to the Australian Mobile Ad Toolkit, which reduces processing requirements and consequently improves the user experience of the app.</string>
 
 
+    <string name="fragment_accessibility_disclosure_subtitle_overview_4">ACCESSIBILITY SERVICES REQUIRED</string>
 
-
+    <string name="fragment_accessibility_disclosure_description_overview_4">To begin observing ads, you must firstly enable accessibility services.\n\nThis app uses accessibility services for necessary functionality that is not related to accessibility.</string>
 
 </resources>
 

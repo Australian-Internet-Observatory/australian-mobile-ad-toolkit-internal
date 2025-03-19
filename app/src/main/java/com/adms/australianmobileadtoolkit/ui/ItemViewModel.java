@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModel;
 public class ItemViewModel extends ViewModel {
    private final MutableLiveData<Boolean> toggleStatus = new MutableLiveData<Boolean>();
    public void setToggleStatusInViewModel(Boolean item) {
-      toggleStatus.setValue(item);
+      try {
+         toggleStatus.setValue(item);
+      } catch (Exception ignored) {}
    }
    public LiveData<Boolean> getToggleStatusInViewModel() {
       return toggleStatus;

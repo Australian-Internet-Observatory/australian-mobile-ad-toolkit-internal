@@ -2,6 +2,7 @@ package com.adms.australianmobileadtoolkit.platform.tiktok;
 
 import static com.adms.australianmobileadtoolkit.IsolatedTest.simulationsDirectory;
 import static com.adms.australianmobileadtoolkit.IsolatedTest.testScreenRecordingsDirectory;
+import static com.adms.australianmobileadtoolkit.ObjectDetector.objectDetectorMachine;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.JSONArrayToList;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.createDirectory;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.filenameUnextended;
@@ -59,7 +60,7 @@ public class interpretation {
             File debugFile = prepareForPlatformInterpretationTest(thisTest, x, testVideo);
             if (debugFile != null) {
                 printJSON(debugFile);
-                platformInterpretationRoutine(testContext, debugFile, getVideoMetadataMachine, frameGrabMachine, false);
+                platformInterpretationRoutine(testContext, debugFile, getVideoMetadataMachine, frameGrabMachine, false, objectDetectorMachine);
             }
             return new JSONObject();
         });

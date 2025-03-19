@@ -1,4 +1,5 @@
 package com.adms.australianmobileadtoolkit;
+import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
@@ -9,6 +10,8 @@ import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_R
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_TITLE_UNREGISTERED;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_REBOOT_TITLE;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_SCREEN_LOCK_DESCRIPTION;
+import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_SCREEN_LOCK_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.intervalMillisecondsBetweenPeriodicNotifications;
 import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
 import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
@@ -23,11 +26,15 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.icu.util.Calendar;
+import android.os.Build;
 import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
+
+import com.adms.australianmobileadtoolkit.interpreter.AccessibilityService;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -83,7 +90,7 @@ public class InactivityReceiver extends BroadcastReceiver {
 
    private static PendingIntent constructNotificationScreenRecorderPendingIntent(Context context, String intentAction) {
       Intent intent = new Intent(context, MainActivity.class);
-      intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+      intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
       intent.putExtra("INTENT_ACTION",intentAction);
       return PendingIntent.getActivity(context,0, intent,
               PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
@@ -252,6 +259,17 @@ public class InactivityReceiver extends BroadcastReceiver {
       sendNotification(context, builderPeriodicNotification, "NOTIFICATION_PERIODIC_ID_CASE");
    }
 
+
+   public static void sendScreenLockNotification(Context context) {
+      NotificationCompat.Builder builderPeriodicNotification;
+         builderPeriodicNotification = constructNotification(context,
+                 get_NOTIFICATION_PERIODIC_CHANNEL_ID(context),
+                 get_NOTIFICATION_SCREEN_LOCK_TITLE(context),
+                 get_NOTIFICATION_SCREEN_LOCK_DESCRIPTION(context),null)
+                 .setContentIntent(constructNotificationScreenRecorderPendingIntent(context, "TURN_ON_SCREEN_RECORDER"));
+      sendNotification(context, builderPeriodicNotification, "NOTIFICATION_PERIODIC_ID_CASE");
+   }
+
    public static void sendRebootNotification(Context context) {
       NotificationCompat.Builder builderRebootNotification = constructNotification(context,
               get_NOTIFICATION_PERIODIC_CHANNEL_ID(context),
@@ -344,6 +362,8 @@ public class InactivityReceiver extends BroadcastReceiver {
          if ((intent != null) && (intent.hasExtra("INTENT_ACTION"))
             && (intent.getStringExtra("INTENT_ACTION").equals("RECORDING_HAS_STOPPED"))) {
                System.out.println( "RECORDING_HAS_STOPPED");
+               sharedPreferencePut(context, "RECORDING_STATUS", "false");
+               MainActivity.safelySetToggleInViewModel(false);
                // If the recording stops after a registered screen off event
                if (sharedPreferenceGet(context, "SCREEN_OFF_DURING_RECORDING", "false").equals("true")) {
                   // Do nothing, as we know that the screen is off during a recording session
@@ -366,8 +386,10 @@ public class InactivityReceiver extends BroadcastReceiver {
                     && (intent.getStringExtra("INTENT_ACTION").equals("SCREEN_IS_OFF"))) {
                System.out.println( "SCREEN_IS_OFF");
                // If the screen switches off during a recording
-               if (sharedPreferenceGet(context, "RECORDING_STATUS", "false").equals("true")) {
-                  sharedPreferencePut(context, "SCREEN_OFF_DURING_RECORDING", "true");
+               if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                  if (sharedPreferenceGet(context, "RECORDING_STATUS", "false").equals("true")) {
+                     sharedPreferencePut(context, "SCREEN_OFF_DURING_RECORDING", "true");
+                  }
                }
          }
       } catch (Exception e) {

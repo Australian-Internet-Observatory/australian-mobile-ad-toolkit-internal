@@ -12,6 +12,7 @@ import static com.adms.australianmobileadtoolkit.InactivityReceiver.cancelAllIna
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.setPeriodicNotifications;
 import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
+import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_SHORT_DEFAULT;
 import static com.adms.australianmobileadtoolkit.appSettings.get_APP_CHILD_DIRECTORY;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
@@ -20,18 +21,23 @@ import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_O
 import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
 import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
 import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityService.wipeTemporals;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.getVideoMetadataAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.Interpreter.rootDirectoryPath;
+import static com.adms.australianmobileadtoolkit.interpreter.platform.ObjectDetector.objectDetectorAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.platformInterpretationRoutine;
+import static com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain.safelySetToggleFromViewModel;
 
 import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.media.MediaRecorder;
 import android.media.projection.MediaProjectionManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
@@ -40,9 +46,9 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.WindowManager;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -51,30 +57,18 @@ import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
-import com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager;
 import com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker;
-import com.adms.australianmobileadtoolkit.interpreter.platform.ImageClassifier;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import kotlin.Unit;
-import kotlin.coroutines.Continuation;
-import kotlin.coroutines.CoroutineContext;
-import kotlinx.coroutines.CoroutineName;
-import kotlinx.coroutines.flow.FlowCollector;
 
 // TODO do further testing on intermittent stops
 
@@ -90,8 +84,10 @@ public class MainActivity extends BaseActivity {
     public static String THIS_OBSERVER_ID = SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE;
     // The registration status of the user
     public static String THIS_REGISTRATION_STATUS = SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
+    public static MediaProjectionManager mMediaProjectionManager;
 
     public static String intentOfMainActivity = "NONE";
+    public static MediaRecorder currentMediaRecorder;
 
     public Boolean initiated = false;
 
@@ -117,12 +113,15 @@ public class MainActivity extends BaseActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+            // TODO - apply loading dialog to start of recording event
 
+            // TODO - examine recording status's being dropped (and unable to reinitiate) on Pixel devices
+
+            mProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
             // The directories that will need to be created
             List<String> directoriesToCreate = appSettings.DIRECTORIES_TO_CREATE;
             // Set the main view
             setContentView(R.layout.activity_base);
-            mProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
 
             // Determine whether the service is running, and use this to determine whether the mToggleButton
             // is then checked
@@ -161,8 +160,11 @@ public class MainActivity extends BaseActivity {
             // Set the observer ID
             THIS_OBSERVER_ID = sharedPreferenceGet(this, "SHARED_PREFERENCE_OBSERVER_ID",
                   SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE);
+
+            sharedPreferencePut(this, "SHARED_PREFERENCE_REGISTERED", "true"); // This line is added in to auto-register the user on the first run
             THIS_REGISTRATION_STATUS = sharedPreferenceGet(this, "SHARED_PREFERENCE_REGISTERED",
                   SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE);
+
             boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
 
             // Retrieve permission to send notifications whenever the app is opened
@@ -268,6 +270,16 @@ public class MainActivity extends BaseActivity {
             }*/
 
 
+        BroadcastReceiver mScreenLockReceiver = new ScreenLockReceiver();
+        IntentFilter screenStateFilter = new IntentFilter();
+        screenStateFilter.addAction(Intent.ACTION_USER_PRESENT);
+        screenStateFilter.addAction(Intent.ACTION_USER_UNLOCKED);
+        screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
+        registerReceiver(mScreenLockReceiver, screenStateFilter);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+
+        wipeTemporals(this);
     }
 
     public void openBatteryUsagePage(Context ctx) {
@@ -295,6 +307,7 @@ public class MainActivity extends BaseActivity {
                     cancelAllInactivityNotifications(this);
                     ; break ;
             }
+            Log.i(TAG, "Arrived at intent: "+intentOfMainActivity);
         }
     }
 
@@ -357,7 +370,7 @@ public class MainActivity extends BaseActivity {
 
         if (DEBUG) {
 
-            platformInterpretationRoutine(context, rootDirectoryPath, getVideoMetadataAndroid, frameGrabAndroid, true);
+            platformInterpretationRoutine(context, rootDirectoryPath, getVideoMetadataAndroid, frameGrabAndroid, true, objectDetectorAndroid);
         }
 
     }
@@ -375,6 +388,11 @@ public class MainActivity extends BaseActivity {
         safelySetToggleInViewModel(serviceIsRunning); // we can't have this code here as it will be
         // called directly after issuing permission, with an outdated value for the toggle
         Log.i(TAG, "on resume was called");
+
+
+        Intent intentOfMainActivityAsIntent = getIntent();
+        boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
+        refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
     }
 
     /*
@@ -426,12 +444,16 @@ public class MainActivity extends BaseActivity {
     private void startRecordingService(int resultCode, Intent data) {
         Intent intent = RecorderService.newIntent(this, resultCode, data);
         startService(intent);
+        //Intent intent2= new Intent(this, RecorderService.class);
+        //bindService(intent2, serviceConnector, Context.BIND_AUTO_CREATE);
+       //thisRecorderService.mMediaProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
     }
 
     public static void safelySetToggleInViewModel(Boolean thisValue) {
         if (viewModel != null) {
-            System.out.println( "viewModel set toggle value: "+thisValue);
+            Log.i(TAG, "viewModel set toggle value: "+thisValue);
             viewModel.setToggleStatusInViewModel(thisValue);
+            safelySetToggleFromViewModel();
         }
     }
 
@@ -453,6 +475,56 @@ public class MainActivity extends BaseActivity {
             }
         }
         return false;
+    }
+
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_POWER) {
+            // Do something here...
+            Log.i(TAG, "testing key down");
+            event.startTracking(); // Needed to track long presses
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyLongPress(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_POWER) {
+            // Do something here...
+            Log.i(TAG, "testing key down");
+            return true;
+        }
+        return super.onKeyLongPress(keyCode, event);
+    }
+
+    @Override
+    public void onStop() {
+       super.onStop();
+        Log.i(TAG, "running a stop event");
+    }
+    public static RecorderService thisRecorderService;
+    ServiceConnection serviceConnector;
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
+    public void stopRecorderService() {
+        stopService(new Intent(this, RecorderService.class));
+    }
+
+    public static String retrieveShortActivationCode(Context context) {
+        String myActivationCodeUUIDStringDefault = get_ACTIVATION_CODE_SHORT_DEFAULT(context);
+        String myActivationCodeUUIDString = sharedPreferenceGet(context,
+                "SHARED_PREFERENCE_OBSERVER_ID", myActivationCodeUUIDStringDefault);
+        if (!myActivationCodeUUIDString.equals(myActivationCodeUUIDStringDefault)) {
+            Integer activationShortCodeLength = 6;
+            myActivationCodeUUIDString = myActivationCodeUUIDString.substring(myActivationCodeUUIDString.length()-(1+activationShortCodeLength), myActivationCodeUUIDString.length()-1).toUpperCase();
+        }
+        return myActivationCodeUUIDString;
     }
 
 }

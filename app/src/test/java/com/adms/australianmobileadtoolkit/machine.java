@@ -6,6 +6,7 @@ import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.c
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.filenameUnextended;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.logger;
 import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourToHex;
+import static com.google.gson.JsonParser.parseString;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -14,16 +15,26 @@ import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
+import org.json.JSONObject;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
@@ -161,6 +172,31 @@ public class machine {
             return debugDirectory;
         }
         return null;
+    }
+
+    public static List<JSONXObject> simulatedYOLODetection(String modelPath, String imagePath) {
+        final String PYTHON_EXECUTABLE = "/Users/obei/anaconda3/envs/keras-env-1/bin/python";
+        final String PYTHON_DETECTION_SCRIPT = "/Users/obei/Developer/2024/_08_app/detectorSimulation/detect.py";
+        List<JSONXObject> boundingBoxes = new ArrayList<>();
+        try {
+            String s;
+            Process p = Runtime.getRuntime().exec(PYTHON_EXECUTABLE+" "+PYTHON_DETECTION_SCRIPT+" '"+modelPath+"' '"+imagePath+"'");
+            BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            while ((s = stdInput.readLine()) != null) {
+                try {
+                    JsonArray jsonElements = parseString(s).getAsJsonArray();
+                    for (int i = 0; i < jsonElements.size(); i++) {
+                        boundingBoxes.add(new JSONXObject(new JSONObject(jsonElements.get(i).getAsJsonObject().toString())));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            while ((s = stdError.readLine()) != null) {}
+            System.out.println(boundingBoxes);
+        } catch (Exception ignored) { }
+        return boundingBoxes;
     }
 
     // TODO - currently on the device, an ffmpeg session is opened on every bitmap grab - would it be better to just do a

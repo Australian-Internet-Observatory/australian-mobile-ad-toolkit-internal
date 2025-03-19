@@ -31,7 +31,7 @@
         android:requestLegacyExternalStorage="true"
         tools:targetApi="31">
 
-
+        <!-- No other component of the app should have a process - otherwise, the recorder service will be discarded when the app is closed.  -->
         <service
             android:name=".RecorderService"
             android:enabled="true"
@@ -39,6 +39,11 @@
             android:foregroundServiceType="mediaProjection"
             android:process=":recordServiceProcess"
             android:stopWithTask="false" />
+        <!--<receiver
+            android:name=".RecorderService$RecorderServiceReceiver"
+            android:enabled="true"
+            android:exported="true">
+        </receiver>-->
 
         <service android:name="com.adms.australianmobileadtoolkit.interpreter.AccessibilityService"
             android:exported="true"
@@ -52,6 +57,7 @@
         </service>
 
         <activity
+            android:persistent="true"
             android:launchMode = "singleTask"
             android:name=".MainActivity"
             android:exported="true"
@@ -60,6 +66,16 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+
+        <activity
+            android:persistent="false"
+            android:launchMode = "singleTask"
+            android:name=".RecorderServiceIntentActivity"
+            android:noHistory="true"
+            android:exported="true"
+            android:theme="@style/Theme.AustralianMobileAdToolkit">
         </activity>
         <receiver
             android:name=".InactivityReceiver"
@@ -75,6 +91,13 @@
                 <action android:name="android.intent.action.ACTION_SHUTDOWN" />
             </intent-filter>
         </receiver>
+
+
+        <!--<receiver
+            android:name=".ScreenLockReceiver"
+            android:enabled="true"
+            android:exported="true">
+        </receiver>-->
     </application>
 
 </manifest>

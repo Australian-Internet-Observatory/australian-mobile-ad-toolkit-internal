@@ -1,17 +1,28 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
+import static android.text.TextUtils.split;
+import static com.adms.australianmobileadtoolkit.MainActivity.retrieveShortActivationCode;
+import static com.adms.australianmobileadtoolkit.MainActivity.safelySetToggleInViewModel;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
+import static com.adms.australianmobileadtoolkit.RecorderService.recordingInProgress;
 import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
 import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
+import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_PREFIX_STRING;
+import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_SHORT_DEFAULT;
+import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_SHORT_CODE_PREFIX_STRING;
 import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.provider.Settings;
+import android.telecom.ConnectionService;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.util.TypedValue;
@@ -28,6 +39,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.adms.australianmobileadtoolkit.InactivityReceiver;
 import com.adms.australianmobileadtoolkit.MainActivity;
 import com.adms.australianmobileadtoolkit.RecorderService;
 import com.adms.australianmobileadtoolkit.interpreter.AccessibilityService;
@@ -36,6 +48,7 @@ import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.interpreter.Interpreter;
 import com.adms.australianmobileadtoolkit.ui.dialogs.DialogEnableAccessibilityService;
+import com.adms.australianmobileadtoolkit.ui.dialogs.DialogEnableAccessibilityServiceIntermediate;
 import com.adms.australianmobileadtoolkit.ui.dialogs.DialogFailedRegistration;
 
 import java.util.Objects;
@@ -43,6 +56,7 @@ import java.util.Objects;
 public class FragmentMain extends Fragment {
 
    private DialogEnableAccessibilityService enableAccessibilityService;
+   private DialogEnableAccessibilityServiceIntermediate enableAccessibilityServiceIntermediate;
 
    // The tag of this class
    private static final String TAG = "FragmentMain";
@@ -56,6 +70,10 @@ public class FragmentMain extends Fragment {
    public static boolean THIS_REGISTRATION_STATUS = false;
 
    private static ItemViewModel viewModel;
+
+   private boolean actionedLatestIntent = false;
+
+
 
    public void goToRegistration() {
       Fragment fragment = new FragmentRegistration1();
@@ -96,7 +114,14 @@ public class FragmentMain extends Fragment {
             // TODO - this is the part that caused the intent error
             // TODO - move to separate function
 
-            createIntentForScreenRecording(getActivity());
+
+            if ((enableAccessibilityServiceIntermediate == null) || (!enableAccessibilityServiceIntermediate.isShowing())) {
+               if (!isAccessibilityServiceEnabled(requireContext(), AccessibilityService.class)) {
+                  dialogEnableAccessibilityServiceIntermediate();
+               } else {
+                  createIntentForScreenRecording(getActivity());
+               }
+            }
             Log.v(TAG, "Screen-recording has started");
          } else {
             Log.v(TAG, "Screen-recording has stopped");
@@ -139,7 +164,9 @@ public class FragmentMain extends Fragment {
 
 
 
-
+         String myActivationCodeUUIDString = retrieveShortActivationCode(getContext());
+         TextView myActivationCode = ((TextView) view.findViewById(R.id.indicator_activation_code));
+         myActivationCode.setText( myActivationCodeUUIDString);
 
 
 
@@ -211,6 +238,8 @@ public class FragmentMain extends Fragment {
 
       startAccessibilityService();
 
+      Log.i(TAG, "Starting FragmentMain");
+
       return view;
 
    }
@@ -233,7 +262,7 @@ public class FragmentMain extends Fragment {
             mToggleButton.setChecked(check);
          }
       } catch (Exception e) {
-
+         e.printStackTrace();
       }
 
       // Then deactivate the de-bouncer in case (as we are resuming the app)
@@ -258,29 +287,42 @@ public class FragmentMain extends Fragment {
    @Override
    public void onResume() {
       super.onResume();
+
+
+      Intent intentOfMainActivityAsIntent = getActivity().getIntent();
+      Log.i(TAG, String.valueOf(intentOfMainActivityAsIntent));
+      if (intentOfMainActivityAsIntent.hasExtra("INTENT_ACTION")) {
+         Log.i(TAG, "Interpreted value of intent: "+ (Objects.requireNonNull(intentOfMainActivityAsIntent.getStringExtra("INTENT_ACTION"))) );
+      }
+
       String intentOfMainActivity = MainActivity.intentOfMainActivity;
 
-      switch (intentOfMainActivity) {
-         case "REGISTER" :
-            // Ignoring cases where a register notification triggers a registered instance of the app
-            if (!THIS_REGISTRATION_STATUS) {
-               goToRegistration();
-            }
-            ; break ;
-         case "TURN_ON_SCREEN_RECORDER" :
+      if (!actionedLatestIntent) {
+         switch (intentOfMainActivity) {
+            case "REGISTER" :
+               // Ignoring cases where a register notification triggers a registered instance of the app
+               if (!THIS_REGISTRATION_STATUS) {
+                  goToRegistration();
+               }
+               actionedLatestIntent = true;
+               ; break ;
+            case "TURN_ON_SCREEN_RECORDER" :
 
-            if ((THIS_REGISTRATION_STATUS) && (!Boolean.TRUE.equals(viewModel.getToggleStatusInViewModel().getValue())))  {
-               mToggleButton.performClick(); // We have to simulate a click, as the toggle's control behaviour interferes with the
-               // overriding post-functions that come from whether the service is running or not
-               //createIntentForScreenRecording(getActivity());
-               //setToggle(thisValue);
-            }
-            ; break ;
-         default : break ;
+               if ((THIS_REGISTRATION_STATUS) && (!Boolean.TRUE.equals(viewModel.getToggleStatusInViewModel().getValue())))  {
+                  mToggleButton.performClick(); // We have to simulate a click, as the toggle's control behaviour interferes with the
+                  // overriding post-functions that come from whether the service is running or not
+                  //createIntentForScreenRecording(getActivity());
+                  //setToggle(thisValue);
+               }
+               actionedLatestIntent = true;
+               ; break ;
+            default : break ;
+         }
+         MainActivity.intentOfMainActivity = "NONE";
       }
 
       updateAccessibilityServicesButtonText(requireContext(), view);
-      MainActivity.intentOfMainActivity = "NONE";
+      Log.i(TAG, "Resuming FragmentMain");
 
    }
 
@@ -297,6 +339,22 @@ public class FragmentMain extends Fragment {
    public void dialogEnableAccessibilityService() {
       enableAccessibilityService = new DialogEnableAccessibilityService(requireContext(), getParentFragmentManager());
       enableAccessibilityService.show();
+      /*
+      enableAccessibilityService.setOnDismissListener(new DialogInterface.OnDismissListener() {
+         @Override
+         public void onDismiss(DialogInterface dialog) {
+            if (!isAccessibilityServiceEnabled(requireContext(), AccessibilityService.class)) {
+               enableAccessibilityService.dismiss();
+               requireContext().startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+            }
+         }
+      });*/
+   }
+
+   public void dialogEnableAccessibilityServiceIntermediate() {
+      safelySetToggleInViewModel(false);
+      enableAccessibilityServiceIntermediate = new DialogEnableAccessibilityServiceIntermediate(requireContext(), getParentFragmentManager());
+      enableAccessibilityServiceIntermediate.show();
       /*
       enableAccessibilityService.setOnDismissListener(new DialogInterface.OnDismissListener() {
          @Override

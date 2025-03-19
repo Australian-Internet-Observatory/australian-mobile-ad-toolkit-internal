@@ -3,8 +3,10 @@ package com.adms.australianmobileadtoolkit.ui.fragments;
 import static android.view.View.TEXT_ALIGNMENT_CENTER;
 import static android.widget.LinearLayout.VERTICAL;
 import static com.adms.australianmobileadtoolkit.MainActivity.THIS_OBSERVER_ID;
+import static com.adms.australianmobileadtoolkit.MainActivity.retrieveShortActivationCode;
 import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_NOT_APPLICABLE_STRING;
 import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_PREFIX_STRING;
+import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_SHORT_CODE_PREFIX_STRING;
 import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
 
 import android.annotation.SuppressLint;
@@ -89,11 +91,9 @@ public class FragmentDashboard extends Fragment {
       View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
       thisView = view;
 
-      String activationCodeNotApplicableString = get_ACTIVATION_CODE_NOT_APPLICABLE_STRING(getContext());
-      String myActivationCodeUUIDString = sharedPreferenceGet(getActivity(),
-            "SHARED_PREFERENCE_OBSERVER_ID", activationCodeNotApplicableString);
+      String myActivationCodeUUIDString = retrieveShortActivationCode(getContext());
       TextView myActivationCode = ((TextView) view.findViewById(R.id.myActivationCode));
-      myActivationCode.setText(get_ACTIVATION_CODE_PREFIX_STRING(getContext()) + myActivationCodeUUIDString);
+      myActivationCode.setText(get_ACTIVATION_SHORT_CODE_PREFIX_STRING(getContext()) + myActivationCodeUUIDString);
 
       Button mbuttonBackToMain = (Button) view.findViewById(R.id.buttonBackToMain);
       mbuttonBackToMain.setOnClickListener(v ->{

@@ -2,6 +2,7 @@ package com.adms.australianmobileadtoolkit;
 
 import androidx.annotation.NonNull;
 
+
 import org.json.JSONObject;
 
 import java.io.Serializable;
@@ -33,6 +34,20 @@ public class JSONXObject implements Serializable {
         if (input != null) {
             try {
                 internalJSONObject = new JSONObject(input.toString());
+            } catch (Exception e) { }
+        } else {
+            internalJSONObject = new JSONObject();
+        }
+    }
+
+    public JSONXObject(JSONObject input, boolean shallowCopy) {
+        if (input != null) {
+            try {
+                if (shallowCopy) {
+                    internalJSONObject = input;
+                } else {
+                    internalJSONObject = new JSONObject(input.toString());
+                }
             } catch (Exception e) { }
         } else {
             internalJSONObject = new JSONObject();
