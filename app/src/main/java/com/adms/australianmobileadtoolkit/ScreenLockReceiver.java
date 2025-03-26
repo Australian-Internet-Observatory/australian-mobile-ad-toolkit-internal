@@ -20,7 +20,7 @@ public class ScreenLockReceiver extends BroadcastReceiver {
         if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             if (sharedPreferenceGet(context, "SHARED_PREFERENCE_RECORDING_INTERRUPTED", "false").equals("true")) {
                 Log.i(TAG, "Being advised that SHARED_PREFERENCE_RECORDING_INTERRUPTED was indeed triggered!!");
-                sendScreenLockNotification(context);
+                //sendScreenLockNotification(context); // Commenting this out
                 sharedPreferencePut(context, "SHARED_PREFERENCE_RECORDING_INTERRUPTED", "false");
             } else {
                 Log.i(TAG, "Being advised that not SHARED_PREFERENCE_RECORDING_INTERRUPTED");

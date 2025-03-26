@@ -30,7 +30,8 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
 
     private static final List<Integer> triggerableEvents = Arrays.asList(
             AccessibilityEvent.TYPE_WINDOWS_CHANGED,
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
+            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
     );
 
     private static final List<String> triggerableAppPackageNames = Arrays.asList(
@@ -65,6 +66,10 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
 
                 if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                     Log.d(TAG, "AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED");
+                }
+
+                if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+                    Log.d(TAG, "AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED");
                 }
 
                 Log.i(TAG,accessibilityEvent.getPackageName().toString());

@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 public class interpretation {
 
     public static JSONXObject screenRecordingsMetadata = new JSONXObject(readJSONFromFile(new File(simulationsDirectory, "screenRecordingsMetadata.json")));
-    public static final File testScreenRecordingsFeb2025RootDirectory = (new File(simulationsDirectory, "titktok2025"));
+    public static final File testScreenRecordingsFeb2025RootDirectory = (new File(simulationsDirectory, "instagram2025"));
 
     @Test
      public void testPlatformInterpretationRoutine() {
