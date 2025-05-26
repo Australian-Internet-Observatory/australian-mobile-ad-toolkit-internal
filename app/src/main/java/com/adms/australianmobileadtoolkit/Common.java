@@ -1,11 +1,17 @@
 package com.adms.australianmobileadtoolkit;
 
+import static com.adms.australianmobileadtoolkit.MainActivity.dataStore;
+import static com.adms.australianmobileadtoolkit.MainActivity.initiateDataStore;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.createDirectory;
 import static java.util.Collections.frequency;
 
 import android.content.Context;
 import android.view.View;
 import android.widget.Button;
 
+import androidx.datastore.preferences.core.MutablePreferences;
+import androidx.datastore.preferences.core.Preferences;
+import androidx.datastore.preferences.core.PreferencesKeys;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -31,23 +37,11 @@ import java.util.OptionalDouble;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
+
 @SuppressWarnings("unchecked")
 public class Common {
-
-   public static String exceptionWrite(Exception e) {
-      return "Line number: " + e.getStackTrace()[0].getLineNumber() + " msg: "+e.getMessage();
-   }
-
-   public static boolean withinTestEnvironment() {
-      boolean result;
-      try {
-         Class.forName("com.adms.australianmobileadtoolkit.testsMachine");
-         result = true;
-      } catch (final Exception e) {
-         result = false;
-      }
-      return result;
-   }
 
 
    /*
@@ -102,150 +96,6 @@ public class Common {
       return false;
    }
 
-   /*
-    *
-    * This function converts a list of integers into a HashMap, with values
-    * that correspond to frequencies of distinct values from the deriving list
-    *
-    * */
-
-   public static HashMap<Integer, Integer> weightedHashMap(List<Integer> input) {
-      HashMap<Integer, Integer> output = new HashMap<>();
-      for (Integer z : input) {
-         // If the entry is not already in the HashMap, add it
-         if (!in(output, z)) {
-            output.put(z, 0);
-         }
-         // Add one frequency point
-         output.put(z, Objects.requireNonNull(output.get(z))+1);
-      }
-      return output;
-   }
-   public static HashMap<Integer, Double> weightedHashMap(List<Integer> input, List<List<Integer>> inputIndices, HashMap<Integer, Integer> propensity) {
-      HashMap<Integer, Double> output = new HashMap<>();
-      for (int i = 0; i < input.size(); i ++) {
-
-         Integer z = input.get(i);
-
-         List<Integer> thisInputListIndex = inputIndices.get(i);
-
-         int divisorA = propensity.get(thisInputListIndex.get(0));
-         int divisorB = propensity.get(thisInputListIndex.get(1));
-
-         double thisPropensity = (1 / (double) divisorA / (double) divisorB);
-
-         // If the entry is not already in the HashMap, add it
-         if (!in(output, z)) {
-            output.put(z, 0.0);
-         }
-
-         // Add one frequency point
-         output.put(z, Objects.requireNonNull(output.get(z))+thisPropensity);
-      }
-      return output;
-   }
-
-   /*
-   *
-   * This function captures optional double errors, returning zero in the error case
-   *
-   * */
-   public static Double optionalGetDouble(Object x) {
-      if (x instanceof OptionalDouble) {
-         OptionalDouble y = (OptionalDouble) x;
-         if (y.isPresent()) {
-            return y.getAsDouble();
-         }
-      }
-      return 0.0;
-   }
-
-   /*
-   *
-   * This function returns the average of a list of doubles
-   *
-   * */
-   public static Double average(List<Double> z) {
-      return optionalGetDouble(z.stream().mapToDouble(Double::doubleValue).average());
-   }
-
-   /*
-    *
-    * This function snaps together values numerically by distance-based
-    * 'likeness' into a dictionary keyed by averages of said values
-    *
-    * */
-   public static double DEFAULT_BIN_AS_AVERAGES_LIKENESS = 2.0; // TODO - settings
-   public static HashMap<Double, List<Double>> binAsAverages(Arguments args) {
-      double likeness = (Double) args.get("likeness", DEFAULT_BIN_AS_AVERAGES_LIKENESS);
-      List<Double> input = (List<Double>) args.get("input", new ArrayList<Double>());
-
-      List<List<Double>> intermediate = new ArrayList<>();
-      // For each entry in the input list...
-      for (Double x : input) {
-         // Find all candidate lists, where the average of the given list is within
-         // 'likeness' distance of the entry
-         List<List<Double>> candidates = intermediate.stream().filter(y ->
-                                          Math.abs(x - average(y)) < likeness).collect(Collectors.toList());
-         // If there are no candidate lists, create one and insert the entry
-         if (candidates.isEmpty()) {
-            intermediate.add(new ArrayList<>(Collections.singletonList(x)));
-         } else {
-            // Or else add the value to the first candidate that it is 'like'
-            // TODO - should we consider instances where a value is 'like' multiple candidate lists
-            candidates.get(0).add(x);
-         }
-      }
-
-      // Convert the lists into a HashMap, keyed by the respective averages
-      HashMap<Double, List<Double>> output = new HashMap<>();
-      for (List<Double> x : intermediate) {
-         output.put(Math.floor(average(x)), x);
-      }
-
-      return output;
-   }
-
-
-   /*
-   *
-   * This function returns all unordered combinations that can be yielded from a list of integers
-   *
-   * */
-   public static List<List<Integer>> combinationPairs(List<Integer> list) {
-      List<List<Integer>> thisCombinations = new ArrayList<>();
-      for (int i = 0; i < list.size(); i++)
-         for (int j = i + 1; j < list.size(); j++) thisCombinations.add(Arrays.asList(i, j));
-      return thisCombinations;
-   }
-
-   /*
-   *
-   * This function determines the frequency of an element within an integer array
-   *
-   * */
-   public static int frequencyInArray(int[][] z, int y) {
-      return (int) Arrays.stream(z).map(x -> frequency(Collections.singletonList(x), y))
-            .collect(Collectors.toList()).stream().mapToDouble(x->x).sum();
-   }
-
-   /*
-   *
-   * This function retrieves the nth index of a boolean value within a supplied boolean list
-   *
-   * */
-   public static int BooleanIndexOfN(List<Boolean> values, Boolean x, int n) {
-      // Convert the list into a string to take advantage of the in-built string functions
-      // that assist this process
-      String str = values.stream().map(y -> (y) ? "a" : "b").collect(Collectors.joining(""));
-      String substr = (x) ? "a" : "b";
-      int pos = str.indexOf(substr);
-      while (--n > 0 && pos != -1)
-         pos = str.indexOf(substr, pos + 1);
-      return pos;
-   }
-
-
    public static void writeToFile(File thisFile, String contents) {
       try {
          PrintWriter writer = new PrintWriter(thisFile, "UTF-8");
@@ -270,6 +120,35 @@ public class Common {
          return convertStreamToString(Files.newInputStream(new File(thisFile.getAbsolutePath()).toPath()));
       } catch (Exception e) {
          return null;
+      }
+   }
+
+
+   public static void dataStoreWrite(Context context, String key, String value) {
+      initiateDataStore(context);
+      String appliedValue = value;
+      if (appliedValue == null) {
+         appliedValue = "NULL_VALUE";
+      }
+      final String appliedValueFinal = appliedValue;
+      Single<Preferences> updateResult = dataStore.updateDataAsync(prefsIn -> {
+         MutablePreferences mutablePreferences = prefsIn.toMutablePreferences();
+         mutablePreferences.set(PreferencesKeys.stringKey(key), appliedValueFinal);
+         return Single.just(mutablePreferences);
+      });
+   }
+
+   public static String dataStoreRead(Context context, String key, String defaultValue) {
+      initiateDataStore(context);
+      try {
+         String retrievedValue = dataStore.data().map(prefs -> prefs.get(PreferencesKeys.stringKey(key))).blockingFirst();
+         if (Objects.equals(retrievedValue, "NULL_VALUE")) {
+            return null;
+         } else {
+            return retrievedValue;
+         }
+      } catch (java.lang.NullPointerException e) {
+         return defaultValue;
       }
    }
 }

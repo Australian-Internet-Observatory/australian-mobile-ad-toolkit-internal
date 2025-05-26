@@ -2,10 +2,9 @@ package com.adms.australianmobileadtoolkit;
 
 import static com.adms.australianmobileadtoolkit.appSettings.prescribedMinVideoWidth;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.adjustDimensions;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.createDirectory;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.filenameUnextended;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.logger;
-import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourToHex;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.createDirectory;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.filenameUnextended;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.logger;
 import static com.google.gson.JsonParser.parseString;
 
 import android.content.Context;
@@ -15,14 +14,11 @@ import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.google.gson.JsonParser;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.json.JSONObject;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
@@ -60,6 +56,14 @@ public class machine {
                 (Integer) y.get("f"));
     });
 
+    /*
+     *
+     * This function converts a colour to a hex string
+     *
+     * */
+    public static String colourToHex(Integer colour) {
+        return String.format("#%06X", (0xFFFFFF & colour));
+    }
     /*
      *
      * Retrieve a bitmap at a given millisecond within a video file (note that this is the mocked version of the function)

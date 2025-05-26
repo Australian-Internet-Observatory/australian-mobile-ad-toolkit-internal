@@ -22,7 +22,6 @@
 
 package com.adms.australianmobileadtoolkit;
 
-import static com.adms.australianmobileadtoolkit.interpreter.visual.Visual.colourToHex;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;

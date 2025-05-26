@@ -19,8 +19,8 @@ android {
         multiDexEnabled  true
         minSdk 26
         targetSdk 34
-        versionCode 1019
-        versionName "1.019"
+        versionCode 1028
+        versionName "1.028"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets {
@@ -89,6 +89,12 @@ dependencies {
     // Image hashing
     implementation "ru.avicorp:phashcalc:1.0.1"
 
+
+    // Adding in Jetpack Datastore
+
+    implementation("androidx.datastore:datastore-preferences:1.1.4")
+    implementation("androidx.datastore:datastore-preferences-rxjava2:1.1.4")
+    implementation("androidx.datastore:datastore-preferences-rxjava3:1.1.4")
 
 
 

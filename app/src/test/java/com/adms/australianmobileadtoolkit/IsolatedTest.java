@@ -1,9 +1,9 @@
 package com.adms.australianmobileadtoolkit;
 
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.createDirectory;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.filePath;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.filenameUnextended;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.writeToJSON;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.createDirectory;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.filePath;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.filenameUnextended;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.writeToJSON;
 
 import static java.util.Arrays.asList;
 

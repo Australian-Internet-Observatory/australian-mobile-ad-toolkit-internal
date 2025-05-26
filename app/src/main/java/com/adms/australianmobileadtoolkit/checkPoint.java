@@ -1,6 +1,6 @@
 package com.adms.australianmobileadtoolkit;
 
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.createDirectory;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.createDirectory;
 
 import android.util.Log;
 
@@ -28,7 +28,7 @@ public class checkPoint {
     public JSONXObject types;
     public JSONXObject preContainer;
     HashMap<String, Boolean> initialized;
-    public static File outputDirectory;
+    public File outputDirectory;
     private boolean malformationFlag = false;
 
     Map<Class, String> primitiveClassMappings = Map.of(
@@ -132,7 +132,7 @@ public class checkPoint {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("Reinitiating as unstable data");
+                System.out.println("Reinitiating as unstable data - 1");
                 // Any error during assessment indicates a malformation in the data structure
                 types = new JSONXObject();
                 flats = new JSONXObject();
@@ -143,7 +143,8 @@ public class checkPoint {
         return null;
     }
 
-    public checkPoint(String argId) {
+    public checkPoint(String argId, File argOutputDirectory) {
+        setTargetDirectory(argOutputDirectory);
         id = argId;
         types = new JSONXObject();
         flats = new JSONXObject();
@@ -183,7 +184,9 @@ public class checkPoint {
                     container.set(k, preContainer.get(k));
                 }
             } else {
-                System.out.println("Reinitiating as unstable data");
+                //preContainer = new JSONXObject();
+                //initialized = new HashMap<>();
+                System.out.println("Reinitiating as unstable data - 2");
 
             }
 
@@ -194,7 +197,7 @@ public class checkPoint {
         }
     }
 
-    public static void setTargetDirectory(File argOutputDirectory) {
+    public void setTargetDirectory(File argOutputDirectory) {
         createDirectory(argOutputDirectory, false);
         outputDirectory = argOutputDirectory;
     }

@@ -2,7 +2,7 @@
     <string name="app_name">Australian Mobile Ad Toolkit</string>
     <string name="app_descr">This app records you phone\'s screen to detect advertisement content served to you within various third-party apps.</string>
     <string name="app_preface_registered">When the switch above is flipped on, this app will detect advertisements.</string>
-    <string name="recording_status">Recording Status</string>
+    <string name="recordingStatus">Recording Status</string>
     <string name="recording_descr">When active, your screen is being recorded.</string>
     <string name="dialog_loading">Loading...</string>
 
@@ -28,6 +28,8 @@
     <string name="fragment_main_app_status_registered">APP STATUS: REGISTERED</string>
     <string name="fragment_main_app_dashboard_tooltip">Advertisements that you have already observed can be viewed at your personal dashboard.</string>
     <string name="fragment_main_app_dashboard_text">GO TO MY DASHBOARD</string>
+    <string name="fragment_main_process_ad_digest_text">PROCESS MY ADS</string>
+
     <string name="dashboard_observed_prefix">Observed </string>
     <string name="notification_screen_lock_title">Ads stop being observed after locking your device</string>
     <string name="notification_screen_lock_description">Tap to continue observing ads</string>

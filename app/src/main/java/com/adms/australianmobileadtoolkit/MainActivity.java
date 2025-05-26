@@ -7,6 +7,8 @@
 package com.adms.australianmobileadtoolkit;
 
 import static android.Manifest.permission.POST_NOTIFICATIONS;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.Debugger.copyDebugData;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.cancelAllInactivityNotifications;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
@@ -17,16 +19,11 @@ import static com.adms.australianmobileadtoolkit.appSettings.get_APP_CHILD_DIREC
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
-import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE;
-import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.appSettings.observerIDDefaultValue;
+import static com.adms.australianmobileadtoolkit.appSettings.observerRegisteredDefaultValue;
+import static com.adms.australianmobileadtoolkit.appSettings.hardFixObserverIDRead;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityService.wipeTemporals;
-import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
-import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.getVideoMetadataAndroid;
-import static com.adms.australianmobileadtoolkit.interpreter.Interpreter.rootDirectoryPath;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.ObjectDetector.objectDetectorAndroid;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.platformInterpretationRoutine;
+import static com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker.httpRequestRegisterJoinedAt;
 import static com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain.safelySetToggleFromViewModel;
 
 import android.app.ActivityManager;
@@ -35,8 +32,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.media.MediaRecorder;
 import android.media.projection.MediaProjectionManager;
 import android.net.ConnectivityManager;
@@ -52,6 +49,9 @@ import android.view.WindowManager;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.datastore.preferences.core.Preferences;
+import androidx.datastore.preferences.rxjava3.RxPreferenceDataStoreBuilder;
+import androidx.datastore.rxjava3.RxDataStore;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
@@ -62,12 +62,8 @@ import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 // TODO do further testing on intermittent stops
@@ -81,28 +77,29 @@ public class MainActivity extends BaseActivity {
     // The main directory variable (to be used with file copying)
     public static File mainDir;
     // The observer ID is set to nothing to begin
-    public static String THIS_OBSERVER_ID = SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE;
+    public static String THIS_OBSERVER_ID = observerIDDefaultValue;
     // The registration status of the user
-    public static String THIS_REGISTRATION_STATUS = SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
+    public static String THIS_REGISTRATION_STATUS = observerRegisteredDefaultValue;
     public static MediaProjectionManager mMediaProjectionManager;
 
     public static String intentOfMainActivity = "NONE";
     public static MediaRecorder currentMediaRecorder;
 
     public Boolean initiated = false;
+    public static String PERIODIC_WORK_TAG = "PERIODIC_WORK_TAG";
+    public static String MANUAL_WORK_TAG = "MANUAL_WORK_TAG";
+
+    public static RxDataStore<Preferences> dataStore;
+
+    public static void initiateDataStore(Context context) {
+        if (dataStore == null) {
+            dataStore = new RxPreferenceDataStoreBuilder(context, /*name=*/ "settings").build();
+        }
+    }
+
 
     // TODO
     private static ItemViewModel viewModel;
-
-    /*
-     *
-     * This method assists with creating new configuration details for devices
-     *
-     * */
-    public void logDeviceIdentifier() {
-        System.out.println( "Device Identifier: " + android.os.Build.MODEL);
-    }
-
     /*
      *
      * This method is called anytime the app spins up
@@ -112,6 +109,8 @@ public class MainActivity extends BaseActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+            initiateDataStore(this);
 
             // TODO - apply loading dialog to start of recording event
 
@@ -133,7 +132,12 @@ public class MainActivity extends BaseActivity {
             // (in case it doesn't wipe when clearing the cache and storage, which technically shouldn't
             // happen, but here we are)
             // Run this block on the first run of the app
-            if (sharedPreferenceGet(this, "SHARED_PREFERENCE_FIRST_RUN", "true").equals("true")) {
+            if (dataStoreRead(this, "appFirstCallTime", "NULL").equals("NULL")) {
+                dataStoreWrite(this, "appFirstCallTime", String.valueOf(System.currentTimeMillis()));
+            }
+
+
+            if (dataStoreRead(this, "observerFirstRun", "true").equals("true")) {
                 System.out.println( "First run: setting shared preferences and generating directories");
                 // Create the directory required by the app within the mainDir
                 if ((!mainDir.exists()) && (!mainDir.mkdirs())) {
@@ -149,23 +153,62 @@ public class MainActivity extends BaseActivity {
                     }
                 }
                 // Generate an observer ID for this device, to be later submitted with data donations
-                sharedPreferencePut(this, "SHARED_PREFERENCE_OBSERVER_ID", UUID.randomUUID().toString());
-                // This code block has finished - commit the SHARED_PREFERENCE_FIRST_RUN variable,
+                // dataStoreWrite(this, "observerID", UUID.randomUUID().toString());
+                // This code block has finished - commit the observerFirstRun variable,
                 // to ensure it doesn't run again
-                sharedPreferencePut(this, "SHARED_PREFERENCE_FIRST_RUN", "false");
+                dataStoreWrite(this, "observerFirstRun", "false");
             }
+
+
             if (DEBUG) {
                 copyDebugData(this);
             }
             // Set the observer ID
-            THIS_OBSERVER_ID = sharedPreferenceGet(this, "SHARED_PREFERENCE_OBSERVER_ID",
-                  SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE);
+            try {
+                THIS_OBSERVER_ID = hardFixObserverIDRead(this);
+            } catch (Exception e) {
+                if (THIS_OBSERVER_ID == null) {
+                    System.exit(0);
+                }
+            }
 
-            sharedPreferencePut(this, "SHARED_PREFERENCE_REGISTERED", "true"); // This line is added in to auto-register the user on the first run
-            THIS_REGISTRATION_STATUS = sharedPreferenceGet(this, "SHARED_PREFERENCE_REGISTERED",
-                  SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE);
 
-            boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
+
+
+            if (dataStoreRead(this, "joinedAtLogged", "false").equals("false")) {
+                Log.i("JOINED_AT", "First time run!");
+                PackageManager pm = this.getPackageManager();
+                ApplicationInfo appInfo = null;
+                try {
+                    appInfo = pm.getApplicationInfo("com.adms.australianmobileadtoolkit", 0);
+                    String appFile = appInfo.sourceDir;
+                    long installed = new File(appFile).lastModified(); //Epoch Time
+                    dataStoreWrite(this, "joinedAtLogged", "true");
+                    Log.i("JOINED_AT", THIS_OBSERVER_ID);
+                    Log.i("JOINED_AT", String.valueOf(installed));
+
+                    Thread thread = new Thread(() -> {
+                        try {
+                            httpRequestRegisterJoinedAt(String.valueOf(installed), THIS_OBSERVER_ID);
+                        } catch (Exception e) {
+                            Log.e(TAG, e.getMessage());
+                        }
+                    });
+                    thread.start();
+
+
+                    Log.i("JOINED_AT", "Applied");
+                } catch (PackageManager.NameNotFoundException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
+            }
+
+            dataStoreWrite(this, "observerRegistered", "true"); // This line is added in to auto-register the user on the first run
+            THIS_REGISTRATION_STATUS = dataStoreRead(this, "observerRegistered",
+                  observerRegisteredDefaultValue);
+
+            boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, observerRegisteredDefaultValue));
 
             // Retrieve permission to send notifications whenever the app is opened
             if (ContextCompat.checkSelfPermission(MainActivity.this, POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -225,18 +268,18 @@ public class MainActivity extends BaseActivity {
 
             viewModel = new ViewModelProvider(this).get(ItemViewModel.class);
 
-            String PERIODIC_WORK_TAG = "PERIODIC_WORK_TAG";
+
 
             try { WorkManager.getInstance().cancelAllWorkByTag(PERIODIC_WORK_TAG).getResult(); } catch (Exception e) { /* Do nothing */ }
             try {  WorkManager.getInstance().pruneWork().getResult(); } catch (Exception e) { /* Do nothing */ }
             try {
                 System.out.println( "WorkManager is set.");
+
                 PeriodicWorkRequest periodicWork = new PeriodicWorkRequest.Builder(InterpreterWorker.class, 15, TimeUnit.MINUTES)
                       .addTag(PERIODIC_WORK_TAG)
                       .build();
                 // Do not start another worker if the current one is active
-                WorkManager.getInstance().enqueueUniquePeriodicWork(
-                        "DETECTION_OR_SIFT", ExistingPeriodicWorkPolicy.KEEP,  periodicWork);
+                WorkManager.getInstance(this.getApplicationContext()).enqueueUniquePeriodicWork("workName", ExistingPeriodicWorkPolicy.KEEP,  periodicWork);
 
             } catch (Exception e) { /* Do nothing */ }
 
@@ -248,7 +291,7 @@ public class MainActivity extends BaseActivity {
 
             String dummyIdentifier = "1234";
             stateObject xxx = new stateObject(this, dummyIdentifier);
-            Log.i(TAG, xxx.toString());
+            Log.i(TAG, xxx.toString());1
             if (!xxx.has("hello")) {
                 HashMap<Integer, Integer> yyy = new HashMap<>();
                 yyy.put(1,2);
@@ -329,54 +372,6 @@ public class MainActivity extends BaseActivity {
 
     /*
      *
-     * This method attempts to create a list of files
-     *
-     * */
-    public static void createFiles(final Context context, final List<Integer> inputRawResources) {
-        try {
-            // Get the context's resources
-            final Resources resources = context.getResources();
-            // Number of bytes to read in a single chunk
-            final byte[] largeBuffer = new byte[1024 * 4];
-            // Ephemeral variable used for tracking bytes to allocate for each file
-            int bytesRead = 0;
-            // For each file
-            for (Integer resource : inputRawResources) {
-                String fName = resources.getResourceEntryName(resource)
-                      .substring(9)
-                      .replace("_", ".")
-                      .replace("0", "-");
-                File outFile = new File(mainDir.getAbsolutePath()
-                      + (File.separatorChar + "tessdata" + File.separatorChar), fName);
-                // Read the file as a stream, and allocate it
-                final OutputStream outputStream = new FileOutputStream(outFile);
-                final InputStream inputStream = resources.openRawResource(resource);
-                while ((bytesRead = inputStream.read(largeBuffer)) > 0) {
-                    if (largeBuffer.length == bytesRead) {
-                        outputStream.write(largeBuffer);
-                    } else {
-                        final byte[] shortBuffer = new byte[bytesRead];
-                        System.arraycopy(largeBuffer, 0, shortBuffer, 0, bytesRead);
-                        outputStream.write(shortBuffer);
-                    }
-                }
-                inputStream.close();
-                outputStream.flush();
-                outputStream.close();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed on createFiles: ", e);
-        }
-
-        if (DEBUG) {
-
-            platformInterpretationRoutine(context, rootDirectoryPath, getVideoMetadataAndroid, frameGrabAndroid, true, objectDetectorAndroid);
-        }
-
-    }
-
-    /*
-     *
      * This method handles the functionality of resuming the app
      *
      * */
@@ -391,7 +386,7 @@ public class MainActivity extends BaseActivity {
 
 
         Intent intentOfMainActivityAsIntent = getIntent();
-        boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
+        boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, observerRegisteredDefaultValue));
         refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
     }
 
@@ -518,11 +513,12 @@ public class MainActivity extends BaseActivity {
 
     public static String retrieveShortActivationCode(Context context) {
         String myActivationCodeUUIDStringDefault = get_ACTIVATION_CODE_SHORT_DEFAULT(context);
-        String myActivationCodeUUIDString = sharedPreferenceGet(context,
-                "SHARED_PREFERENCE_OBSERVER_ID", myActivationCodeUUIDStringDefault);
-        if (!myActivationCodeUUIDString.equals(myActivationCodeUUIDStringDefault)) {
+        String myActivationCodeUUIDString = hardFixObserverIDRead(context);
+        if (myActivationCodeUUIDString != null) {
             Integer activationShortCodeLength = 6;
             myActivationCodeUUIDString = myActivationCodeUUIDString.substring(myActivationCodeUUIDString.length()-(1+activationShortCodeLength), myActivationCodeUUIDString.length()-1).toUpperCase();
+        } else {
+            myActivationCodeUUIDString = myActivationCodeUUIDStringDefault;
         }
         return myActivationCodeUUIDString;
     }

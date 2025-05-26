@@ -1,17 +1,18 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
+import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.Common.writeToFile;
-import static com.adms.australianmobileadtoolkit.InactivityReceiver.sendPeriodicNotification;
-import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
 
+import android.app.ActivityManager;
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 
 import com.adms.australianmobileadtoolkit.MainActivity;
+import com.adms.australianmobileadtoolkit.RecorderService;
 import com.adms.australianmobileadtoolkit.RecorderServiceIntentActivity;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -23,7 +24,7 @@ import java.util.List;
 
 public class AccessibilityService extends android.accessibilityservice.AccessibilityService{
     public static AccessibilityService instance;
-    private static final Long millisecondsWithinACooldown = 5000L; // 5 seconds
+    private static final Long millisecondsWithinACooldown = 5000L; // 5 seconds TODO:14.04.25
 
 
     private static String TAG = "AccessibilityService";
@@ -34,9 +35,9 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
     );
 
-    private static final List<String> triggerableAppPackageNames = Arrays.asList(
-            "com.facebook.", // Facebook
-            "com.instagram.", // Instagram
+    public static final List<String> triggerableAppPackageNames = Arrays.asList(
+            "com.facebook.katana", // Facebook
+            "com.instagram.android", // Instagram
             "com.zhiliaoapp.musically" // TikTok
     );
 
@@ -51,8 +52,23 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
     }
 
     public static void wipeTemporals(Context context) {
-        sharedPreferencePut(context, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_LAST_CALL", "NULL");
-        sharedPreferencePut(context, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_RUNNING", "false");
+        dataStoreWrite(context, "recorderServiceIntentLastCall", "NULL");
+        dataStoreWrite(context, "recorderServiceIntentRunning", "false");
+    }
+
+
+    private boolean isServiceRunningA() {
+        // Get the ActivityManager for the device
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        // Loop through all services within it
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            // If any of the services are equal to that of this app, return true
+            if (RecorderService.class.getName().equals(service.service.getClassName())) {
+
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -76,29 +92,44 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
                 // Within target platform...
                 if (isTargetPlatformBoolean(accessibilityEvent.getPackageName().toString())) {
                     Log.i(TAG, "Within target platform...");
-                    sharedPreferencePut(this, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_TARGET_PLATFORM", accessibilityEvent.getPackageName().toString());
+                    dataStoreWrite(this, "recorderServiceIntentTargetPlatform", accessibilityEvent.getPackageName().toString());
+                    dataStoreWrite(this, "recorderServiceIntentTargetPlatform_CALL_TIME", String.valueOf(System.currentTimeMillis()));
                     // Recording intent hasn't opened...
-                    if (sharedPreferenceGet(this, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_RUNNING", "false").equals("false")) {
+                    //if (dataStoreRead(this, "recorderServiceIntentRunning", "false").equals("false")) {
                         Log.i(TAG, "Recording intent has not been called...");
-                        // Not currently recording...
-                        if (sharedPreferenceGet(this, "RECORDING_STATUS", "false").equals("false")) {
-                            Log.i(TAG, "No current recording...");
-                            // Not currently in cooldown...
-                            String recorderServiceIntentLastCall = sharedPreferenceGet(this, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_LAST_CALL", "NULL");
-                            Log.i(TAG, "recorderServiceIntentLastCall: " + recorderServiceIntentLastCall);
-                            boolean isWithinCooldown = ((!recorderServiceIntentLastCall.equals("NULL")) && withinCooldown(recorderServiceIntentLastCall,currentMillis()));
-                            Log.i(TAG, String.valueOf(isWithinCooldown));
-                            if (!isWithinCooldown) {
-                                Log.i(TAG, "Not currently in cooldown...");
-                                sharedPreferencePut(this, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_LAST_CALL", currentMillis());
-                                startActivity(new Intent(this, RecorderServiceIntentActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                            }
+                        KeyguardManager myKM = (KeyguardManager) this.getSystemService(Context.KEYGUARD_SERVICE);
+
+                        // TODO - the recording status desyncs from the fragmentmain toggle when this safeguard turns off - there should be a closer sync strategy between both features
+                        if(myKM.inKeyguardRestrictedInputMode()) {
+                            Log.i(TAG, "Averting screen recording as screen is locked...");
+                        } else {
+                            // Not currently recording...
+                            Log.i(TAG, "r - Getting recordingStatus: "+ dataStoreRead( this, "recordingStatus", "false"));
+                            //if (dataStoreRead(this, "recordingStatus", "false").equals("false")) {
+                                Log.i(TAG, "No current recording...");
+                                // Not currently in cooldown...
+                                String recorderServiceIntentLastCall = dataStoreRead(this, "recorderServiceIntentLastCall", "NULL");
+                                Log.i(TAG, "recorderServiceIntentLastCall: " + recorderServiceIntentLastCall);
+                                boolean isWithinCooldown = ((!recorderServiceIntentLastCall.equals("NULL")) && withinCooldown(recorderServiceIntentLastCall,currentMillis()));
+                                Log.i(TAG, String.valueOf(isWithinCooldown));
+                                if (!isWithinCooldown) {
+
+                                    if (!isServiceRunningA()) { // TODO - this is a temporary fix
+                                        Log.i(TAG, "Not currently in cooldown...");
+                                        dataStoreWrite(this, "recorderServiceIntentLastCall", currentMillis());
+                                        startActivity(new Intent(this, RecorderServiceIntentActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                                    }
+                                }
+                            //}
                         }
-                    }
+                    //}
                 }
 
                 File rootDirectoryPath = MainActivity.getMainDir(this);
-                writeToFile(new File(rootDirectoryPath, "withinTargetApplication"),isTargetPlatform(accessibilityEvent.getPackageName().toString()));
+                if (!accessibilityEvent.getPackageName().toString().contains("australianmobileadtoolkit")) {
+                    writeToFile(new File(rootDirectoryPath, "withinTargetApplication"),isTargetPlatform(accessibilityEvent.getPackageName().toString()));
+                }
+
             }
         } catch (Exception e) {
             e.printStackTrace();

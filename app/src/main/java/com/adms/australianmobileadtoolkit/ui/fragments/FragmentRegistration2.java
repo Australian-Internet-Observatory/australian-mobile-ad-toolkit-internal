@@ -1,9 +1,10 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
+import static androidx.core.content.ContentProviderCompat.requireContext;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.appSettings.get_DEMOGRAPHIC_FAILSAFE_COUNTRY;
 import static com.adms.australianmobileadtoolkit.appSettings.get_DEMOGRAPHIC_FAILSAFE_STRING;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -56,7 +57,7 @@ public class FragmentRegistration2 extends Fragment implements AsyncResponse {
    public void processFinish(Boolean successfulRegistration) {
       if (successfulRegistration) {
          loadRegistration.dismiss();
-         sharedPreferencePut(getContext(), "SHARED_PREFERENCE_REGISTERED", "true");
+         dataStoreWrite( requireContext(), "observerRegistered", "true");
          loadSuccessfulRegistration = new DialogSuccessfulRegistration(requireContext());
          loadSuccessfulRegistration.show();
          loadSuccessfulRegistration.setOnDismissListener(new DialogInterface.OnDismissListener() {
@@ -213,12 +214,12 @@ public class FragmentRegistration2 extends Fragment implements AsyncResponse {
 
 
          if (fieldsEmpty) {
-            Toast.makeText(getContext(), get_DEMOGRAPHIC_FAILSAFE_STRING(getContext()), Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), get_DEMOGRAPHIC_FAILSAFE_STRING(getContext()), Toast.LENGTH_SHORT).show();
          } else {
             loadRegistration = new DialogLoading(requireContext());
             loadRegistration.show();
             // If the registration value is not yet set
-            if (!sharedPreferenceGet(requireContext(),"SHARED_PREFERENCE_REGISTERED", "false").equals("true")) {
+            if (!dataStoreRead(requireContext(),"observerRegistered", "false").equals("true")) {
                try {
                   String genderResult = tagOfRadioButton(view, R.id.radioGroupGender);
                   String genderSpecifyResult = (((EditText) view.findViewById(R.id.textInputGender)).getText().toString());
@@ -253,7 +254,7 @@ public class FragmentRegistration2 extends Fragment implements AsyncResponse {
       mswitchResidingInAustralia.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
          public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if (!isChecked) {
-               Toast.makeText(getContext(), get_DEMOGRAPHIC_FAILSAFE_COUNTRY(getContext()), Toast.LENGTH_SHORT).show();
+               Toast.makeText(requireContext(), get_DEMOGRAPHIC_FAILSAFE_COUNTRY(getContext()), Toast.LENGTH_SHORT).show();
                ((LinearLayout) view.findViewById(R.id.fragmentMainUnregisteredAustralian)).setVisibility(View.GONE);
                ((Button) view.findViewById(R.id.buttonCompleteRegistration)).setVisibility(View.GONE);
                ((TextView) view.findViewById(R.id.textViewAustralianCondition)).setVisibility(View.VISIBLE);

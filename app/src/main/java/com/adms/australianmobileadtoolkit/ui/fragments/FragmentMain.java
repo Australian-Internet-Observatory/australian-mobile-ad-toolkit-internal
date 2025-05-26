@@ -1,36 +1,23 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
 import static android.text.TextUtils.split;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.MainActivity.retrieveShortActivationCode;
 import static com.adms.australianmobileadtoolkit.MainActivity.safelySetToggleInViewModel;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
-import static com.adms.australianmobileadtoolkit.RecorderService.recordingInProgress;
-import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
-import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
-import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_PREFIX_STRING;
-import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_SHORT_DEFAULT;
-import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_SHORT_CODE_PREFIX_STRING;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
+import static com.adms.australianmobileadtoolkit.appSettings.observerRegisteredDefaultValue;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
 
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.graphics.Color;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.provider.Settings;
-import android.telecom.ConnectionService;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -39,22 +26,20 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.adms.australianmobileadtoolkit.InactivityReceiver;
 import com.adms.australianmobileadtoolkit.MainActivity;
 import com.adms.australianmobileadtoolkit.RecorderService;
 import com.adms.australianmobileadtoolkit.interpreter.AccessibilityService;
-import com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import com.adms.australianmobileadtoolkit.R;
-import com.adms.australianmobileadtoolkit.interpreter.Interpreter;
 import com.adms.australianmobileadtoolkit.ui.dialogs.DialogEnableAccessibilityService;
 import com.adms.australianmobileadtoolkit.ui.dialogs.DialogEnableAccessibilityServiceIntermediate;
-import com.adms.australianmobileadtoolkit.ui.dialogs.DialogFailedRegistration;
+import com.adms.australianmobileadtoolkit.ui.dialogs.DialogSubmitAds;
 
 import java.util.Objects;
 
 public class FragmentMain extends Fragment {
 
+   private DialogSubmitAds submitAdsDialog;
    private DialogEnableAccessibilityService enableAccessibilityService;
    private DialogEnableAccessibilityServiceIntermediate enableAccessibilityServiceIntermediate;
 
@@ -64,6 +49,7 @@ public class FragmentMain extends Fragment {
    private static Switch mToggleButton;
    // TODO - comment
    private Button mregisterButton;
+   private Button mRTD;
    // De-bouncer variable on toggler
    private static boolean mToggleButtonDebouncerActivated;
    // The registration status of the user
@@ -95,8 +81,7 @@ public class FragmentMain extends Fragment {
    @Override
    public View onCreateView(LayoutInflater inflater, ViewGroup container,
                             Bundle savedInstanceState) {
-      THIS_REGISTRATION_STATUS = (!Objects.equals(sharedPreferenceGet(
-            getActivity(), "SHARED_PREFERENCE_REGISTERED", SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE), SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
+      THIS_REGISTRATION_STATUS = (!Objects.equals(dataStoreRead(requireContext(),"observerRegistered", observerRegisteredDefaultValue), observerRegisteredDefaultValue));
       // TODO Auto-generated method stub
 
       view = inflater.inflate(R.layout.fragment_main, container, false);
@@ -105,6 +90,7 @@ public class FragmentMain extends Fragment {
       mToggleButton = (Switch) view.findViewById(R.id.simpleSwitch);
       // TODO // - comment
       mregisterButton = (Button) view.findViewById(R.id.buttonRegister);
+
       // Initialise the de-bouncer on the mToggleButton control
       mToggleButtonDebouncerActivated = false;
       // Apply a listener to the mToggleButton control, to execute the onToggleScreenShare method
@@ -164,7 +150,18 @@ public class FragmentMain extends Fragment {
 
 
 
-         String myActivationCodeUUIDString = retrieveShortActivationCode(getContext());
+
+         Button buttonGoToProcessMyAdDigest = (Button) view.findViewById(R.id.buttonGoToProcessMyAdDigest);
+         buttonGoToProcessMyAdDigest.setOnClickListener(v ->{
+            submitAdsDialog = (new DialogSubmitAds(requireContext(), getParentFragmentManager()));
+            submitAdsDialog.create();
+            submitAdsDialog.show();
+         });
+
+
+
+
+         String myActivationCodeUUIDString = retrieveShortActivationCode(requireContext());
          TextView myActivationCode = ((TextView) view.findViewById(R.id.indicator_activation_code));
          myActivationCode.setText( myActivationCodeUUIDString);
 
@@ -210,31 +207,6 @@ public class FragmentMain extends Fragment {
       });
       buttonAccessibilityDisclosureAER.setOnClickListener(commonLaunchAccessibilityPermissionsRoutine);
       buttonAccessibilityDisclosureBER.setOnClickListener(commonLaunchAccessibilityPermissionsRoutine);
-
-      if (DEBUG) { // TODO - clean
-         Button btn = new Button(getActivity());
-         btn.setText("RUN DEBUG");
-         LinearLayout.MarginLayoutParams x = new LinearLayout.MarginLayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-               LinearLayout.LayoutParams.WRAP_CONTENT);
-         x.setMargins(0,(int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, getResources().getDisplayMetrics()), 0, 0);
-         btn.setLayoutParams(new LinearLayout.LayoutParams(x));
-         btn.setBackgroundColor(Color.rgb(252, 3, 44));
-         LinearLayout ll = (THIS_REGISTRATION_STATUS) ?
-               view.findViewById(R.id.fragment_main_registered) : view.findViewById(R.id.fragment_main_unregistered);
-         ll.addView(btn);
-         ll.invalidate();
-         btn.setOnClickListener(view1 -> {
-            Thread thread = new Thread(() -> {
-               Interpreter lManager = new Interpreter(getActivity());
-               //try {
-                  lManager.run("DETECTION");
-             //  } catch (JSONException e) {
-//throw new RuntimeException(e);
-             //  }
-            });
-            thread.start();
-         });
-      }
 
       startAccessibilityService();
 

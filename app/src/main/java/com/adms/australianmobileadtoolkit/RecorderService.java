@@ -10,6 +10,8 @@ package com.adms.australianmobileadtoolkit;
 import static android.app.Activity.RESULT_OK;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION;
 
+import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.Common.filePath;
 import static com.adms.australianmobileadtoolkit.Common.getFilesInDirectory;
 import static com.adms.australianmobileadtoolkit.Common.readStringFromFile;
@@ -27,8 +29,7 @@ import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RE
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.get_RECORD_SERVICE_EXTRA_RESULT_CODE;
 import static com.adms.australianmobileadtoolkit.appSettings.maxNumberOfVideos;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
+import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityService.triggerableAppPackageNames;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
 
 import android.app.Activity;
@@ -55,6 +56,7 @@ import android.os.PowerManager;
 import android.os.Process;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Surface;
 import android.view.WindowManager;
 
@@ -69,7 +71,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -127,7 +131,6 @@ public final class RecorderService extends Service {
                     MediaProjectionConfig.createConfigForUserChoice());*/
             screenRecordingIntent = mProjectionManager.createScreenCaptureIntent(
                     MediaProjectionConfig.createConfigForDefaultDisplay()); // TODO - desired effect was not observed
-
         } else {
             screenRecordingIntent = mProjectionManager.createScreenCaptureIntent();
         }
@@ -298,8 +301,73 @@ public final class RecorderService extends Service {
 
     private Handler mHandler;
 
-    private String recordingFilename(String videoDir, String orientation) {
-        return (videoDir + File.separatorChar + "unclassified" + "." + ((int) Math.floor(System.currentTimeMillis() / (double) 1000)) + "." + UUID.randomUUID().toString() + "." + orientation + ".mp4");
+    private String recordingFilename(String videoDir, String orientation, Context context) {
+        return (videoDir + File.separatorChar + getCurrentAppPackageName(context) + "." + ((int) Math.floor(System.currentTimeMillis() / (double) 1000)) + "." + UUID.randomUUID().toString() + "." + orientation + ".mp4");
+    }
+
+    public static String augmentAppPackageName(String tentativeAppPackageName) {
+        return tentativeAppPackageName.replaceAll("\n", "").replaceAll("\\.","_");
+
+    }
+
+    public static String getCurrentAppPackageName(Context context) {
+        String appPackageName = "unclassified";
+        String tentativeAppPackageName = "unclassified";
+        try { tentativeAppPackageName = readStringFromFile(new File(MainActivity.getMainDir(context), "withinTargetApplication")); } catch (Exception ignored) {}
+        String finalTentativeAppPackageName = tentativeAppPackageName;
+        if (triggerableAppPackageNames.stream().anyMatch(x -> finalTentativeAppPackageName.contains(x))) {
+            appPackageName = augmentAppPackageName(tentativeAppPackageName);
+        }
+        return appPackageName;
+    }
+
+    /*
+    *
+    * This method awaits a premature stop of the screen-recorder, and retrieves the lsat screen-recording's filename, adjusting it
+    * to the name of the current app package name (if applicable)
+    *
+    * */
+    public static void tentativeRecordingRecovery(Context context) {
+
+        File videosDirectory = (new File (MainActivity.getMainDir(context).getAbsolutePath(), "videos"));
+        String tentativeRecordingFilename = "NULL";
+
+        if (Objects.requireNonNull(videosDirectory.listFiles()).length > 0) {
+            List<String> orderedVideoPaths = Arrays.stream(videosDirectory.listFiles()).map((x) -> {
+                List<String> splitFile = Arrays.asList(x.getAbsolutePath().split("/"));
+                Integer timestamp = Integer.valueOf(Arrays.asList(splitFile.get(splitFile.size() - 1).split("\\.")).get(1));
+                return new Pair<>(x.getAbsolutePath(), timestamp);
+            }).sorted(Comparator.comparing(o -> o.second)).map(y -> y.first).collect(Collectors.toList());
+            tentativeRecordingFilename = orderedVideoPaths.get(orderedVideoPaths.size() - 1);
+        }
+
+        Log.i(TAG, "The current recording at time of premature stop is:");
+        Log.i(TAG, tentativeRecordingFilename);//dataStoreRead(context, "TENTATIVE_RECORDING_FILENAME", "NULL"));
+        Log.i(TAG, dataStoreRead(context,"recorderServiceIntentTargetPlatform", "NULL"));
+        Log.i(TAG, dataStoreRead(context,"recorderServiceIntentTargetPlatform_CALL_TIME", "NULL"));
+
+        // At the point of starting a recording, it may not yet be classified (e.g. if we are not within the target app at starting the recording
+        // but then go into it - thereafter, we abruptly stop the recording, causing it to be retained as an unclassified recording
+        // To overcome this, we have a 'catching' event that recovers unclassified recordings
+        // TODO
+        // To replicate, begin a recording in this app, and then switch to a target platform
+        long cooldownOnCallTime = (10 * 1000);
+        long tentativeCallTime = Long.parseLong((dataStoreRead(context,"recorderServiceIntentTargetPlatform_CALL_TIME", String.valueOf(0))));
+
+        Log.i(TAG, "cooldownOnCallTime: " + cooldownOnCallTime);
+        Log.i(TAG, "tentativeCallTime: " + tentativeCallTime);
+
+        String tentativePlatform = dataStoreRead(context,"recorderServiceIntentTargetPlatform", "NULL");
+        // If the recording is unclassified, the tentative platform is non-null, and the time of reading the tentative platform was not more than 10 seconds ago
+        if ((tentativeRecordingFilename.contains("unclassified")) && (!tentativePlatform.equals("NULL")) && (Math.abs(System.currentTimeMillis() - tentativeCallTime) < cooldownOnCallTime)) {
+            Log.i(TAG, "Can recover!!!!");
+            String newFilename = tentativeRecordingFilename.replace("unclassified", augmentAppPackageName(tentativePlatform));
+            Log.i(TAG, "Original filename: " + tentativeRecordingFilename);
+            Log.i(TAG, "New filename: " + newFilename);
+            (new File(tentativeRecordingFilename)).renameTo(new File(newFilename));
+        } else {
+            (new File(tentativeRecordingFilename)).delete();
+        }
     }
 
     /*
@@ -348,7 +416,7 @@ public final class RecorderService extends Service {
                         if (isAccessibilityServiceEnabled(getApplicationContext(), AccessibilityService.class)) {
                             // There is a possibility that the value may've not been written.
                             try {
-                                tentativeAppPackageName = readStringFromFile(new File(MainActivity.getMainDir(this), "withinTargetApplication"));
+                                tentativeAppPackageName = getCurrentAppPackageName(this);
                                 assert tentativeAppPackageName != null;
                                 withinTargetPlatform = (!(tentativeAppPackageName.contains("NULL")));
                             } catch (Exception e) {}
@@ -361,16 +429,21 @@ public final class RecorderService extends Service {
                             }
                         }
 
-
-                        if (dispatchCooldown <= 0) {
-                            (new File(previousRecordingFilename)).delete();
-                        } else {
-                            if (appPackageName.isEmpty()) {
+                        // This block is only actioned when the previous recording has not yet been identified as relating to a target app,
+                        // which in turn preserves recordings that have already been identified as relevant.
+                        if (previousRecordingFilename.contains("unclassified")) {
+                            if (dispatchCooldown <= 0) {
                                 (new File(previousRecordingFilename)).delete();
                             } else {
-                                // Apply the app package name to the recording
-                                (new File(previousRecordingFilename)).renameTo(
-                                        new File(previousRecordingFilename.replace("unclassified", appPackageName.replaceAll("\n", "").replaceAll("\\.","_"))));
+                                if (appPackageName.isEmpty()) {
+                                    (new File(previousRecordingFilename)).delete();
+                                } else {
+                                    // Apply the app package name to the recording
+                                    (new File(previousRecordingFilename)).renameTo(
+                                            new File(previousRecordingFilename.replace("unclassified", appPackageName)));
+                                    // The tentative recording filename only indicates the current file - which is no longer this one
+                                    // dataStoreWrite(this, "TENTATIVE_RECORDING_FILENAME", previousRecordingFilename);
+                                }
                             }
                         }
 
@@ -392,7 +465,8 @@ public final class RecorderService extends Service {
                     System.out.println("The media recorder has identified that the maximum file size has"
                             + " been reached; setting new output file.");
                     // Write out a new file
-                    tentativeRecordingFilename = recordingFilename(videoDir, finalOrientation);
+                    tentativeRecordingFilename = recordingFilename(videoDir, finalOrientation, this);
+                    dataStoreWrite(this, "TENTATIVE_RECORDING_FILENAME", tentativeRecordingFilename);
                     try (RandomAccessFile newRandomAccessFile =
                                  new RandomAccessFile(tentativeRecordingFilename,"rw")) {
                         mMediaRecorder.setNextOutputFile(newRandomAccessFile.getFD());
@@ -446,7 +520,8 @@ public final class RecorderService extends Service {
             mMediaRecorder.setCaptureRate(30); // success with 1 - 30
             mMediaRecorder.setVideoFrameRate(30);
             // Set the preliminary output file
-            previousRecordingFilename = recordingFilename(videoDir, finalOrientation);
+            previousRecordingFilename = recordingFilename(videoDir, finalOrientation, this);
+            dataStoreWrite( this, "TENTATIVE_RECORDING_FILENAME", previousRecordingFilename);
             mMediaRecorder.setOutputFile(previousRecordingFilename);
             boolean didPrepare = false;
             try {
@@ -469,8 +544,9 @@ public final class RecorderService extends Service {
                         @Override
                         public void onStop() {
                             super.onStop();
-                            sharedPreferencePut(getApplicationContext(), "RECORDING_STATUS", "false");
-                            sharedPreferencePut(getApplicationContext(), "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_LAST_CALL", String.valueOf(System.currentTimeMillis()));
+                            dataStoreWrite( getApplicationContext(), "recordingStatus", "false");
+                            Log.i("recordingStatus", "Setting recordingStatus to false - recorderService");
+                            dataStoreWrite(getApplicationContext(), "recorderServiceIntentLastCall", String.valueOf(System.currentTimeMillis()));
                             Log.i(TAG, "RecorderService was possibly stopped prematurely.");
                             // This event is triggered one of a few ways - either from the status bar chip,
                             // from the screen lock 'auto stop' functionality, or from manually stopping the Media Projection
@@ -501,6 +577,9 @@ public final class RecorderService extends Service {
 
             if (didStart) {
                 recordingInProgress = true;
+                dataStoreWrite( getApplicationContext(), "recordingStatus", "true"); // TODO:14.04.25
+                // Log.i("recordingStatus", "Setting recordingStatus to true - 1");
+
                 sendBroadcast(new Intent(this, InactivityReceiver.class)
                         .putExtra("INTENT_ACTION", "RECORDING_HAS_STARTED"));  // TODO - checked for API migration
                 //MainActivity.safelySetToggleInViewModel(true);

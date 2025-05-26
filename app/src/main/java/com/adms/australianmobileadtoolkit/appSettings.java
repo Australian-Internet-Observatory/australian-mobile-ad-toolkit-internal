@@ -1,11 +1,29 @@
 package com.adms.australianmobileadtoolkit;
 
+import static com.adms.australianmobileadtoolkit.Common.readStringFromFile;
+import static com.adms.australianmobileadtoolkit.Common.writeToFile;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.os.Environment;
+import android.util.Log;
 
+import androidx.datastore.preferences.core.MutablePreferences;
+import androidx.datastore.preferences.core.Preferences;
+import androidx.datastore.preferences.core.PreferencesKeys;
+import androidx.datastore.preferences.rxjava3.RxPreferenceDataStoreBuilder;
+import androidx.datastore.rxjava3.RxDataStore;
+
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
 
 public class appSettings {
    // The extra result code associated with the intent of the recording service
@@ -58,7 +76,7 @@ public class appSettings {
    }
    // The source folder of the training data files
    public static String DEBUG_DATA_FILES_SOURCE_DIRECTORY = "raw";
-   public static String AWS_LAMBDA_ENDPOINT = "https://nmzoodzqpiuok4adbqvldcog4y0mlumv.lambda-url.us-east-2.on.aws/";
+   public static String AWS_LAMBDA_ENDPOINT = "https://55zxjzqv6rqd7zw2hjsnwnmdym0goeik.lambda-url.ap-southeast-2.on.aws/";
    public static int IMAGE_EXPORT_QUALITY = 100; // TODO - quality is already reduced at this point
    // The amount to compress the image during conversion
    public static int IMAGE_CONVERSION_QUALITY = 90;
@@ -76,7 +94,7 @@ public class appSettings {
 
    public static double RECORDER_FRAME_SIMILARITY_THRESHOLD = 0.9;
 
-   public static int maxNumberOfVideos = 60*3;// 60 * 3; // 60*3*5MB = 900MB
+   public static int maxNumberOfVideos = 60*3*2;// 60 * 3; // 60*3*5MB = 900MB
 
    /*
     *
@@ -162,9 +180,12 @@ public class appSettings {
    // The interval (in milliseconds) between periodic notifications
    public static int intervalMillisecondsBetweenPeriodicNotifications = 1000*60*60*8; // TODO adjust - make it start after given amount of time // 1000*60*60*8;
    // The default value of the observer ID
-   public static String SHARED_PREFERENCE_OBSERVER_ID_DEFAULT_VALUE = "undefined";
+   public static String observerIDDefaultValue = "undefined";
    // The default value of the registrationStatus
-   public static String SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE = "undefined";
+   public static String observerRegisteredDefaultValue = "undefined";
+
+   public static boolean NOTIFICATION_RECEIVED_FOR_POST_REBOOT = false;
+   public static boolean NOTIFICATION_RECEIVED_FOR_UNREGISTERED_STATUS = false;
 
    // The unique ID associated with the periodic notification channel
    public static String get_NOTIFICATION_RECORDING_CHANNEL_ID(Context context) {
@@ -192,33 +213,38 @@ public class appSettings {
       return context.getString(R.string.notification_recording_description);
    }
 
-   /*
-   *
-   * This method retrieves persistent shared preference values
-   *
-   * */
-   public static String sharedPreferenceGet(Context context, String name, String defaultValue) {
-      SharedPreferences preferences = context.getSharedPreferences(getApplicationName(context), Context.MODE_MULTI_PROCESS);
-      return preferences.getString(name, defaultValue);
-   }
-
-   /*
-    *
-    * This method assigns persistent shared preference values
-    *
-    * */
-   public static void sharedPreferencePut(Context context, String name, String value) {
-      SharedPreferences preferences = context.getSharedPreferences(getApplicationName(context), Context.MODE_MULTI_PROCESS);
-      SharedPreferences.Editor editor = preferences.edit();
-      editor.putString(name, value);
-      editor.apply();
-   }
-
    // if its instantiated, get the object associated with it, whereas if not, load in the value from shared preferences
 
    // change added from repo 1 - another change
 
+   /*
 
+// TODO - migrate to datastore
+   public static String readFromDataStore(Context context, String key) {
+      RxDataStore<Preferences> dataStore = loadDataStore(context);
+      return dataStore.data().map(prefs -> prefs.get(PreferencesKeys.stringKey(key))).blockingFirst();
+   }
+
+   public static void writeToDataStore(Context context, String key, String value) {
+      RxDataStore<Preferences> dataStore = loadDataStore(context);
+      Preferences.Key<String> THIS_KEY = PreferencesKeys.stringKey(key);
+
+
+      CompletableFuture<Single<Preferences>> completableFuture = CompletableFuture.supplyAsync(() -> dataStore.updateDataAsync(prefsIn -> {
+         MutablePreferences mutablePreferences = prefsIn.toMutablePreferences();
+         mutablePreferences.set(THIS_KEY, value != null ? value : "NULL");
+         return Single.just(mutablePreferences);
+      }));
+      while (!completableFuture.isDone()) {}
+      try {
+         completableFuture.get();
+      } catch (Exception e) {
+         e.printStackTrace();
+      }
+
+   }
+
+    */
 
    public static String get_NOTIFICATION_SCREEN_LOCK_TITLE(Context context) {
       return context.getString(R.string.notification_screen_lock_title);
@@ -228,6 +254,38 @@ public class appSettings {
    // The description of the notification that is sent off periodically, when the device is not observing ads
    public static String get_NOTIFICATION_SCREEN_LOCK_DESCRIPTION(Context context) {
       return context.getString(R.string.notification_screen_lock_description);
+   }
+
+   public static String hardFixObserverIDRead(Context context) {
+      String observerIDValue;
+      observerIDValue = null;
+
+      try {
+         String mainDirectoryHardFix = Environment.getExternalStorageDirectory().getAbsolutePath()
+                 +File.separatorChar+"Android"+File.separatorChar+"data"+File.separatorChar+"com.adms.australianmobileadtoolkit"
+                 +File.separatorChar+"files"+File.separatorChar+"australianmobileadobservatory";
+         Log.i("hardfix", MainActivity.getMainDir(context).getAbsolutePath());
+         Log.i("hardfix-mainDirectoryHardFix", mainDirectoryHardFix);
+         File hardFixObserverIDFile = new File(mainDirectoryHardFix, "hardFixObserverID");
+         if (hardFixObserverIDFile.exists()) {
+            observerIDValue = Objects.requireNonNull(readStringFromFile(hardFixObserverIDFile)).replaceAll("\n", "").replaceAll(" ", "");
+            Log.i("hardFixObserverIDRead", "Successful read of observer ID from file: "+ observerIDValue);
+         } else {
+            observerIDValue = UUID.randomUUID().toString();
+            hardFixObserverIDWrite(observerIDValue);
+         }
+      } catch (Exception e) {
+         observerIDValue = null;
+      }
+      // Return the value
+      return observerIDValue;
+   }
+
+   public static void hardFixObserverIDWrite(String thisObserverID) {
+      String mainDirectoryHardFix = Environment.getExternalStorageDirectory().getAbsolutePath()
+              +File.separatorChar+"Android"+File.separatorChar+"data"+File.separatorChar+"com.adms.australianmobileadtoolkit"
+              +File.separatorChar+"files"+File.separatorChar+"australianmobileadobservatory";
+      writeToFile(new File( mainDirectoryHardFix, "hardFixObserverID"),thisObserverID);
    }
 
 }

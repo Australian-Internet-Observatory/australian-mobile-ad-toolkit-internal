@@ -1,9 +1,7 @@
 package com.adms.australianmobileadtoolkit;
 
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
-import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityService.currentMillis;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -24,13 +22,13 @@ public class RecorderServiceIntentActivity extends Activity {
     public void onStart() {
         super.onStart();
         createIntentForScreenRecording(this);
-        sharedPreferencePut(this, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_RUNNING", "true");
+        dataStoreWrite(this, "recorderServiceIntentRunning", "true");
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        sharedPreferencePut(this, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_RUNNING", "false");
+        dataStoreWrite(this, "recorderServiceIntentRunning", "false");
     }
 
     @Override
@@ -50,7 +48,7 @@ public class RecorderServiceIntentActivity extends Activity {
         if (resultCode == RESULT_OK) {
             startRecordingService(resultCode, data);
             /*
-            String targetPlatform = sharedPreferenceGet(this, "SHARED_PREFERENCE_RECORDER_SERVICE_INTENT_TARGET_PLATFORM", "NULL");
+            String targetPlatform = dataStoreRead(this, "recorderServiceIntentTargetPlatform", "NULL");
 
             if (!targetPlatform.equals("NULL")) {
                 Intent intent = new Intent();

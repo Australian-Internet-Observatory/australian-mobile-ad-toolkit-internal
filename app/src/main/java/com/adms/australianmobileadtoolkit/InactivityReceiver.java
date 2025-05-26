@@ -1,20 +1,23 @@
 package com.adms.australianmobileadtoolkit;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
+import static com.adms.australianmobileadtoolkit.RecorderService.getCurrentAppPackageName;
+import static com.adms.australianmobileadtoolkit.RecorderService.tentativeRecordingRecovery;
+import static com.adms.australianmobileadtoolkit.appSettings.NOTIFICATION_RECEIVED_FOR_UNREGISTERED_STATUS;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_REBOOT_DESCRIPTION;
-import static com.adms.australianmobileadtoolkit.appSettings.SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE;
+import static com.adms.australianmobileadtoolkit.appSettings.observerRegisteredDefaultValue;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_TITLE_UNREGISTERED;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_REBOOT_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_SCREEN_LOCK_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_SCREEN_LOCK_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.intervalMillisecondsBetweenPeriodicNotifications;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -59,7 +62,7 @@ public class InactivityReceiver extends BroadcastReceiver {
    *
    * */
    public static void setPeriodicNotifications(Context context) {
-      if (sharedPreferenceGet(context, "SHARED_PREFERENCE_PERIODIC_NOTIFICATIONS_SET", "false").equals("false")) {
+      if (dataStoreRead( context, "periodicNotificationsSet", "false").equals("false")) {
          System.out.println( "Attempted to set periodic notifications: success");
          Intent notificationIntent = new Intent(context, InactivityReceiver.class); // TODO - checked for API migration
          notificationIntent.putExtra("INTENT_ACTION", "PERIODIC_NOTIFICATION");
@@ -77,7 +80,7 @@ public class InactivityReceiver extends BroadcastReceiver {
                   AlarmManager.RTC, Calendar.getInstance().getTime().toInstant().toEpochMilli(),
                   intervalMillisecondsBetweenPeriodicNotifications, pending);
          }
-         sharedPreferencePut(context, "SHARED_PREFERENCE_PERIODIC_NOTIFICATIONS_SET", "true");
+         dataStoreWrite(context, "periodicNotificationsSet", "true");
       } else {
          System.out.println( "Attempted to set periodic notifications: already set");
       }
@@ -168,7 +171,7 @@ public class InactivityReceiver extends BroadcastReceiver {
 
       // Get the current random notification ID (if it exists)
       int thisCurrentNotificationRandomID = Integer.parseInt(
-                                               sharedPreferenceGet(context, notificationIDCase,
+                                               dataStoreRead(context, notificationIDCase,
                                                    String.valueOf(DEFAULT_NOTIFICATION_RANDOM_ID_VALUE)));
       // And generate a new random notification ID (that will replace the current one)
       int thisNewNotificationRandomID = generateRandomPositiveNumber();
@@ -178,7 +181,7 @@ public class InactivityReceiver extends BroadcastReceiver {
          // Or if there are past notifications to cancel, cancel them...
          cancelNotificationOfID(context, thisCurrentNotificationRandomID, notificationIDCase);
       }
-      sharedPreferencePut(context, notificationIDCase, String.valueOf(thisNewNotificationRandomID));
+      dataStoreWrite(context, notificationIDCase, String.valueOf(thisNewNotificationRandomID));
       // Irrespectively, send off the current notification (with the newly defined
       // random notification ID (that will be cancelled upon re-initiation in future)
       Log.i("randomNotificationID", "Sending new "+notificationIDCase+" notification of ID: " + String.valueOf(thisNewNotificationRandomID));
@@ -208,7 +211,8 @@ public class InactivityReceiver extends BroadcastReceiver {
    *
    * */
    private boolean shouldUserBeNotifiedAboutInactivity(Context context) {
-      return (!sharedPreferenceGet(context, "RECORDING_STATUS", "false").equals("true"));
+      Log.i(TAG, "w - Getting recordingStatus: "+ dataStoreRead(context, "recordingStatus", "false"));
+      return (!dataStoreRead( context, "recordingStatus", "false").equals("true"));
    }
 
    /*
@@ -228,7 +232,7 @@ public class InactivityReceiver extends BroadcastReceiver {
               Arrays.asList("NOTIFICATION_PERIODIC_ID_CASE", "NOTIFICATION_REBOOT_ID_CASE")) {
          // Retrieve the current random notification ID
          int currentNotificationRandomIDPeriodic = Integer.parseInt(
-                 sharedPreferenceGet(context, notificationCase,
+                 dataStoreRead(context, notificationCase,
                          String.valueOf(DEFAULT_NOTIFICATION_RANDOM_ID_VALUE)));
          // If there is a notification to be cancelled
          // (by indication that the notification ID is not its default value)
@@ -239,7 +243,9 @@ public class InactivityReceiver extends BroadcastReceiver {
       }
    }
 
-   public static void sendPeriodicNotification(Context context, boolean THIS_REGISTRATION_STATUS) {
+   public static void sendPeriodicNotification(Context context, boolean _THIS_REGISTRATION_STATUS) {
+      // Note: We are inserting an override to accommodate instances where the app comes pre-registered
+      boolean THIS_REGISTRATION_STATUS = !NOTIFICATION_RECEIVED_FOR_UNREGISTERED_STATUS || _THIS_REGISTRATION_STATUS;
       NotificationCompat.Builder builderPeriodicNotification;
       // Send the periodic notification to inform the user that the app is not observing ads
       if (THIS_REGISTRATION_STATUS) {
@@ -256,7 +262,8 @@ public class InactivityReceiver extends BroadcastReceiver {
                  .setContentIntent(constructNotificationScreenRecorderPendingIntent(context, "REGISTER"));
 
       }
-      sendNotification(context, builderPeriodicNotification, "NOTIFICATION_PERIODIC_ID_CASE");
+      // TODO - turning off most periodic notifications tentatively
+      // sendNotification(context, builderPeriodicNotification, "NOTIFICATION_PERIODIC_ID_CASE");
    }
 
 
@@ -267,7 +274,8 @@ public class InactivityReceiver extends BroadcastReceiver {
                  get_NOTIFICATION_SCREEN_LOCK_TITLE(context),
                  get_NOTIFICATION_SCREEN_LOCK_DESCRIPTION(context),null)
                  .setContentIntent(constructNotificationScreenRecorderPendingIntent(context, "TURN_ON_SCREEN_RECORDER"));
-      sendNotification(context, builderPeriodicNotification, "NOTIFICATION_PERIODIC_ID_CASE");
+      // TODO - turning off most periodic notifications tentatively
+      // sendNotification(context, builderPeriodicNotification, "NOTIFICATION_PERIODIC_ID_CASE");
    }
 
    public static void sendRebootNotification(Context context) {
@@ -297,8 +305,7 @@ public class InactivityReceiver extends BroadcastReceiver {
    * */
    @Override
    public void onReceive(Context context, Intent intent) {
-      boolean THIS_REGISTRATION_STATUS = (!Objects.equals(sharedPreferenceGet(
-              context, "SHARED_PREFERENCE_REGISTERED", SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE), SHARED_PREFERENCE_REGISTERED_DEFAULT_VALUE));
+      boolean THIS_REGISTRATION_STATUS = (!Objects.equals(dataStoreRead(context, "observerRegistered", observerRegisteredDefaultValue), observerRegisteredDefaultValue));
 
       // Set the periodic alarm that is called to determine if the software is observing ads or not
       // We place it for any received event, as we try to maximise the instances in which it is called
@@ -309,13 +316,13 @@ public class InactivityReceiver extends BroadcastReceiver {
                get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME(context), get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION(context));
          // If the device has rebooted:
          if ((intent != null) && (intent.getAction() != null) && (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED))) {
-            System.out.println( "'SCREEN_OFF_DURING_RECORDING' and 'RECORDING_STATUS' variables have been set back to 'false'");
-            // Reset the 'SCREEN_OFF_DURING_RECORDING' and 'RECORDING_STATUS' variables
-            sharedPreferencePut(context, "SCREEN_OFF_DURING_RECORDING", "false");
-            Log.i("RECORDING_STATUS", "Setting RECORDING_STATUS to false - 1");
-            sharedPreferencePut(context, "RECORDING_STATUS", "false");
+            System.out.println( "'SCREEN_OFF_DURING_RECORDING' and 'recordingStatus' variables have been set back to 'false'");
+            // Reset the 'SCREEN_OFF_DURING_RECORDING' and 'recordingStatus' variables
+            dataStoreWrite(context, "SCREEN_OFF_DURING_RECORDING", "false");
+            Log.i("recordingStatus", "Setting recordingStatus to false - 1");
+            dataStoreWrite(context, "recordingStatus", "false");
             // Reset the periodic notifications indicator (so that it isn't doubly set)
-            sharedPreferencePut(context, "SHARED_PREFERENCE_PERIODIC_NOTIFICATIONS_SET", "false");
+            dataStoreWrite(context, "periodicNotificationsSet", "false");
             // If the app is not recording after a reboot...
             if (shouldUserBeNotifiedAboutInactivity(context)) {
                // Attempt to start the app, to the main screen with a directive
@@ -325,7 +332,13 @@ public class InactivityReceiver extends BroadcastReceiver {
                context.startActivity(i);
                if (THIS_REGISTRATION_STATUS) {
                   // Send the reboot notification informing the user that the app is not observing ads
-                  sendRebootNotification(context);
+                  if (!dataStoreRead(context, "appFirstCallTime", "NULL").equals("NULL")) {
+                     long firstCallTime = Long.parseLong(dataStoreRead(context, "appFirstCallTime", "0"));
+                     Log.i(TAG, "firstCallTime: " + firstCallTime);
+                     if (Math.abs(firstCallTime - System.currentTimeMillis()) > (10 * 1000)) {
+                        sendRebootNotification(context);
+                     }
+                  }
                } else {
                   // Send a periodic notification instead - as the user is not logged in
                   sendPeriodicNotification(context, THIS_REGISTRATION_STATUS);
@@ -351,34 +364,44 @@ public class InactivityReceiver extends BroadcastReceiver {
          // If the screen recording has started
          if ((intent != null) && (intent.hasExtra("INTENT_ACTION"))
             && (intent.getStringExtra("INTENT_ACTION").equals("RECORDING_HAS_STARTED"))) {
-               System.out.println( "RECORDING_HAS_STARTED");
+            Log.i(TAG, "RECORDING_HAS_STARTED");
                MainActivity.safelySetToggleInViewModel(true);
             // Cancel all inactivity notifications
             cancelAllInactivityNotifications(context);
-            Log.i("RECORDING_STATUS", "Setting RECORDING_STATUS to true - 1");
-               sharedPreferencePut(context, "RECORDING_STATUS", "true");
+            Log.i("recordingStatus", "Setting recordingStatus to true - b");
+            dataStoreWrite(context, "recordingStatus", "true"); //TODO:14.04.25
          } else
          // If the screen recording has stopped
          if ((intent != null) && (intent.hasExtra("INTENT_ACTION"))
             && (intent.getStringExtra("INTENT_ACTION").equals("RECORDING_HAS_STOPPED"))) {
                System.out.println( "RECORDING_HAS_STOPPED");
-               sharedPreferencePut(context, "RECORDING_STATUS", "false");
+               dataStoreWrite(context, "recordingStatus", "false");
+               Log.i("recordingStatus", "Setting recordingStatus to false - 2");
                MainActivity.safelySetToggleInViewModel(false);
                // If the recording stops after a registered screen off event
-               if (sharedPreferenceGet(context, "SCREEN_OFF_DURING_RECORDING", "false").equals("true")) {
+               if (dataStoreRead( context, "SCREEN_OFF_DURING_RECORDING", "false").equals("true")) {
                   // Do nothing, as we know that the screen is off during a recording session
                } else {
                   MainActivity.safelySetToggleInViewModel(false);
-                  Log.i("RECORDING_STATUS", "Setting RECORDING_STATUS to false - 2");
-                  sharedPreferencePut(context, "RECORDING_STATUS", "false");
+                  Log.i("recordingStatus", "Setting recordingStatus to false - 2");
+                  dataStoreWrite(context, "recordingStatus", "false");
+                  dataStoreWrite(context, "SCREEN_OFF_DURING_RECORDING", "true");
+                  Log.i(TAG, getCurrentAppPackageName(context));
                }
+
+               // Screen recording recovery is only necessary in newer versions
+               if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                  tentativeRecordingRecovery(context);
+               }
+
+
          } else
          // If the screen is on
          if ((intent != null) && (intent.hasExtra("INTENT_ACTION"))
             && (intent.getStringExtra("INTENT_ACTION").equals("SCREEN_IS_ON"))) {
                System.out.println( "SCREEN_IS_ON");
                // By extension of that the screen is on, the screen being off during a recording is falsified
-               sharedPreferencePut(context, "SCREEN_OFF_DURING_RECORDING", "false");
+               dataStoreWrite(context, "SCREEN_OFF_DURING_RECORDING", "false");
 
          } else
             // If the screen is off
@@ -387,8 +410,9 @@ public class InactivityReceiver extends BroadcastReceiver {
                System.out.println( "SCREEN_IS_OFF");
                // If the screen switches off during a recording
                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                  if (sharedPreferenceGet(context, "RECORDING_STATUS", "false").equals("true")) {
-                     sharedPreferencePut(context, "SCREEN_OFF_DURING_RECORDING", "true");
+                  Log.i(TAG, "v - Getting recordingStatus: "+ dataStoreRead(context, "recordingStatus", "false"));
+                  if (dataStoreRead(context, "recordingStatus", "false").equals("true")) {
+                     dataStoreWrite(context, "SCREEN_OFF_DURING_RECORDING", "true");
                   }
                }
          }

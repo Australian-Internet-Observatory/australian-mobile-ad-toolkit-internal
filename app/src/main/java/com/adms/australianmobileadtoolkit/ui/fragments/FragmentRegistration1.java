@@ -1,8 +1,8 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
+import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.appSettings.USING_DEMOGRAPHIC_QUESTIONS;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
 
 import android.content.DialogInterface;
 import android.content.res.Configuration;
@@ -85,7 +85,7 @@ public class FragmentRegistration1 extends Fragment implements AsyncResponse {
             loadRegistration = new DialogLoading(requireContext());
             loadRegistration.show();
             // If the registration value is not yet set
-            if (!sharedPreferenceGet(requireContext(),"SHARED_PREFERENCE_REGISTERED", "false").equals("true")) {
+            if (!dataStoreRead(requireContext(),"observerRegistered", "false").equals("true")) {
                JSONObject registrationJSONObject;
                registrationJSONObject = new JSONObject();
                asyncTask.execute(registrationJSONObject);
@@ -122,7 +122,7 @@ public class FragmentRegistration1 extends Fragment implements AsyncResponse {
 
       if (successfulRegistration) {
          loadRegistration.dismiss();
-         sharedPreferencePut(getContext(), "SHARED_PREFERENCE_REGISTERED", "true");
+         dataStoreWrite( requireContext(),"observerRegistered", "true");
          loadSuccessfulRegistration = new DialogSuccessfulRegistration(requireContext());
          loadSuccessfulRegistration.show();
          loadSuccessfulRegistration.setOnDismissListener(new DialogInterface.OnDismissListener() {

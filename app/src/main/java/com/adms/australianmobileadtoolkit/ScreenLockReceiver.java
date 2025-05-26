@@ -1,8 +1,8 @@
 package com.adms.australianmobileadtoolkit;
 
+import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.sendScreenLockNotification;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferenceGet;
-import static com.adms.australianmobileadtoolkit.appSettings.sharedPreferencePut;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,12 +18,12 @@ public class ScreenLockReceiver extends BroadcastReceiver {
 
     private static void testRecordingInterrupted(Context context) {
         if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            if (sharedPreferenceGet(context, "SHARED_PREFERENCE_RECORDING_INTERRUPTED", "false").equals("true")) {
-                Log.i(TAG, "Being advised that SHARED_PREFERENCE_RECORDING_INTERRUPTED was indeed triggered!!");
+            if (dataStoreRead(context,"recordingInterrupted", "false").equals("true")) {
+                Log.i(TAG, "Being advised that recordingInterrupted was indeed triggered!!");
                 //sendScreenLockNotification(context); // Commenting this out
-                sharedPreferencePut(context, "SHARED_PREFERENCE_RECORDING_INTERRUPTED", "false");
+                dataStoreWrite(context,"recordingInterrupted", "false");
             } else {
-                Log.i(TAG, "Being advised that not SHARED_PREFERENCE_RECORDING_INTERRUPTED");
+                Log.i(TAG, "Being advised that not recordingInterrupted");
             }
         }
     }
@@ -42,13 +42,12 @@ public class ScreenLockReceiver extends BroadcastReceiver {
             case Intent.ACTION_SCREEN_OFF:
                 Log.i(TAG, "ACTION_SCREEN_OFF");
                 // This relies on the idea that this event is received before the recording status is formally updated - in which case, the
-                if (sharedPreferenceGet(context, "RECORDING_STATUS", "false").equals("true")) {
-                    Log.i(TAG, "SHARED_PREFERENCE_RECORDING_INTERRUPTED");
-                    sharedPreferencePut(context, "SHARED_PREFERENCE_RECORDING_INTERRUPTED", "true"); // Always the case
+                Log.i(TAG, "q - Getting recordingStatus: "+ dataStoreRead(context, "recordingStatus", "false"));
+                if (dataStoreRead(context, "recordingStatus", "false").equals("true")) {
+                    Log.i(TAG, "recordingInterrupted");
+                    dataStoreWrite(context, "recordingInterrupted", "true"); // Always the case
                 }
                 break;
         }
-
-
     }
 }

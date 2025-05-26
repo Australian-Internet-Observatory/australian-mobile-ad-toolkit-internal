@@ -1,7 +1,6 @@
 package com.adms.australianmobileadtoolkit;
 
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.filePath;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.logger;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.filePath;
 import static com.google.gson.JsonParser.parseString;
 
 import static java.util.Arrays.asList;
@@ -34,12 +33,10 @@ public class ObjectDetector {
         try {
             String s;
             String command = PYTHON_EXECUTABLE+" "+PYTHON_DETECTION_SCRIPT+" "+modelPath+" "+imagePath;
-            logger.info(command);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
             BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             while ((s = stdInput.readLine()) != null) {
-                logger.info(s);
                 try {
                     JsonArray jsonElements = parseString(s).getAsJsonArray();
                     for (int i = 0; i < jsonElements.size(); i++) {
@@ -49,22 +46,21 @@ public class ObjectDetector {
             }
             while ((s = stdError.readLine()) != null) {}
             System.out.println(boundingBoxes);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            ignored.printStackTrace();
+        }
         return boundingBoxes;
     }
 
     public ObjectDetector(File analysisDirectory, File thisScreenRecordingFile,
                            List<String> retainedFrameFiles, List<Integer> retainedFrames, String modelName, String thisCase) {
         inferenceCase = "inference"+thisCase;
-
-        File checkPointDirectory = new File(analysisDirectory, "checkpoint");
-        checkPoint.setTargetDirectory(checkPointDirectory);
-        thisCheckPoint = new checkPoint(thisScreenRecordingFile.getName());
+        thisCheckPoint = new checkPoint(thisScreenRecordingFile.getName(), (new File(analysisDirectory, "checkpoint")));
 
         if (thisCheckPoint.container.has(inferenceCase)) {
             inferenceResult = new JSONXObject((JSONObject) thisCheckPoint.container.get(inferenceCase), true);
         } else {
-                String adjustedModelPath = filePath(asList(((new File(".")).getAbsolutePath()), "src", "main", "assets", modelName)).getAbsolutePath().replace(".tflite", ".pt");
+                String adjustedModelPath = filePath(asList(((new File(".")).getAbsolutePath()), "..", "..", "pt_models", modelName)).getAbsolutePath().replace(".tflite", ".pt").replace("float16", "float32");
                 Integer currentFrameIndex = 0;
                 for (String retainedFrameFile : retainedFrameFiles) {
                     currentFrame = retainedFrames.get(currentFrameIndex);

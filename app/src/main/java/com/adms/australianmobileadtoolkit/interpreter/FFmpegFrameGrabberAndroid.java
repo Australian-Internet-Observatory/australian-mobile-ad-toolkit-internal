@@ -1,7 +1,6 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.Common.filePath;
-import static com.adms.australianmobileadtoolkit.interpreter.platform.Platform.logger;
 import static java.util.Arrays.asList;
 import android.content.Context;
 import android.content.res.Resources;
@@ -20,7 +19,6 @@ import com.arthenica.ffmpegkit.FFprobeKit;
 import com.arthenica.ffmpegkit.FFprobeSession;
 import com.arthenica.ffmpegkit.ReturnCode;
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -170,7 +168,6 @@ public class FFmpegFrameGrabberAndroid {
          } catch (Exception e) {
             // It's expected that this may occasionally produce an error (for instance, when the last or near last frame
             // doesn't exist)
-            logger.error(e);
             e.printStackTrace();
             session.cancel();
             return null;

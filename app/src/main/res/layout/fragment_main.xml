@@ -14,7 +14,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
-        android:padding="15dp">
+        android:padding="15dp"
+        android:visibility="gone">
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -246,13 +247,27 @@
             android:textAlignment="center"
             android:text="@string/fragment_main_app_dashboard_tooltip"
             />
-        <Button
-            android:id="@+id/buttonDashboard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/fragment_main_app_dashboard_text"
-            android:layout_marginBottom="15dp"
-            android:theme="@style/PrimaryButton"/>
+                <Button
+                    android:id="@+id/buttonDashboard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/fragment_main_app_dashboard_text"
+                    android:layout_marginBottom="5dp"
+                    android:theme="@style/PrimaryButton"/>
+                <Button
+                    android:id="@+id/buttonGoToProcessMyAdDigest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/fragment_main_process_ad_digest_text"
+                    android:layout_marginBottom="15dp"
+                    android:theme="@style/PrimaryButton"/>
+               <!-- <Button
+                    android:id="@+id/buttonRTD"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:layout_marginBottom="15dp"
+                    android:theme="@style/PrimaryButton"/> -->
 
         <View
             android:layout_width="match_parent"
