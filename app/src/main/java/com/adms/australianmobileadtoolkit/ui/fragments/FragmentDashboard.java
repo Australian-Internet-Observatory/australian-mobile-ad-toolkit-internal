@@ -28,13 +28,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.adms.australianmobileadtoolkit.JSONXObject;
 import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.appSettings;
 import com.adms.australianmobileadtoolkit.ui.SortByObservedAt;
+import com.adms.australianmobileadtoolkit.ui.dialogs.DialogLoading;
+import com.google.gson.JsonArray;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -59,9 +64,11 @@ public class FragmentDashboard extends Fragment {
 
    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
       ImageView bmImage;
+      View loadingPanel;
 
-      public DownloadImageTask(ImageView bmImage) {
+      public DownloadImageTask(ImageView bmImage, View loadingPanel) {
          this.bmImage = bmImage;
+         this.loadingPanel = loadingPanel;
       }
 
       protected Bitmap doInBackground(String... urls) {
@@ -78,22 +85,33 @@ public class FragmentDashboard extends Fragment {
       }
 
       protected void onPostExecute(Bitmap result) {
+         ((ViewGroup) loadingPanel.getParent()).removeView(loadingPanel);
          bmImage.setImageBitmap(result);
+         bmImage.setMinimumHeight(Math.round(result.getHeight()));
+         bmImage.setAdjustViewBounds(true);
+         bmImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
       }
    }
 
    private View thisView;
+   private Integer thisOffset = 0;
+   private boolean loadingDashboard = false;
+   private ViewGroup mContainer;
+   private DialogLoading loadDialog;
+   private boolean canForward = false;
+   private boolean canBackward = false;
 
    @Override
    public View onCreateView(LayoutInflater inflater, ViewGroup container,
                             Bundle savedInstanceState) {
 
+      mContainer = container;
       View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
       thisView = view;
-
+      /*
       String myActivationCodeUUIDString = retrieveShortActivationCode(requireContext());
       TextView myActivationCode = ((TextView) view.findViewById(R.id.myActivationCode));
-      myActivationCode.setText(get_ACTIVATION_SHORT_CODE_PREFIX_STRING(requireContext()) + myActivationCodeUUIDString);
+      myActivationCode.setText(get_ACTIVATION_SHORT_CODE_PREFIX_STRING(requireContext()) + myActivationCodeUUIDString);*/
 
       Button mbuttonBackToMain = (Button) view.findViewById(R.id.buttonBackToMain);
       mbuttonBackToMain.setOnClickListener(v ->{
@@ -112,44 +130,138 @@ public class FragmentDashboard extends Fragment {
          transaction.commit();
       });
 
-      Thread thread = new Thread(() -> {
-         try {
-            JSONObject response = httpRequestDashboard();
-            if (response != null) {
-               getActivity().runOnUiThread(() -> {
-                  View loadingBar = view.findViewById(R.id.dashboardLoading);
-                  ((ViewGroup) loadingBar.getParent()).removeView(loadingBar);
-               });
-
-               JSONObject ads = (JSONObject) response.get("ads");
-               Iterator<String> keys = ads.keys();
-               List<JSONObject> adsSorted = new ArrayList<>();
-               while(keys.hasNext()) {
-                  adsSorted.add((JSONObject) ads.get(keys.next()));
-               }
-               Collections.sort(adsSorted, new SortByObservedAt());
-               for (JSONObject thisAd : adsSorted) {
-                  String bannerURL = thisAd.getString("banner_url");
-                  String headerURL = thisAd.getString("header_url");
-                  long observedAt = thisAd.getLong("observed_at");
-                  getActivity().runOnUiThread(() -> adDivider(headerURL, bannerURL, observedAt));
-               }
-            }
-         } catch (Exception e) {
-            Log.e(TAG, e.getMessage());
-         }
-      });
-      thread.start();
+      loadDashboard(view);
+      (view.findViewById(R.id.prevPaginationButton)).setOnClickListener(v ->{ loadDashboardOnOffset( -1); });
+      (view.findViewById(R.id.nextPaginationButton)).setOnClickListener(v ->{ loadDashboardOnOffset( +1); });
       return view;
 
 
    }
 
+   public void loadDashboardOnOffset(Integer offset) {
+      if (!loadingDashboard) {
+         boolean antiConditionA = ((thisOffset == 0) && (offset == -1));
+         boolean antiConditionB = ((!canBackward) && (offset == -1));
+         boolean antiConditionC = ((!canForward) && (offset == 1));
+         if ((!antiConditionA) && (!antiConditionB) && (!antiConditionC)) {
+            resetDashboardView();
+            thisOffset += offset;
+            loadDashboard(thisView);
+         }
+      }
+   }
+
+   public void loadDashboard(View view) {
+      Thread thread = new Thread(() -> {
+         loadingDashboard = true;
+         try {
+            JSONXObject response = httpRequestDashboard();
+            if (response != null) {
+               getActivity().runOnUiThread(() -> {
+                  View loadingBar = view.findViewById(R.id.dashboardLoading);
+                  ((ViewGroup) loadingBar.getParent()).removeView(loadingBar);
+               });
+               JSONArray adObjectsAsJSONArray = ((JSONArray) response.get("ad_objs"));
+               for (var i = 0; i < adObjectsAsJSONArray.length(); i ++) {
+                  final Integer finalI = i;
+                  try {
+                     JSONObject x = adObjectsAsJSONArray.getJSONObject(finalI);
+                     getActivity().runOnUiThread(() -> adDivider(new JSONXObject(x)));
+                  } catch (Exception e) {
+                     e.printStackTrace();
+                  }
+               }
+               JSONXObject paginationAllowances = (new JSONXObject((JSONObject) response.get("paginate")));
+               canForward = ((boolean) paginationAllowances.get("forward"));
+               canBackward = ((boolean) paginationAllowances.get("backward"));
+               getActivity().runOnUiThread(() -> {
+                  (view.findViewById(R.id.paginationButtons)).setVisibility((canForward || canBackward) ? View.VISIBLE : View.GONE);
+                  /*
+                  (view.findViewById(R.id.prevPaginationButton)).setVisibility(canBackward ? View.VISIBLE : View.GONE);
+                  (view.findViewById(R.id.nextPaginationButton)).setVisibility(canForward ? View.VISIBLE : View.GONE);
+                  */
+                  (view.findViewById(R.id.prevPaginationButton)).setAlpha(canBackward ? 1.0f : 0.5f);
+                  (view.findViewById(R.id.nextPaginationButton)).setAlpha(canForward ? 1.0f : 0.5f);
+               });
+               if (adObjectsAsJSONArray.length() == 0) {
+                  getActivity().runOnUiThread(() -> {
+                     LinearLayout fdo = thisView.findViewById(R.id.fragment_dashboard_overview);
+                     View viewEmptyDashboard = getLayoutInflater().inflate(R.layout.fragment_dashboard_empty, mContainer, false);
+                     fdo.addView(viewEmptyDashboard);
+                     fdo.invalidate();
+                     view.findViewById(R.id.noteAboutShowing).setVisibility(View.GONE);
+                  });
+               } else {
+                  getActivity().runOnUiThread(() -> {
+                     view.findViewById(R.id.noteAboutShowing).setVisibility(View.VISIBLE);
+                  });
+               }
+            }
+         } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+         }
+         loadingDashboard = false;
+      });
+      thread.start();
+   }
+
+   private void resetDashboardView() {
+      LinearLayout fdo = thisView.findViewById(R.id.fragment_dashboard_overview);
+      fdo.removeAllViews();
+      View viewLoading = getLayoutInflater().inflate(R.layout.fragment_dashboard_loading, mContainer, false);
+      fdo.addView(viewLoading);
+      fdo.invalidate();
+   }
+
    static int id = 1;
 
    @SuppressLint("SetTextI18n")
-   private void adDivider(String headerURL, String bannerURL, long observedAt) {
+   private void adDivider(JSONXObject thisAd) {
       LinearLayout fdo = thisView.findViewById(R.id.fragment_dashboard_overview);
+      View viewAdCard = getLayoutInflater().inflate(R.layout.fragment_dashboard_card, mContainer, false);
+
+      Calendar cal = Calendar.getInstance(Locale.ENGLISH);
+      cal.setTimeInMillis(((Integer) thisAd.get("observed_at")) * 1000L);
+      String date = DateFormat.format("hh:mm:ss a dd-MM-yyyy", cal.getTime()).toString();
+      ((TextView) viewAdCard.findViewById(R.id.observed_at_text)).setText(date);
+
+      /*
+      int adPlatformDrawable = R.drawable.platform_facebook_icon;;
+      switch ((String) thisAd.get("platform")) {
+         case "FACEBOOK" :
+            adPlatformDrawable = R.drawable.platform_facebook_icon;
+            break ;
+         case "INSTAGRAM" :
+            adPlatformDrawable = R.drawable.platform_instagram_icon;
+            break ;
+         case "TIKTOK" :
+            adPlatformDrawable = R.drawable.platform_tiktok_icon;
+            break ;
+         case "YOUTUBE" :
+            adPlatformDrawable = R.drawable.platform_youtube_icon;
+            break ;
+      }
+      ((ImageView) viewAdCard.findViewById(R.id.platform_icon)).setImageDrawable(ContextCompat.getDrawable(requireActivity(), adPlatformDrawable));
+       */
+
+      new DownloadImageTask(viewAdCard.findViewById(R.id.ad_image), viewAdCard.findViewById(R.id.loadingPanel)).execute((String) thisAd.get("banner_img"));
+
+      viewAdCard.findViewById(R.id.showhide_option).setOnClickListener(v ->{
+
+         loadDialog = new DialogLoading(requireContext());
+         loadDialog.setOnDismissListener((l)->{
+            l = null;
+         });
+         loadDialog.create();
+         loadDialog.show();
+
+         Thread thread = new Thread(() -> {
+            httpRequestDisableAd((String) thisAd.get("rdo_uuid_unsplit"));
+         });
+         thread.start();
+      });
+
+      /*
       LinearLayout.MarginLayoutParams x = new LinearLayout.MarginLayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT);
       x.setMargins(0,0,0,(int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, getResources().getDisplayMetrics()));
@@ -159,23 +271,9 @@ public class FragmentDashboard extends Fragment {
       f.setBackgroundColor(getResources().getColor(R.color.yellow_primary_transparent));
       f.setBackground(getResources().getDrawable(R.drawable.border_radius));
 
-      FrameLayout fHeader = new FrameLayout(getActivity());
-      ImageView headerImage = new ImageView(getActivity());
-      new DownloadImageTask(headerImage).execute(headerURL);
-      fHeader.addView(headerImage);
-      headerImage.setAdjustViewBounds(true);
-      headerImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
-      headerImage.invalidate();
-      fHeader.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
-      f.addView(fHeader);
-      fHeader.invalidate();
-      headerImage.setMinimumHeight((int) Math.round(headerImage.getHeight()*2));
-
-
-
       FrameLayout fBanner = new FrameLayout(getActivity());
       ImageView bannerImage = new ImageView(getActivity());
-      new DownloadImageTask(bannerImage).execute(bannerURL);
+      new DownloadImageTask(bannerImage).execute((String) thisAd.get("banner_img"));
       fBanner.addView(bannerImage);
       bannerImage.setAdjustViewBounds(true);
       bannerImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -184,14 +282,11 @@ public class FragmentDashboard extends Fragment {
       fBanner.invalidate();
       bannerImage.setMinimumHeight((int) Math.round(bannerImage.getHeight()*2));
 
-      Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-      cal.setTimeInMillis(observedAt);
-      String date = DateFormat.format("hh:mm:ss a dd-MM-yyyy", cal.getTime()).toString();
 
       TextView thisDateText = new TextView(getActivity());
       thisDateText.setTextColor(getResources().getColor(R.color.yellow_primary));
       thisDateText.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 5, getResources().getDisplayMetrics()));
-      thisDateText.setText(getString(R.string.dashboard_observed_prefix)+date);
+      thisDateText.setText(getString(R.string.dashboard_observed_prefix)+" "+date);
       thisDateText.setTypeface(null, Typeface.BOLD_ITALIC);
       thisDateText.setTextAlignment(TEXT_ALIGNMENT_CENTER);
       thisDateText.setPadding(
@@ -206,16 +301,15 @@ public class FragmentDashboard extends Fragment {
       f.addView(fText);
       fText.invalidate();
       //new DownloadImageTask((ImageView) thisView.findViewById(id)).execute(MY_URL_STRING);
-
-      fdo.addView(f);
+      */
+      fdo.addView(viewAdCard);
       fdo.invalidate();
    }
 
-
-   private JSONObject httpRequestDashboard() {
+   private void httpRequestDisableAd(String thisAd) {
       try {
          // Declare the AWS Lambda endpoint
-         String urlParam = appSettings.AWS_LAMBDA_ENDPOINT;
+         String urlParam = "https://bxxqvaozhe237ak5ndca2zftz40kvgfm.lambda-url.ap-southeast-2.on.aws/";
          // The unique ID of the observer to insert with the HTTP request
          String observerID = THIS_OBSERVER_ID;
          // The identifier for submitting data donations
@@ -227,8 +321,61 @@ public class FragmentDashboard extends Fragment {
          // Write up the stream for inserting the image (as a Base64 string) into the request
          // Assemble the request JSON object
          JSONObject requestBody = new JSONObject();
-         requestBody.put("action", identifierDataDonation);
-         requestBody.put("observer_id", observerID);
+         requestBody.put("action", "DISABLE_AD");
+         requestBody.put("observer_uuid", observerID);
+         Log.i(TAG, observerID);
+         requestBody.put("rdo_uuid_unsplit", thisAd);
+         Log.i(TAG, thisAd);
+         String bodyParam = requestBody.toString();
+         // Set up the HTTP request configuration
+         URL url = new URL(urlParam);
+         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+         connection.setDoOutput(true);
+         connection.setRequestMethod("POST");
+         connection.setRequestProperty("Accept", "text/plain");
+         connection.setRequestProperty("Content-Type", "text/plain");
+         connection.setConnectTimeout(requestConnectTimeout);
+         connection.setReadTimeout(requestReadTimeout);
+         OutputStream os = connection.getOutputStream();
+         OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+         osw.write(bodyParam);
+         osw.flush();
+         osw.close();
+         connection.connect();
+         BufferedReader rd = new BufferedReader(new InputStreamReader(
+                 connection.getInputStream()));
+
+         JSONXObject obj = new JSONXObject(new JSONObject(rd.lines().collect(Collectors.joining())));
+
+         getActivity().runOnUiThread(() -> {
+            resetDashboardView();
+            loadDashboard(thisView);
+            loadDialog.dismiss();
+         });
+      } catch (Exception e) {
+         Log.e(TAG, "Failed to run httpRequestDisableAd: ", e);
+      }
+   }
+
+
+   private JSONXObject httpRequestDashboard() {
+      try {
+         // Declare the AWS Lambda endpoint
+         String urlParam = "https://bxxqvaozhe237ak5ndca2zftz40kvgfm.lambda-url.ap-southeast-2.on.aws/";
+         // The unique ID of the observer to insert with the HTTP request
+         String observerID = THIS_OBSERVER_ID;
+         // The identifier for submitting data donations
+         String identifierDataDonation = appSettings.IDENTIFIER_AD_LEADS;
+         // The HTTP request connection timeout (in milliseconds)
+         int requestConnectTimeout = appSettings.AWS_LAMBDA_ENDPOINT_CONNECTION_TIMEOUT;
+         // The HTTP request read timeout (in milliseconds)
+         int requestReadTimeout = appSettings.AWS_LAMBDA_ENDPOINT_READ_TIMEOUT;
+         // Write up the stream for inserting the image (as a Base64 string) into the request
+         // Assemble the request JSON object
+         JSONObject requestBody = new JSONObject();
+         requestBody.put("action", "GET_ADS");
+         requestBody.put("observer_uuid", observerID);
+         requestBody.put("offset", thisOffset.toString());
          String bodyParam = requestBody.toString();
          // Set up the HTTP request configuration
          URL url = new URL(urlParam);
@@ -249,10 +396,8 @@ public class FragmentDashboard extends Fragment {
          BufferedReader rd = new BufferedReader(new InputStreamReader(
                connection.getInputStream()));
 
-         JSONObject obj = new JSONObject(rd.lines().collect(Collectors.joining()));
+         JSONXObject obj = new JSONXObject(new JSONObject(rd.lines().collect(Collectors.joining())));
          return obj;
-         //new DownloadImageTask((ImageView) findViewById(R.id.imageView1))
-         //      .execute(MY_URL_STRING);
 
       } catch (Exception e) {
          Log.e(TAG, "Failed to run httpRequestDataDonation: ", e);

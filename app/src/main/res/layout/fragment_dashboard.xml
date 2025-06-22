@@ -1,5 +1,6 @@
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/fragment_dashboard"
     android:orientation="vertical"
@@ -28,19 +29,29 @@
             android:layout_height="1dp"
             android:layout_marginHorizontal="15dp"
             android:background="@color/yellow_primary"/>
-        <TextView
-            android:id="@+id/myActivationCode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/colorPrimaryDark"
-            android:textSize="9sp"
-            android:letterSpacing="0.05"
-            android:paddingHorizontal="15dp"
-            android:paddingVertical="10dp"
-            android:textColor="@color/yellow_primary"
-            android:textStyle="italic"
-            android:text="@string/fragment_dashboard_activation_code_text"
-            />
+        <RelativeLayout
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:layout_gravity="center"
+            >
+            <TextView
+                android:singleLine="true"
+                android:visibility="gone"
+                android:id="@+id/noteAboutShowing"
+                android:layout_width="fill_parent"
+                android:layout_height="30dp"
+                android:background="@color/colorPrimaryDark"
+                android:textSize="9sp"
+                android:letterSpacing="0.05"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="10dp"
+                android:textColor="@color/yellow_primary"
+                android:textStyle="italic"
+                android:text="Note: You can disinclude an ad from your data donations by clicking the 'Hide' icon."
+                />
+        </RelativeLayout>
         <View
             android:layout_marginTop="10dp"
             android:layout_width="match_parent"
@@ -112,11 +123,60 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true">
+
         <View
             android:layout_width="match_parent"
             android:layout_height="2dp"
             android:background="@color/yellow_primary"
             android:layout_marginBottom="15dp"/>
+
+
+    <LinearLayout
+        android:id="@+id/paginationButtons"
+        android:visibility="visible"
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:layout_marginHorizontal="15dp"
+
+        >
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginRight="7.5dp"
+            >
+            <Button
+                android:visibility="visible"
+                android:id="@+id/prevPaginationButton"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:theme="@style/PrimaryButton"
+                android:text="Previous"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="7.5dp"
+            >
+
+            <Button
+                android:id="@+id/nextPaginationButton"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:theme="@style/PrimaryButton"
+                android:text="Next"
+                />
+        </LinearLayout>
+    </LinearLayout>
+
         <Button
             android:id="@+id/buttonBackToMain"
             android:layout_width="fill_parent"

@@ -14,7 +14,7 @@
     <string name="dialog_registration_success_description">Thank you for choosing to participate. The registration process is now complete.</string>
     <string name="dialog_registration_success_back_text">CONTINUE</string>
 
-    <string name="fragment_dashboard_title">My Personal Dashboard</string>
+    <string name="fragment_dashboard_title">AD DASHBOARD</string>
     <string name="fragment_dashboard_activation_code_text">My Activation Code: Loading...</string>
     <string name="fragment_dashboard_back_text">BACK TO MAIN</string>
 
@@ -30,7 +30,7 @@
     <string name="fragment_main_app_dashboard_text">GO TO MY DASHBOARD</string>
     <string name="fragment_main_process_ad_digest_text">PROCESS MY ADS</string>
 
-    <string name="dashboard_observed_prefix">Observed </string>
+    <string name="dashboard_observed_prefix">Observed on </string>
     <string name="notification_screen_lock_title">Ads stop being observed after locking your device</string>
     <string name="notification_screen_lock_description">Tap to continue observing ads</string>
 

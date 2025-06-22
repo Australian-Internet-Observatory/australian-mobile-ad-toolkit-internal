@@ -179,14 +179,19 @@ public class Sampler {
     public static JSONXObject basicReading(Context context,
                                            File rootDirectory, File screenRecordingAnalysisDirectory, File thisScreenRecordingFile, Function<JSONXObject, JSONXObject> videoMetadataFunction,
                                            Function<JSONXObject, Bitmap> frameGrabFunction) throws Exception {
-        checkPoint checkPoint = new checkPoint(thisScreenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
+        //checkPoint checkPoint = new checkPoint(thisScreenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
 
-        if (checkPoint.container.has("comprehensiveReading")) {
-            return new JSONXObject((JSONObject) checkPoint.container.get("comprehensiveReading"), true);
-        } else {
+        //if (checkPoint.container.has("comprehensiveReading")) {
+        //    return new JSONXObject((JSONObject) checkPoint.container.get("comprehensiveReading"), true);
+        //} else {
             JSONXObject output;
             Double elapsedTime = Long.valueOf(System.currentTimeMillis()).doubleValue();
-            JSONXObject videoMetadata = videoMetadataFunction.apply(new JSONXObject().set("context", context).set("screenRecordingFile", thisScreenRecordingFile));
+            JSONXObject videoMetadata;
+            try {
+                videoMetadata = videoMetadataFunction.apply(new JSONXObject().set("context", context).set("screenRecordingFile", thisScreenRecordingFile));
+            } catch (Exception e) {
+                return (new JSONXObject()).set("malformedFlag", true);
+            }
 
             // Determine the length of the recording in frames
             final Integer FRAME_SAMPLE_LOWER_THRESHOLD = 2;
@@ -266,12 +271,12 @@ public class Sampler {
                     .set("nFramesUnadjusted", totalFramesUnadjusted)
                     .set("retainedFramesAsFiles", retainedFrames.stream().map(imageSample::get).collect(Collectors.toList()))
                     .set("fps", FPS);
-            checkPoint.set("comprehensiveReading", output.internalJSONObject);
-            checkPoint.save();
+            //checkPoint.set("comprehensiveReading", output.internalJSONObject);
+            //checkPoint.save();
             // TODO - this has been added for a comprehensive reading test...
             //writeToJSON((new File(rootDirectory, "thisBasicReadingDump.json")), output.internalJSONObject);
             return output;
-        }
+        //}
     }
 
     // An agnostic implementatotion of the Facebook-specific function, with a few error fixes
@@ -280,11 +285,11 @@ public class Sampler {
                                                    File rootDirectory, File screenRecordingAnalysisDirectory, File thisScreenRecordingFile, Function<JSONXObject, JSONXObject> videoMetadataFunction,
                                                    Function<JSONXObject, Bitmap> frameGrabFunction) {
 
-        checkPoint checkPoint = new checkPoint(thisScreenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
+        //checkPoint checkPoint = new checkPoint(thisScreenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
 
-        if (checkPoint.container.has("comprehensiveReading")) {
-            return new JSONXObject((JSONObject) checkPoint.container.get("comprehensiveReading"), true);
-        } else {
+        //if (checkPoint.container.has("comprehensiveReading")) {
+        //    return new JSONXObject((JSONObject) checkPoint.container.get("comprehensiveReading"), true);
+        //} else {
             JSONXObject output;
             Double elapsedTime = Long.valueOf(System.currentTimeMillis()).doubleValue();
             JSONXObject videoMetadata = videoMetadataFunction.apply(new JSONXObject().set("context", context).set("screenRecordingFile", thisScreenRecordingFile));
@@ -499,13 +504,13 @@ public class Sampler {
                     .set("nFramesUnadjusted", totalFramesUnadjusted)
                     .set("retainedFramesAsFiles", retainedFrames.stream().map(imageSample::get).collect(Collectors.toList()))
                     .set("fps", FPS);
-            checkPoint.set("comprehensiveReading", output.internalJSONObject);
-            checkPoint.save();
+            //checkPoint.set("comprehensiveReading", output.internalJSONObject);
+            //checkPoint.save();
 
             // TODO - this has been added for a comprehensive reading test...
             //writeToJSON((new File(rootDirectory, "thisComprehensiveReadingDump.json")), output.internalJSONObject);
             return output;
-        }
+        //}
     }
 
 }

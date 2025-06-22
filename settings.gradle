@@ -7,3 +7,5 @@ pluginManagement {
 }
 rootProject.name = "Australian Mobile Ad Toolkit"
 include ':app'
+include ':models'
+include ':modelsquantized'

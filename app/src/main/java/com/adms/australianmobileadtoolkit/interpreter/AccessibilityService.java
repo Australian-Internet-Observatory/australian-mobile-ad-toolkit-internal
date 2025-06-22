@@ -24,8 +24,8 @@ import java.util.List;
 
 public class AccessibilityService extends android.accessibilityservice.AccessibilityService{
     public static AccessibilityService instance;
-    private static final Long millisecondsWithinACooldown = 5000L; // 5 seconds TODO:14.04.25
-
+    private static final Long millisecondsWithinACooldown = 180000L; // 5 seconds TODO:14.04.25
+    private static boolean logging = false;
 
     private static String TAG = "AccessibilityService";
 
@@ -37,13 +37,15 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
 
     public static final List<String> triggerableAppPackageNames = Arrays.asList(
             "com.facebook.katana", // Facebook
+            "com.facebook.lite", // Facebook
             "com.instagram.android", // Instagram
-            "com.zhiliaoapp.musically" // TikTok
+            "com.zhiliaoapp.musically", // TikTok
+            "com.google.android.youtube" // Youtube
     );
 
     public static boolean withinCooldown(String lastCallMillis, String currentCallMillis) {
         Long differenceOfMilliseconds = Math.abs(Long.valueOf(lastCallMillis) - Long.valueOf(currentCallMillis));
-        Log.i(TAG, "differenceOfMilliseconds: "+differenceOfMilliseconds);
+        if (logging) { Log.i(TAG, "differenceOfMilliseconds: "+differenceOfMilliseconds); };
         return (differenceOfMilliseconds < millisecondsWithinACooldown);
     }
 
@@ -77,45 +79,45 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
         try {
             if (triggerableEvents.contains(accessibilityEvent.getEventType())) {
                 if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
-                    Log.i(TAG, "AccessibilityEvent.TYPE_WINDOWS_CHANGED");
+                    if (logging) { Log.i(TAG, "AccessibilityEvent.TYPE_WINDOWS_CHANGED"); }
                 }
 
                 if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                    Log.d(TAG, "AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED");
+                    if (logging) { Log.d(TAG, "AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED"); }
                 }
 
                 if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-                    Log.d(TAG, "AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED");
+                    if (logging) { Log.d(TAG, "AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED"); }
                 }
 
-                Log.i(TAG,accessibilityEvent.getPackageName().toString());
+                if (logging) { Log.i(TAG,accessibilityEvent.getPackageName().toString()); }
                 // Within target platform...
                 if (isTargetPlatformBoolean(accessibilityEvent.getPackageName().toString())) {
-                    Log.i(TAG, "Within target platform...");
+                    if (logging) { Log.i(TAG, "Within target platform..."); }
                     dataStoreWrite(this, "recorderServiceIntentTargetPlatform", accessibilityEvent.getPackageName().toString());
                     dataStoreWrite(this, "recorderServiceIntentTargetPlatform_CALL_TIME", String.valueOf(System.currentTimeMillis()));
                     // Recording intent hasn't opened...
                     //if (dataStoreRead(this, "recorderServiceIntentRunning", "false").equals("false")) {
-                        Log.i(TAG, "Recording intent has not been called...");
+                    if (logging) { Log.i(TAG, "Recording intent has not been called...");}
                         KeyguardManager myKM = (KeyguardManager) this.getSystemService(Context.KEYGUARD_SERVICE);
 
                         // TODO - the recording status desyncs from the fragmentmain toggle when this safeguard turns off - there should be a closer sync strategy between both features
                         if(myKM.inKeyguardRestrictedInputMode()) {
-                            Log.i(TAG, "Averting screen recording as screen is locked...");
+                            if (logging) { Log.i(TAG, "Averting screen recording as screen is locked...");}
                         } else {
                             // Not currently recording...
-                            Log.i(TAG, "r - Getting recordingStatus: "+ dataStoreRead( this, "recordingStatus", "false"));
+                            if (logging) { Log.i(TAG, "r - Getting recordingStatus: "+ dataStoreRead( this, "recordingStatus", "false"));}
                             //if (dataStoreRead(this, "recordingStatus", "false").equals("false")) {
-                                Log.i(TAG, "No current recording...");
+                            if (logging) { Log.i(TAG, "No current recording...");}
                                 // Not currently in cooldown...
                                 String recorderServiceIntentLastCall = dataStoreRead(this, "recorderServiceIntentLastCall", "NULL");
-                                Log.i(TAG, "recorderServiceIntentLastCall: " + recorderServiceIntentLastCall);
+                            if (logging) { Log.i(TAG, "recorderServiceIntentLastCall: " + recorderServiceIntentLastCall);}
                                 boolean isWithinCooldown = ((!recorderServiceIntentLastCall.equals("NULL")) && withinCooldown(recorderServiceIntentLastCall,currentMillis()));
-                                Log.i(TAG, String.valueOf(isWithinCooldown));
+                            if (logging) { Log.i(TAG, String.valueOf(isWithinCooldown));}
                                 if (!isWithinCooldown) {
 
                                     if (!isServiceRunningA()) { // TODO - this is a temporary fix
-                                        Log.i(TAG, "Not currently in cooldown...");
+                                        if (logging) { Log.i(TAG, "Not currently in cooldown...");}
                                         dataStoreWrite(this, "recorderServiceIntentLastCall", currentMillis());
                                         startActivity(new Intent(this, RecorderServiceIntentActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                                     }

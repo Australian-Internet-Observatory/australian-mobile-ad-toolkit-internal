@@ -49,6 +49,7 @@ import android.view.WindowManager;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler;
 import androidx.datastore.preferences.core.Preferences;
 import androidx.datastore.preferences.rxjava3.RxPreferenceDataStoreBuilder;
 import androidx.datastore.rxjava3.RxDataStore;
@@ -59,12 +60,19 @@ import androidx.work.WorkManager;
 
 import com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
+import androidx.datastore.preferences.core.PreferencesSerializer;
 import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
+import com.example.KotlinInterop;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
+import okio.BufferedSource;
+import okio.Okio;
+import okio.Source;
 
 // TODO do further testing on intermittent stops
 
@@ -78,8 +86,6 @@ public class MainActivity extends BaseActivity {
     public static File mainDir;
     // The observer ID is set to nothing to begin
     public static String THIS_OBSERVER_ID = observerIDDefaultValue;
-    // The registration status of the user
-    public static String THIS_REGISTRATION_STATUS = observerRegisteredDefaultValue;
     public static MediaProjectionManager mMediaProjectionManager;
 
     public static String intentOfMainActivity = "NONE";
@@ -93,7 +99,21 @@ public class MainActivity extends BaseActivity {
 
     public static void initiateDataStore(Context context) {
         if (dataStore == null) {
-            dataStore = new RxPreferenceDataStoreBuilder(context, /*name=*/ "settings").build();
+            ReplaceFileCorruptionHandler<Preferences> corruptionHandler = new ReplaceFileCorruptionHandler<>(
+                    ex -> {
+                        // Log the corruption exception for debugging purposes
+                        System.err.println("DataStore corruption detected: " + ex.getMessage());
+                        // Return empty preferences to replace the corrupted data
+                        ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
+                        Source source = Okio.source(inputStream);
+                        BufferedSource bufferedSource = Okio.buffer(source);
+                        // Kotlin coroutines interop; need to call the suspend function from Java
+                        // Solution: call runBlocking using Kotlin helper (see below)
+                        return KotlinInterop.runBlockingReadFrom(bufferedSource);
+                    }
+            );
+
+            dataStore = new RxPreferenceDataStoreBuilder(context, /*name=*/ "settings").setCorruptionHandler(corruptionHandler).build();
         }
     }
 
@@ -205,10 +225,8 @@ public class MainActivity extends BaseActivity {
             }
 
             dataStoreWrite(this, "observerRegistered", "true"); // This line is added in to auto-register the user on the first run
-            THIS_REGISTRATION_STATUS = dataStoreRead(this, "observerRegistered",
-                  observerRegisteredDefaultValue);
-
-            boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, observerRegisteredDefaultValue));
+            boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(dataStoreRead(this, "observerRegistered",
+                    observerRegisteredDefaultValue), observerRegisteredDefaultValue));
 
             // Retrieve permission to send notifications whenever the app is opened
             if (ContextCompat.checkSelfPermission(MainActivity.this, POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -273,15 +291,17 @@ public class MainActivity extends BaseActivity {
             try { WorkManager.getInstance().cancelAllWorkByTag(PERIODIC_WORK_TAG).getResult(); } catch (Exception e) { /* Do nothing */ }
             try {  WorkManager.getInstance().pruneWork().getResult(); } catch (Exception e) { /* Do nothing */ }
             try {
-                System.out.println( "WorkManager is set.");
 
                 PeriodicWorkRequest periodicWork = new PeriodicWorkRequest.Builder(InterpreterWorker.class, 15, TimeUnit.MINUTES)
                       .addTag(PERIODIC_WORK_TAG)
                       .build();
                 // Do not start another worker if the current one is active
                 WorkManager.getInstance(this.getApplicationContext()).enqueueUniquePeriodicWork("workName", ExistingPeriodicWorkPolicy.KEEP,  periodicWork);
+                System.out.println( "WorkManager is set.");
 
-            } catch (Exception e) { /* Do nothing */ }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             Intent intentOfMainActivityAsIntent = getIntent();
             refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
@@ -386,7 +406,8 @@ public class MainActivity extends BaseActivity {
 
 
         Intent intentOfMainActivityAsIntent = getIntent();
-        boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(THIS_REGISTRATION_STATUS, observerRegisteredDefaultValue));
+        boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(dataStoreRead(this, "observerRegistered",
+                observerRegisteredDefaultValue), observerRegisteredDefaultValue));
         refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
     }
 

@@ -19,6 +19,7 @@ import com.adms.australianmobileadtoolkit.checkPoint;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 
 public class Facebook {
     private static String TAG = "Facebook";
+
 
     public static void evaluateFacebookAd(Context context, File rootDirectory, HashMap<String, String> thisInterpretation,
                                        Function<JSONXObject, JSONXObject> objectDetectorFunction, JSONXObject thisComprehensiveReading, Boolean implementedOnAndroid) throws Exception {
@@ -48,6 +50,15 @@ public class Facebook {
             JSONXObject inferenceResultShallow = inferencePassthrough(context, objectDetectorFunction,"facebook_sponsored",
                     (new JSONXObject()).set("retainedFramesAsFiles", retainedFramesAsFiles).set("retainedFrames", retainedFrames),
                     screenRecordingFile, screenRecordingAnalysisDirectory);
+
+            // If the shallow inference result yields a null response, it is most likely due to a malformed image
+            // that was originally obtained from the reading of the screen-recording file - otherwise, it might be
+            // because the actual screen-recording is corrupt.
+
+
+
+
+            //
 
 
 

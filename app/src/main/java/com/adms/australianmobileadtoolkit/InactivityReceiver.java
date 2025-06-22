@@ -1,7 +1,6 @@
 package com.adms.australianmobileadtoolkit;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
-import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
 import static com.adms.australianmobileadtoolkit.RecorderService.getCurrentAppPackageName;
 import static com.adms.australianmobileadtoolkit.RecorderService.tentativeRecordingRecovery;
 import static com.adms.australianmobileadtoolkit.appSettings.NOTIFICATION_RECEIVED_FOR_UNREGISTERED_STATUS;
@@ -243,29 +242,6 @@ public class InactivityReceiver extends BroadcastReceiver {
       }
    }
 
-   public static void sendPeriodicNotification(Context context, boolean _THIS_REGISTRATION_STATUS) {
-      // Note: We are inserting an override to accommodate instances where the app comes pre-registered
-      boolean THIS_REGISTRATION_STATUS = !NOTIFICATION_RECEIVED_FOR_UNREGISTERED_STATUS || _THIS_REGISTRATION_STATUS;
-      NotificationCompat.Builder builderPeriodicNotification;
-      // Send the periodic notification to inform the user that the app is not observing ads
-      if (THIS_REGISTRATION_STATUS) {
-         builderPeriodicNotification = constructNotification(context,
-                 get_NOTIFICATION_PERIODIC_CHANNEL_ID(context),
-                 get_NOTIFICATION_PERIODIC_TITLE(context),
-                 get_NOTIFICATION_PERIODIC_DESCRIPTION(context),null)
-                 .setContentIntent(constructNotificationScreenRecorderPendingIntent(context, "TURN_ON_SCREEN_RECORDER"));
-      } else {
-         builderPeriodicNotification = constructNotification(context,
-                 get_NOTIFICATION_PERIODIC_CHANNEL_ID(context),
-                 get_NOTIFICATION_PERIODIC_TITLE_UNREGISTERED(context),
-                 get_NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED(context),null)
-                 .setContentIntent(constructNotificationScreenRecorderPendingIntent(context, "REGISTER"));
-
-      }
-      // TODO - turning off most periodic notifications tentatively
-      // sendNotification(context, builderPeriodicNotification, "NOTIFICATION_PERIODIC_ID_CASE");
-   }
-
 
    public static void sendScreenLockNotification(Context context) {
       NotificationCompat.Builder builderPeriodicNotification;
@@ -305,8 +281,6 @@ public class InactivityReceiver extends BroadcastReceiver {
    * */
    @Override
    public void onReceive(Context context, Intent intent) {
-      boolean THIS_REGISTRATION_STATUS = (!Objects.equals(dataStoreRead(context, "observerRegistered", observerRegisteredDefaultValue), observerRegisteredDefaultValue));
-
       // Set the periodic alarm that is called to determine if the software is observing ads or not
       // We place it for any received event, as we try to maximise the instances in which it is called
       setPeriodicNotifications(context);
@@ -330,18 +304,13 @@ public class InactivityReceiver extends BroadcastReceiver {
                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                i.setAction(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
                context.startActivity(i);
-               if (THIS_REGISTRATION_STATUS) {
-                  // Send the reboot notification informing the user that the app is not observing ads
-                  if (!dataStoreRead(context, "appFirstCallTime", "NULL").equals("NULL")) {
-                     long firstCallTime = Long.parseLong(dataStoreRead(context, "appFirstCallTime", "0"));
-                     Log.i(TAG, "firstCallTime: " + firstCallTime);
-                     if (Math.abs(firstCallTime - System.currentTimeMillis()) > (10 * 1000)) {
-                        sendRebootNotification(context);
-                     }
+               // Send the reboot notification informing the user that the app is not observing ads
+               if (!dataStoreRead(context, "appFirstCallTime", "NULL").equals("NULL")) {
+                  long firstCallTime = Long.parseLong(dataStoreRead(context, "appFirstCallTime", "0"));
+                  Log.i(TAG, "firstCallTime: " + firstCallTime);
+                  if (Math.abs(firstCallTime - System.currentTimeMillis()) > (10 * 1000)) {
+                     sendRebootNotification(context);
                   }
-               } else {
-                  // Send a periodic notification instead - as the user is not logged in
-                  sendPeriodicNotification(context, THIS_REGISTRATION_STATUS);
                }
 
             }
@@ -356,7 +325,6 @@ public class InactivityReceiver extends BroadcastReceiver {
                   // Check the registration
 
                   // Send the periodic notification to inform the user that the app is not observing ads
-                  sendPeriodicNotification(context, THIS_REGISTRATION_STATUS);
                } else {
                   System.out.println( "Periodic inactivity notification has been rejected - the screen recording is running");
                }

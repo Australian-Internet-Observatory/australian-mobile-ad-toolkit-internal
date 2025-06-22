@@ -1,4 +1,5 @@
 .DS_Store
-.gradle/*
-.idea/*
+.*/
 app/.DS_Store
+app/logs/*
+app/release/*

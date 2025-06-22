@@ -19,8 +19,8 @@ android {
         multiDexEnabled  true
         minSdk 26
         targetSdk 34
-        versionCode 1028
-        versionName "1.028"
+        versionCode 1033
+        versionName "1.033"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets {
@@ -52,6 +52,7 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+    assetPacks = [":models", ":modelsquantized"]
 }
 
 dependencies {
@@ -95,6 +96,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.4")
     implementation("androidx.datastore:datastore-preferences-rxjava2:1.1.4")
     implementation("androidx.datastore:datastore-preferences-rxjava3:1.1.4")
+    implementation "com.squareup.okio:okio:3.7.0" // or any compatible version
+
 
 
 

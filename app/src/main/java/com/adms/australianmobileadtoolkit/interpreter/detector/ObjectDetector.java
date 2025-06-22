@@ -5,6 +5,7 @@ import static com.adms.australianmobileadtoolkit.interpreter.Platform.persistThr
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -15,6 +16,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -30,7 +32,48 @@ public class ObjectDetector {
     private checkPoint thisCheckPoint;
     private Detector thisDetector;
 
-    public List<JSONObject> inferencesOnFrame(List<BoundingBox> boundingBoxes) {
+
+
+
+    public static String adaptClassName(String thisCaseUnadapted, String className) {
+        String thisCase = thisCaseUnadapted.replace("float32_", "").replace("_int8.tflite", "");
+        if (!className.contains("class")) {
+            return className;
+        }
+        try {
+            Integer actualIndex = Integer.parseInt(className.replace("class",""))-1;
+            if (Objects.equals(thisCase, "facebook_sponsored")) {
+                return List.of("SPONSORED_TEXT").get(actualIndex);
+            } else
+            if (Objects.equals(thisCase, "facebook_elements")) {
+                return Arrays.asList("CROSS_AND_ELLIPSIS", "ENGAGEMENT_BUTTONS", "MARKETPLACE_ELEMENT", "POST_FOOTER", "POST_HEADER", "SPONSORED_BY_SELLERS_TEXT", "VIDEO_BUTTONS").get(actualIndex);
+            } else
+            if (Objects.equals(thisCase, "tiktok_sponsored")) {
+                return Arrays.asList("PAID_PARTNERSHIP_TEXT", "PROMOTIONAL_CONTENT_TEXT", "SPONSORED_TEXT").get(actualIndex);
+            } else
+            if (Objects.equals(thisCase, "tiktok_elements")) {
+                return Arrays.asList("ENGAGEMENT_BUTTONS", "LIVE_BUTTON", "POST_THUMBNAIL", "REEL_SEARCH_INPUT", "SEARCH_BUTTON").get(actualIndex);
+            } else
+            if (Objects.equals(thisCase, "instagram_sponsored")) {
+                return Arrays.asList("SPONSORED_TEXT").get(actualIndex);
+            } else
+            if (Objects.equals(thisCase, "instagram_elements")) {
+                return Arrays.asList("BUTTONS_ENGAGEMENT", "BUTTON_NEW_POST", "FEED_POST_HEADER").get(actualIndex);
+            } else
+            if (Objects.equals(thisCase, "youtube_sponsored")) {
+                return Arrays.asList("PRODUCT_IN_THIS_VIDEO_TEXT", "SPONSORED_TEXT", "SPONSORED_TEXT_HORIZONTAL").get(actualIndex);
+            } else
+            if (Objects.equals(thisCase, "youtube_elements")) {
+                return Arrays.asList("APP_STYLE_ELEMENT", "ENGAGEMENT_BUTTONS", "PLUS_BUTTON", "PREVIEW_ELEMENT", "PREVIEW_FOOTER_ELLIPSIS", "PRODUCT_ELEMENT", "VISIT_ADVERTISER_TEXT_HORIZONTAL").get(actualIndex);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return className;
+    }
+
+    public List<JSONObject> inferencesOnFrame(String modelName, List<BoundingBox> boundingBoxes) {
         List<JSONObject> boundingBoxesRecorded = new ArrayList<>();
         for (BoundingBox b : boundingBoxes) {
             boundingBoxesRecorded.add((new JSONXObject())
@@ -42,15 +85,16 @@ public class ObjectDetector {
                     .set("cy", (double) b.getCy())
                     .set("w", (double) b.getW())
                     .set("h", (double) b.getH())
-                    .set("confidence", (double) b.getCnf())
-                    .set("className", b.getClsName()).internalJSONObject
+                    //.set("className", b.getClsName())
+                    .set("className", adaptClassName(modelName, b.getClsName()))
+                    .set("confidence", (double) b.getCnf()).internalJSONObject
             );
         }
         return boundingBoxesRecorded;
     }
 
-    public void setInferencesOnFrame(List<Integer> retainedFrames, List<BoundingBox> inferenceOutcome) {
-        inferencesByFrames.set(currentFrame, inferencesOnFrame(inferenceOutcome));
+    public void setInferencesOnFrame(String modelName, List<Integer> retainedFrames, List<BoundingBox> inferenceOutcome) {
+        inferencesByFrames.set(currentFrame, inferencesOnFrame(modelName, inferenceOutcome));
         if (Objects.equals(currentFrame, retainedFrames.get(retainedFrames.size() - 1))) {
             thisDetector.close();
             elapsedTime = Math.abs(elapsedTime - Long.valueOf(System.currentTimeMillis()).doubleValue()) / 1000;
@@ -78,12 +122,12 @@ public class ObjectDetector {
             Detector.DetectorListener thisDetectorListener = new Detector.DetectorListener() {
                 @Override
                 public void onEmptyDetect() {
-                    setInferencesOnFrame(retainedFrames, (new ArrayList<>()));
+                    setInferencesOnFrame(modelName, retainedFrames, (new ArrayList<>()));
                 }
 
                 @Override
                 public void onDetect(@NonNull List<BoundingBox> boundingBoxes, long inferenceTime) {
-                    setInferencesOnFrame(retainedFrames, boundingBoxes);
+                    setInferencesOnFrame(modelName, retainedFrames, boundingBoxes);
                 }
             };
 
@@ -91,11 +135,14 @@ public class ObjectDetector {
             Integer currentFrameIndex = 0;
             for (String retainedFrameFile : retainedFrameFiles) {
                 persistThread(context, TAG);
-                currentFrame = retainedFrames.get(currentFrameIndex);
-                Bitmap thisFrameBitmap = Bitmap.createScaledBitmap(
-                        BitmapFactory.decodeFile(retainedFrameFile), INFERENCE_IMAGE_WIDTH, INFERENCE_IMAGE_HEIGHT, false);
-                thisDetector.detect(thisFrameBitmap);
-                currentFrameIndex ++;
+                Log.i(TAG, retainedFrameFile.toString());
+                try {
+                    currentFrame = retainedFrames.get(currentFrameIndex);
+                    thisDetector.detect(BitmapFactory.decodeFile(retainedFrameFile));
+                    currentFrameIndex ++;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

@@ -4,7 +4,6 @@ import static com.adms.australianmobileadtoolkit.appSettings.prescribedMinVideoW
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.adjustDimensions;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.createDirectory;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.filenameUnextended;
-import static com.adms.australianmobileadtoolkit.interpreter.Platform.logger;
 import static com.google.gson.JsonParser.parseString;
 
 import android.content.Context;
@@ -155,7 +154,6 @@ public class machine {
 
             String xUnextended = filenameUnextended(x);
             String xDebugDirectory = x.getName() + ".debugDirectory";
-            logger.info("Running test " + x);
 
             File debugDirectory = new File(thisTest.outputDirectory.getAbsolutePath(), xDebugDirectory);
             File adsFromFacebookDirectory = new File(debugDirectory, "adsToDispatch");

@@ -108,6 +108,11 @@ public final class RecorderService extends Service {
     private String videoDir;
 
     private static Intent recorderIntent;
+    private MediaProjectionManager projectionManager;
+
+    private int displayWidth = 0;
+    private int displayHeight = 0;
+    private int screenDensity = 0;
 
     /*
      *
@@ -126,13 +131,19 @@ public final class RecorderService extends Service {
         // In Android API version 14, configurations are introduced for screen recordings - this code
         // ensures that the default configuration is selected for the display when the dialog is shown
         // (on newer devices)
+
+        /*if (mProjectionManager == null) {
+            mProjectionManager = (MediaProjectionManager) fragmentActivity.getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        }*/
+        MediaProjectionManager thisMediaProjectionManager = (MediaProjectionManager) fragmentActivity.getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             /*screenRecordingIntent = mProjectionManager.createScreenCaptureIntent(
                     MediaProjectionConfig.createConfigForUserChoice());*/
-            screenRecordingIntent = mProjectionManager.createScreenCaptureIntent(
+            screenRecordingIntent = thisMediaProjectionManager.createScreenCaptureIntent(
                     MediaProjectionConfig.createConfigForDefaultDisplay()); // TODO - desired effect was not observed
         } else {
-            screenRecordingIntent = mProjectionManager.createScreenCaptureIntent();
+            screenRecordingIntent = thisMediaProjectionManager.createScreenCaptureIntent();
         }
         fragmentActivity.startActivityForResult(screenRecordingIntent, SCREEN_RECORDING_PERMISSION_CODE);
     }
@@ -167,12 +178,21 @@ public final class RecorderService extends Service {
                     break;
                 case Intent.ACTION_CONFIGURATION_CHANGED:
                     if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        stopRecording();
+
+                        //stopRecording();
+                        /*
+                        mMediaRecorder.reset();
+                        //stopRecording();
+                        boolean didPrepare = configureMediaRecorder();
+                        attemptToStartRecording(didPrepare, resultCode, data, false);
+                        Log.i(TAG, "configuration changed logged here");*/
                     } else {
                         if (!screenOff) {
-                            System.out.println( "The device's configuration has changed: restarting recording");
-                            stopRecording();
-                            startRecording(resultCode, data);
+                            //System.out.println( "The device's configuration has changed: restarting recording");
+                            //stopRecording();
+
+                            //projectionManager = (MediaProjectionManager) getApplicationContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+                            //startRecording(resultCode, data);
                         }
                     }
                     break;
@@ -313,7 +333,9 @@ public final class RecorderService extends Service {
     public static String getCurrentAppPackageName(Context context) {
         String appPackageName = "unclassified";
         String tentativeAppPackageName = "unclassified";
-        try { tentativeAppPackageName = readStringFromFile(new File(MainActivity.getMainDir(context), "withinTargetApplication")); } catch (Exception ignored) {}
+        try { tentativeAppPackageName = readStringFromFile(new File(MainActivity.getMainDir(context), "withinTargetApplication")); } catch (Exception ignored) {
+            ignored.printStackTrace();
+        }
         String finalTentativeAppPackageName = tentativeAppPackageName;
         if (triggerableAppPackageNames.stream().anyMatch(x -> finalTentativeAppPackageName.contains(x))) {
             appPackageName = augmentAppPackageName(tentativeAppPackageName);
@@ -370,34 +392,78 @@ public final class RecorderService extends Service {
         }
     }
 
+    private boolean configureMediaRecorder() {
+
+        final Integer lowerBoundOnWidth = (android.os.Build.VERSION.SDK_INT < 28) ? 2000 : 500;
+
+        DisplayMetrics metrics = new DisplayMetrics();
+        WindowManager wm = (WindowManager) getApplicationContext().getSystemService(WINDOW_SERVICE);
+        wm.getDefaultDisplay().getRealMetrics(metrics);
+        screenDensity = metrics.densityDpi;
+
+        displayWidth = 0;
+        displayHeight = 0;
+
+        if (metrics.widthPixels < metrics.heightPixels) {
+            displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
+            displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
+        } else {
+            displayHeight = Math.max((int)Math.round(metrics.heightPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
+            displayWidth = (int)Math.round(displayHeight*((double)metrics.widthPixels/(double)metrics.heightPixels));
+        }
+
+        String finalOrientationAdjusted = ((displayWidth < displayHeight) ? "portrait" : "landscape");
+
+        int videoRecordingMaximumFileSize = appSettings.videoRecordingMaximumFileSize;
+
+        if (android.os.Build.VERSION.SDK_INT < 28) {
+            videoRecordingMaximumFileSize = 1000000;
+        }
+
+        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        Log.i(TAG, "displayWidthAdjusted:"+displayWidth );
+        Log.i(TAG, "displayHeightAdjusted:"+displayHeight);
+        mMediaRecorder.setVideoSize(displayWidth, displayHeight);
+        mMediaRecorder.setMaxFileSize(videoRecordingMaximumFileSize); // 5mb (4.7mb)
+        mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+        //mMediaRecorder.setVideoEncodingBitRate(25000);
+        mMediaRecorder.setCaptureRate(30); // success with 1 - 30
+        mMediaRecorder.setVideoFrameRate(30);
+        // Set the preliminary output file
+        previousRecordingFilename = recordingFilename(videoDir, finalOrientationAdjusted, this);
+        dataStoreWrite( this, "TENTATIVE_RECORDING_FILENAME", previousRecordingFilename);
+        mMediaRecorder.setOutputFile(previousRecordingFilename);
+        boolean didPrepare = false;
+        try {
+            // Attempt to prepare the recording
+            mMediaRecorder.prepare();
+            didPrepare = true;
+        } catch (Exception e) {
+            Log.e(TAG, "Failed on startRecording: ", e);
+        }
+        return didPrepare;
+    }
+
     /*
      *
      * This method starts the media recorder, and generates the resulting video files
      *
      * */
     private void startRecording(int resultCode, Intent data) {
-        int videoRecordingMaximumFileSize = appSettings.videoRecordingMaximumFileSize;
-
-        if (android.os.Build.VERSION.SDK_INT < 28) {
-            videoRecordingMaximumFileSize = 1000000;
-        }
+        final Integer lowerBoundOnWidth = (android.os.Build.VERSION.SDK_INT < 28) ? 2000 : 500;
         // If the recording is not in progress
         if(!recordingInProgress) {
-            // Set up a new MediaProjectionManager for the recording process
-            MediaProjectionManager mProjectionManager = (MediaProjectionManager)
+            projectionManager = (MediaProjectionManager)
                     getApplicationContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
             mMediaRecorder = new MediaRecorder();
 
             DisplayMetrics metrics = new DisplayMetrics();
             WindowManager wm = (WindowManager) getApplicationContext().getSystemService(WINDOW_SERVICE);
             wm.getDefaultDisplay().getRealMetrics(metrics);
-            int mScreenDensity = metrics.densityDpi;
-            Integer lowerBoundOnWidth = 500;
-            if (android.os.Build.VERSION.SDK_INT < 28) {
-                lowerBoundOnWidth = 2000;
-            }
-            int displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
-            int displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
+            screenDensity = metrics.densityDpi;
+            displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
+            displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
 
             // Determine the orientation of the device
             String finalOrientation = ((displayWidth < displayHeight) ? "portrait" : "landscape");
@@ -419,7 +485,9 @@ public final class RecorderService extends Service {
                                 tentativeAppPackageName = getCurrentAppPackageName(this);
                                 assert tentativeAppPackageName != null;
                                 withinTargetPlatform = (!(tentativeAppPackageName.contains("NULL")));
-                            } catch (Exception e) {}
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
 
                             if (withinTargetPlatform) {
                                 appPackageName = tentativeAppPackageName;
@@ -464,12 +532,38 @@ public final class RecorderService extends Service {
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_APPROACHING) {
                     System.out.println("The media recorder has identified that the maximum file size has"
                             + " been reached; setting new output file.");
+
+                    // Change configuration of metrics
+                    /*
+                    int displayWidthAdjusted = 0;
+                    int displayHeightAdjusted = 0;
+
+                    if (metrics.widthPixels < metrics.heightPixels) {
+                        displayWidthAdjusted = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
+                        displayHeightAdjusted = (int)Math.round(displayWidthAdjusted*((double)metrics.heightPixels/(double)metrics.widthPixels));
+                    } else {
+                        displayHeightAdjusted = Math.max((int)Math.round(metrics.heightPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
+                        displayWidthAdjusted = (int)Math.round(displayHeightAdjusted*((double)metrics.widthPixels/(double)metrics.heightPixels));
+                    }
+
+                    String finalOrientationAdjusted = ((displayWidthAdjusted < displayHeightAdjusted) ? "portrait" : "landscape");
+                    mMediaRecorder.setVideoSize(displayWidthAdjusted, displayHeightAdjusted);
+
+                     */
+
+
                     // Write out a new file
-                    tentativeRecordingFilename = recordingFilename(videoDir, finalOrientation, this);
+                    tentativeRecordingFilename = recordingFilename(videoDir, finalOrientation, this); // TODO - set to adjusted
                     dataStoreWrite(this, "TENTATIVE_RECORDING_FILENAME", tentativeRecordingFilename);
                     try (RandomAccessFile newRandomAccessFile =
                                  new RandomAccessFile(tentativeRecordingFilename,"rw")) {
+
+
+
                         mMediaRecorder.setNextOutputFile(newRandomAccessFile.getFD());
+
+
+
                         File thisVideoFolder = filePath(Arrays.asList((videoDir))); // TODO - inserted
 
                         // delete landscapes, then non-positives, then positives
@@ -511,33 +605,20 @@ public final class RecorderService extends Service {
             Log.i(TAG, "cpHigh.videoFrameRate: " + cpHigh.videoFrameRate);*/
 
 
-            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-            mMediaRecorder.setVideoSize(displayWidth, displayHeight);
-            mMediaRecorder.setMaxFileSize(videoRecordingMaximumFileSize); // 5mb (4.7mb)
-            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-            //mMediaRecorder.setVideoEncodingBitRate(25000);
-            mMediaRecorder.setCaptureRate(30); // success with 1 - 30
-            mMediaRecorder.setVideoFrameRate(30);
-            // Set the preliminary output file
-            previousRecordingFilename = recordingFilename(videoDir, finalOrientation, this);
-            dataStoreWrite( this, "TENTATIVE_RECORDING_FILENAME", previousRecordingFilename);
-            mMediaRecorder.setOutputFile(previousRecordingFilename);
-            boolean didPrepare = false;
+            boolean didPrepare = configureMediaRecorder();
+
+            attemptToStartRecording(didPrepare, resultCode, data, true);
+        }
+    }
+
+    private void attemptToStartRecording(boolean didPrepare, int thisResultCode, Intent thisData, boolean firstPass) {
+
+        // Set up a new MediaProjectionManager for the recording process
+        boolean didStart = false;
+        if (didPrepare) {
             try {
-                // Attempt to prepare the recording
-                mMediaRecorder.prepare();
-                didPrepare = true;
-            } catch (Exception e) {
-                Log.e(TAG, "Failed on startRecording: ", e);
-            }
-
-            boolean didStart = false;
-            if (didPrepare) {
-                try {
-                    mMediaProjection = mProjectionManager.getMediaProjection(resultCode, data); // Data is intent
-                    Surface surface = mMediaRecorder.getSurface();
-
+                if (firstPass) {
+                    mMediaProjection = projectionManager.getMediaProjection(thisResultCode, thisData); // Data is intent
                     // TODO - fix hander to do something when stopped : https://github.com/mtsahakis/MediaProjectionDemo/blob/3a98fc8e5e86da4dc75c3c048d27ddcd4f2925e9/app/src/main/java/com/mtsahakis/mediaprojectiondemo/ScreenCaptureService.java#L49
                     mMediaProjection.registerCallback(new MediaProjection.Callback() {
                         // Implement callback methods here
@@ -563,27 +644,28 @@ public final class RecorderService extends Service {
                             }
                         }
                     }, mHandler);
+                    Surface surface = mMediaRecorder.getSurface();
                     mVirtualDisplay = mMediaProjection.createVirtualDisplay("MainActivity",
-                            displayWidth, displayHeight, mScreenDensity,
+                            displayWidth, displayHeight, screenDensity,
                             VIRTUAL_DISPLAY_FLAG_PRESENTATION,
                             surface, null, null);
-                    // Start the recording
-                    mMediaRecorder.start();
-                    didStart = true;
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed on startRecording: ", e);
                 }
+                // Start the recording
+                mMediaRecorder.start();
+                didStart = true;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed on startRecording: ", e);
             }
+        }
 
-            if (didStart) {
-                recordingInProgress = true;
-                dataStoreWrite( getApplicationContext(), "recordingStatus", "true"); // TODO:14.04.25
-                // Log.i("recordingStatus", "Setting recordingStatus to true - 1");
+        if (didStart) {
+            recordingInProgress = true;
+            dataStoreWrite( getApplicationContext(), "recordingStatus", "true"); // TODO:14.04.25
+            // Log.i("recordingStatus", "Setting recordingStatus to true - 1");
 
-                sendBroadcast(new Intent(this, InactivityReceiver.class)
-                        .putExtra("INTENT_ACTION", "RECORDING_HAS_STARTED"));  // TODO - checked for API migration
-                //MainActivity.safelySetToggleInViewModel(true);
-            }
+            sendBroadcast(new Intent(this, InactivityReceiver.class)
+                    .putExtra("INTENT_ACTION", "RECORDING_HAS_STARTED"));  // TODO - checked for API migration
+            //MainActivity.safelySetToggleInViewModel(true);
         }
     }
 

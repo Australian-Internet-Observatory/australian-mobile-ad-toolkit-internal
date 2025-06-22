@@ -52,8 +52,6 @@ public class FragmentMain extends Fragment {
    private Button mRTD;
    // De-bouncer variable on toggler
    private static boolean mToggleButtonDebouncerActivated;
-   // The registration status of the user
-   public static boolean THIS_REGISTRATION_STATUS = false;
 
    private static ItemViewModel viewModel;
 
@@ -81,7 +79,6 @@ public class FragmentMain extends Fragment {
    @Override
    public View onCreateView(LayoutInflater inflater, ViewGroup container,
                             Bundle savedInstanceState) {
-      THIS_REGISTRATION_STATUS = (!Objects.equals(dataStoreRead(requireContext(),"observerRegistered", observerRegisteredDefaultValue), observerRegisteredDefaultValue));
       // TODO Auto-generated method stub
 
       view = inflater.inflate(R.layout.fragment_main, container, false);
@@ -126,8 +123,8 @@ public class FragmentMain extends Fragment {
       ((TextView)view.findViewById(R.id.fragment_main_learn_more_unregistered)).setMovementMethod(LinkMovementMethod.getInstance());
       ((TextView)view.findViewById(R.id.fragment_main_privacy_policy_unregistered)).setMovementMethod(LinkMovementMethod.getInstance());
 
-      // If the device is registered
-      if (THIS_REGISTRATION_STATUS) { // NB: This can be inverted for testing purposes - default is (!THIS_REGISTRATION_STATUS)
+      // If the device is registeredc
+      //if (THIS_REGISTRATION_STATUS) { // NB: This can be inverted for testing purposes - default is (!THIS_REGISTRATION_STATUS)
          // Hide the 'unregistered' screen
          view.findViewById(R.id.fragment_main_unregistered).setVisibility(View.GONE);
 
@@ -166,11 +163,11 @@ public class FragmentMain extends Fragment {
          myActivationCode.setText( myActivationCodeUUIDString);
 
 
-
+      /*
       } else {
          // Or else hide the 'registered' screen
          view.findViewById(R.id.fragment_main_registered).setVisibility(View.GONE);
-      }
+      }*/
 
 
       View.OnClickListener commonAccessibilityServicesProminentDisclosureRoutine = (v -> {
@@ -229,16 +226,18 @@ public class FragmentMain extends Fragment {
    }
 
    public static void setToggle(Boolean check) {
-      try {
-         if (!mToggleButtonDebouncerActivated) {
-            mToggleButton.setChecked(check);
+      if (check != null) {
+         try {
+            if ((!mToggleButtonDebouncerActivated) && (mToggleButton != null)) {
+               mToggleButton.setChecked(check);
+            }
+         } catch (Exception e) {
+            e.printStackTrace();
          }
-      } catch (Exception e) {
-         e.printStackTrace();
-      }
 
-      // Then deactivate the de-bouncer in case (as we are resuming the app)
-      mToggleButtonDebouncerActivated = false;
+         // Then deactivate the de-bouncer in case (as we are resuming the app)
+         mToggleButtonDebouncerActivated = false;
+      }
    }
 
    public static void safelySetToggleFromViewModel() {
@@ -272,15 +271,11 @@ public class FragmentMain extends Fragment {
       if (!actionedLatestIntent) {
          switch (intentOfMainActivity) {
             case "REGISTER" :
-               // Ignoring cases where a register notification triggers a registered instance of the app
-               if (!THIS_REGISTRATION_STATUS) {
-                  goToRegistration();
-               }
                actionedLatestIntent = true;
                ; break ;
             case "TURN_ON_SCREEN_RECORDER" :
 
-               if ((THIS_REGISTRATION_STATUS) && (!Boolean.TRUE.equals(viewModel.getToggleStatusInViewModel().getValue())))  {
+               if (!Boolean.TRUE.equals(viewModel.getToggleStatusInViewModel().getValue()))  {
                   mToggleButton.performClick(); // We have to simulate a click, as the toggle's control behaviour interferes with the
                   // overriding post-functions that come from whether the service is running or not
                   //createIntentForScreenRecording(getActivity());

@@ -1,22 +1,26 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
-import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
+import static com.adms.australianmobileadtoolkit.MainActivity.PERIODIC_WORK_TAG;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.getVideoMetadataAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.platformInterpretationRoutine;
 import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.objectDetectorAndroid;
+import static com.adms.australianmobileadtoolkit.ui.dialogs.DialogSubmitAds.accessableTentativeThread;
 
 import android.content.Context;
 import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.adms.australianmobileadtoolkit.MainActivity;
 import com.adms.australianmobileadtoolkit.appSettings;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.json.JSONObject;
 
@@ -27,6 +31,7 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class InterpreterWorker extends Worker {
 
@@ -39,46 +44,30 @@ public class InterpreterWorker extends Worker {
 
    public static void platformInterpretationRoutineInterruption(Context context) {
       Log.i(TAG, "Perhaps thread related?...");
-      dataStoreWrite(context, "platformRoutineRunning", "false");
       dataStoreWrite(context, "platformRoutineState", "COMPLETE");
       dataStoreWrite(context, "platformRoutineToAnalyze", "0");
       dataStoreWrite(context, "platformRoutineAnalyzed", "0");
    }
 
-   public static Integer currentTimeInSeconds() {
-      return Math.toIntExact(Math.round (Long.valueOf(System.currentTimeMillis()).doubleValue() / 1000));
-   }
-
-   public static boolean canForcePlatformInterpretation(Context context) {
-      Integer lastCall = Integer.parseInt(dataStoreRead(context, "platformInterpretationLastCall", "0"));
-      return (Math.abs(lastCall - currentTimeInSeconds()) > (15 * 60));
-   }
-
-
-   public static void platformInterpretationRoutineContainer(Context context) {
-      dataStoreWrite(context, "periodicWorkerRunning", "true");
-      dataStoreWrite(context, "platformInterpretationLastCall", String.valueOf(currentTimeInSeconds()));
+   public static void platformInterpretationRoutineContainer(Context context, boolean  implementedOnAndroid) {
       try {
          platformInterpretationRoutine(context, MainActivity.getMainDir(context),
-                 getVideoMetadataAndroid, frameGrabAndroid, true, objectDetectorAndroid);
+                 getVideoMetadataAndroid, frameGrabAndroid, implementedOnAndroid, objectDetectorAndroid);
       } catch (Exception e) {
          e.printStackTrace();
          platformInterpretationRoutineInterruption(context);
       }
-      dataStoreWrite(context, "periodicWorkerRunning", "false");
    }
 
    @Override
    public Result doWork() {
       localThread = Thread.currentThread();
       // This check stops a periodic worker from overlapping on a manual process
-      if ((dataStoreRead(getApplicationContext(), "platformRoutineRunning", "false").equals("false")) || canForcePlatformInterpretation(getApplicationContext())) {
-         platformInterpretationRoutineContainer(getApplicationContext());
+      if ((accessableTentativeThread != null) ? (!accessableTentativeThread.isAlive()) : true) {
+         platformInterpretationRoutineContainer(getApplicationContext(), true);
       } else {
          Log.i(TAG, "Periodic worker has been cancelled due to manual process...");
       }
-
-
 
       // Indicate success or failure with your return value:
       return Result.success();
@@ -130,6 +119,9 @@ public class InterpreterWorker extends Worker {
    public void onStopped() {
       super.onStopped();
       Log.i(TAG, "Periodic worker was stopped!!!!!!!!");
+      if (localThread == null) { // There is a possibility we have a null thread here...
+         localThread = Thread.currentThread();
+      }
       localThread.interrupt();
    }
 }

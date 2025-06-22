@@ -2,9 +2,7 @@ package com.adms.australianmobileadtoolkit.ui.dialogs;
 
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
-import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
-import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.getVideoMetadataAndroid;
-import static com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker.canForcePlatformInterpretation;
+import static com.adms.australianmobileadtoolkit.MainActivity.PERIODIC_WORK_TAG;
 import static com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker.platformInterpretationRoutineContainer;
 import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.objectDetectorAndroid;
 
@@ -26,17 +24,21 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentManager;
+import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
 import com.adms.australianmobileadtoolkit.MainActivity;
 import com.adms.australianmobileadtoolkit.R;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class DialogSubmitAds extends Dialog implements android.view.View.OnClickListener {
 
     private static String TAG = "DialogSubmitAds";
     private Thread tentativeThread;
+    public static Thread accessableTentativeThread;
 
     private DialogLoading loadKillAdDigest;
     private DialogSubmitAds thisDialogSubmitAds;
@@ -66,12 +68,10 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
             Log.i(TAG, "killPeriodicWorker iteration");
 
         }
-        dataStoreWrite(context, "periodicWorkerRunning", "false");
-        dataStoreWrite(context, "platformRoutineRunning", "false");
     }
 
     public Thread constructProcessThread(Context context) {
-        return new Thread(() -> platformInterpretationRoutineContainer(context));
+        return new Thread(() -> platformInterpretationRoutineContainer(context, true));
     }
 
     public static Integer safeIntegerRead(Context context, String key) {
@@ -95,12 +95,6 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
                 });
 
-                // If we can force a platform interpretation
-                if (canForcePlatformInterpretation(context)) {
-                    // Exit the current lock
-                    instance.killAdDigestProcess(context);
-                }
-
                 Integer platformRoutineToAnalyze = 0;
                 Integer platformRoutineAnalyzed = 0;
 
@@ -114,7 +108,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
                     try {
                         Log.i(TAG, "Sleeping on adDigestProcess...");
 
-                        String tentativePlatformRoutineState = dataStoreRead(context, "platformRoutineState", "false");
+                        String tentativePlatformRoutineState = dataStoreRead(context, "platformRoutineState", "LOADING");
 
                         platformRoutineToAnalyze = safeIntegerRead(context, "platformRoutineToAnalyze");
                         platformRoutineAnalyzed = safeIntegerRead(context, "platformRoutineAnalyzed");
@@ -223,6 +217,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
         if (!adDigestIsRunning(context)) {
             tentativeThread = constructProcessThread(context);
             tentativeThread.start();
+            accessableTentativeThread = tentativeThread;
             refreshDialog(context);
 
 
@@ -231,7 +226,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
         return false;
     }
 
-    public boolean isThreadAlive() {
+    public boolean isManualProcessRunning() {
         if (tentativeThread == null) {
             return false;
         } else {
@@ -241,7 +236,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
     public void killThread() {
         try {
-            if (isThreadAlive()) {
+            if (isManualProcessRunning()) {
                 tentativeThread.interrupt();
             }
         } catch (Exception e) {
@@ -250,15 +245,18 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
     }
 
     public boolean adDigestIsRunning(Context context) {
-        return ((isPeriodicWorkerRunning(context)) || (isThreadAlive()) || (isRoutineRunning(context)));
+        return ((isPeriodicWorkerRunning(context)) || (isManualProcessRunning()));
     }
 
     public boolean isPeriodicWorkerRunning(Context context) {
-        return (dataStoreRead(context, "periodicWorkerRunning", "false").equals("true"));
-    }
-
-    public boolean isRoutineRunning(Context context) {
-        return (dataStoreRead(context, "platformRoutineRunning", "false").equals("true"));
+        boolean periodicWorkerIsRunning = false;
+        try {
+            List<WorkInfo> thisPeriodicWorkerInfo = WorkManager.getInstance(context).getWorkInfosByTag(PERIODIC_WORK_TAG).get();
+            periodicWorkerIsRunning = thisPeriodicWorkerInfo.stream().anyMatch(x -> x.getState() == WorkInfo.State.RUNNING);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return periodicWorkerIsRunning;
     }
 
     public void killAdDigestProcess(Context context) {

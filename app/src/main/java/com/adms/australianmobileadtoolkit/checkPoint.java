@@ -236,7 +236,7 @@ public class checkPoint {
                 types.set(k, "LIST");
                 List<String> objectList = new ArrayList<>();
                 for (Object x : ((List<Object>) v)) {
-                    String thisUUID = UUID.randomUUID().toString();
+                    String thisUUID = UUID.randomUUID().toString().substring(0,8);
                     objectList.add(thisUUID);
                     this.flatApply(thisUUID, x);
                 }
@@ -247,7 +247,7 @@ public class checkPoint {
                     HashMap<Integer, String> objectHashMap = new HashMap<>();
                     HashMap<Integer, Object> valueAsHashMap = (HashMap<Integer, Object>) v;
                     for (Integer thisHashMapKey : valueAsHashMap.keySet()) {
-                        String thisUUID = UUID.randomUUID().toString();
+                        String thisUUID = UUID.randomUUID().toString().substring(0,8);
                         objectHashMap.put(thisHashMapKey, thisUUID);
                         this.flatApply(thisUUID, valueAsHashMap.get(thisHashMapKey));
                     }
@@ -256,7 +256,7 @@ public class checkPoint {
                     HashMap<String, String> objectHashMap = new HashMap<>();
                     HashMap<String, Object> valueAsHashMap = (HashMap<String, Object>) v;
                     for (String thisHashMapKey : valueAsHashMap.keySet()) {
-                        String thisUUID = UUID.randomUUID().toString();
+                        String thisUUID = UUID.randomUUID().toString().substring(0,8);
                         objectHashMap.put(thisHashMapKey, thisUUID);
                         this.flatApply(thisUUID, valueAsHashMap.get(thisHashMapKey));
                     }
@@ -269,7 +269,7 @@ public class checkPoint {
                 ((JSONObject) v).keys().forEachRemaining(thisKeys::add);
 
                 for (String thisJSONKey : thisKeys) {
-                    String thisUUID = UUID.randomUUID().toString();
+                    String thisUUID = UUID.randomUUID().toString().substring(0,8);
                     objectHashMap.put(thisJSONKey, thisUUID);
                     try {
                         this.flatApply(thisUUID, ((JSONObject) v).get(thisJSONKey));

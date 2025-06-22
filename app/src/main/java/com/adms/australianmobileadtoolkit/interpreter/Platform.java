@@ -7,6 +7,7 @@ import static com.adms.australianmobileadtoolkit.interpreter.Sampler.basicReadin
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Facebook.evaluateFacebookAd;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Instagram.evaluateInstagramAd;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.TikTok.evaluateTikTokAd;
+import static com.adms.australianmobileadtoolkit.interpreter.platform.Youtube.evaluateYoutubeAd;
 
 
 import static java.util.Arrays.asList;
@@ -179,18 +180,6 @@ public class Platform {
             } catch (Exception e2) {
                 e2.printStackTrace();}
         }
-    }
-
-    public static List<Object> JSONArrayToList(JSONArray thisJSONArray) {
-        List<Object> thisList = new ArrayList<>();
-        if (thisJSONArray != null) {
-            for (int i=0;i<thisJSONArray.length();i++){
-                try {
-                    thisList.add(thisJSONArray.get(i));
-                } catch (Exception e) {}
-            }
-        }
-        return thisList;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -395,13 +384,19 @@ public class Platform {
         try {
             outputHashMap = new HashMap<>();
             outputHashMap.put("filename", filename);
+            outputHashMap.put("tags", "");
+            outputHashMap.put("timestamp", "");
+            outputHashMap.put("UUID", "");
+            outputHashMap.put("orientation", "");
             try {
                 String[] parts = filename.split("\\."); //  TODO - very real possibility that the code fails here (on malformed, older files)
-                assert (parts.length == 5);
-                outputHashMap.put("tags", String.join(" ", asList(parts).subList(0, parts.length-4)));
-                outputHashMap.put("timestamp", parts[parts.length-4]);
-                outputHashMap.put("UUID", parts[parts.length-3]);
-                outputHashMap.put("orientation", parts[parts.length-2]);
+                //assert (parts.length == 5);
+                if (parts.length == 5) {
+                    outputHashMap.put("tags", String.join(" ", asList(parts).subList(0, parts.length-4)));
+                    outputHashMap.put("timestamp", parts[parts.length-4]);
+                    outputHashMap.put("UUID", parts[parts.length-3]);
+                    outputHashMap.put("orientation", parts[parts.length-2]);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -456,13 +451,15 @@ public class Platform {
         for (Integer thisFrame : retainedFrames) {
             String thisFrameFile = retainedFramesAsFiles.get(cursorFrameFile);
             List<JSONXObject> boundingBoxes = (List<JSONXObject>) inferencesByFrames.get(thisFrame);
-            if (!boundingBoxes.isEmpty()) {
-                currentAdFrames.add(thisFrame);
-                retainedFramesAsFilesForDeepInference.add(thisFrameFile);
-                retainedFramesForDeepInference.add(thisFrame);
+            if (boundingBoxes != null) {
+                if (!boundingBoxes.isEmpty()) {
+                    currentAdFrames.add(thisFrame);
+                    retainedFramesAsFilesForDeepInference.add(thisFrameFile);
+                    retainedFramesForDeepInference.add(thisFrame);
+                }
             }
             // If the current frame has no reading, or we are at the end of the retained frames
-            if ((boundingBoxes.isEmpty()) || (thisFrame.equals(retainedFrames.get(retainedFrames.size() - 1)))) {
+            if ((boundingBoxes == null) || (boundingBoxes.isEmpty()) || (thisFrame.equals(retainedFrames.get(retainedFrames.size() - 1)))) {
                 if (!currentAdFrames.isEmpty()) {
                     // Dispatch and start anew
                     groupsOfAdFrames.add(new ArrayList<>(currentAdFrames));
@@ -567,18 +564,26 @@ public class Platform {
                String modelIdentifier, JSONXObject groupedAdsObject, File screenRecordingFile, File screenRecordingAnalysisDirectory) throws Exception {
 
         dataStoreWrite(context, "platformRoutineState", "PERFORMING ANALYSIS");
+        String thisModelIdentifier = "";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Log.i(TAG, "Applying newer models");
+            thisModelIdentifier = "float32_"+modelIdentifier+"_int8.tflite";
+        } else {
+            Log.i(TAG, "Applying older models");
+            thisModelIdentifier = "float16_"+modelIdentifier+".tflite";
+        }
+
         JSONXObject result = objectDetectorFunction.apply((new JSONXObject())
                     .set("context", context)
                     .set("analysisDirectory", screenRecordingAnalysisDirectory)
                     .set("thisScreenRecordingFile", screenRecordingFile)
                     .set("retainedFrameFiles", groupedAdsObject.get("retainedFramesAsFiles"))
                     .set("retainedFrames", groupedAdsObject.get("retainedFrames"))
-                    .set("modelName", "float32_"+modelIdentifier+"_full_integer_quant.tflite")
-                    //.set("modelName", "float16_"+modelIdentifier+".tflite") // float32_facebook_elements_full_integer_quant
+                    //.set("modelName", "float16_"+modelIdentifier+".tflite")
+                    .set("modelName", thisModelIdentifier)
                     .set("thisCase", ((modelIdentifier.contains("sponsored")) ? "Shallow" : "Deep"))
             );
         if (result == null) { persistThread(context, TAG); }
-
         return result;
     }
 
@@ -703,8 +708,7 @@ public class Platform {
     public static void persistThread(Context context, String thisTag) throws Exception {
         if (Thread.interrupted()) {
             Log.i(thisTag, "Thread exited...");
-            dataStoreWrite(context, "periodicWorkerRunning", "false");
-            throw new Exception();
+            throw new Exception("Deliberate thread interruption");
         }
     }
 
@@ -718,7 +722,6 @@ public class Platform {
         dataStoreWrite(context, "platformRoutineRelayed", "0");
         Integer platformRoutineAnalyzed = 0;
         dataStoreWrite(context, "platformRoutineAnalyzed", platformRoutineAnalyzed.toString());
-        dataStoreWrite(context, "platformRoutineRunning", "true");
         List<HashMap<String,String>> recordingsClassified = new ArrayList<>();
         List<HashMap<String,String>> recordingsToDelete = new ArrayList<>();
 
@@ -751,7 +754,16 @@ public class Platform {
             try {
                 HashMap<String, String> thisInterpretation = interpretRecordingFileName(thisFile.getName());
                 if (thisInterpretation != null) {
-                    if ((!thisInterpretation.containsKey("orientation")) || (Objects.equals(thisInterpretation.get("orientation"), "landscape"))) {
+                    // TODO - adapt this to a pre-condition for all platforms
+                    if (
+                            (((!thisInterpretation.containsKey("orientation")) || (Objects.equals(thisInterpretation.get("orientation"), "landscape"))) && (thisInterpretation.get("tags").equals("com_zhiliaoapp_musically"))) ||
+                            (((!thisInterpretation.containsKey("orientation")) || (Objects.equals(thisInterpretation.get("orientation"), "landscape"))) && (thisInterpretation.get("tags").equals("com_facebook_katana"))) ||
+                            (((!thisInterpretation.containsKey("orientation")) || (Objects.equals(thisInterpretation.get("orientation"), "landscape"))) && (thisInterpretation.get("tags").equals("com_facebook_lite"))) ||
+                            (((!thisInterpretation.containsKey("orientation")) || (Objects.equals(thisInterpretation.get("orientation"), "landscape"))) && (thisInterpretation.get("tags").equals("com_instagram_android"))) ||
+                            ((!thisInterpretation.containsKey("orientation")) && (Objects.equals(thisInterpretation.get("tags"), "com_google_android_youtube")))
+
+                    )
+                    {
                         recordingsToDelete.add(thisInterpretation);
                     } else {
                         if (!Objects.equals(thisInterpretation.get("tags"), "unclassified")) {
@@ -762,7 +774,6 @@ public class Platform {
                     recordingsToDelete.add(thisInterpretation);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 e.printStackTrace(); // TODO
             }
         }
@@ -779,7 +790,7 @@ public class Platform {
 
             // TODO - fresh passes upstream have to trigger fresh passes downstream
 
-            List<String> targetedPlatforms = Arrays.asList("com_zhiliaoapp_musically", "com_facebook_katana", "com_instagram_android");
+            List<String> targetedPlatforms = Arrays.asList("com_zhiliaoapp_musically", "com_facebook_katana", "com_facebook_lite", "com_instagram_android", "com_google_android_youtube");
 
             if (targetedPlatforms.contains(thisInterpretation.get("tags"))) {
                 File screenRecordingFile = (new File(appStorageRecordingsDirectory, thisInterpretation.get("filename")));
@@ -788,26 +799,36 @@ public class Platform {
                     dataStoreWrite(context, "platformRoutineState", "SAMPLING IMAGERY");
                     thisComprehensiveReading = basicReading(context, rootDirectory, screenRecordingAnalysisDirectory,
                             screenRecordingFile, getVideoMetadataFunction, frameGrabFunction);
-                } catch (RuntimeException e) {
+                } catch (Exception e) {
+                    e.printStackTrace();
                     if (screenRecordingFile.length() < 2000) {
                         screenRecordingFile.delete(); // TODO - Due to empty file size - make more stringent
                     }
                 }
 
-                if (Objects.equals(thisInterpretation.get("tags"), "com_facebook_katana")) {
-                    evaluateFacebookAd(context, rootDirectory, thisInterpretation,
-                            objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                if (thisComprehensiveReading.has("malformedFlag") && ((Boolean) thisComprehensiveReading.get("malformedFlag"))) {
+                    deleteScreenRecordingAnalysis(screenRecordingFile, screenRecordingAnalysisDirectory, implementedOnAndroid);
+                } else {
+                    if ((Objects.equals(thisInterpretation.get("tags"), "com_facebook_katana")) || (Objects.equals(thisInterpretation.get("tags"), "com_facebook_lite"))) {
+                        evaluateFacebookAd(context, rootDirectory, thisInterpretation,
+                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                    }
+
+                    if (Objects.equals(thisInterpretation.get("tags"), "com_zhiliaoapp_musically")) {
+                        evaluateTikTokAd(context, rootDirectory, thisInterpretation,
+                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                    }
+
+                    if (Objects.equals(thisInterpretation.get("tags"), "com_instagram_android")) {
+                        evaluateInstagramAd(context, rootDirectory, thisInterpretation,
+                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                    }
+                    if (Objects.equals(thisInterpretation.get("tags"), "com_google_android_youtube")) {
+                        evaluateYoutubeAd(context, rootDirectory, thisInterpretation,
+                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                    }
                 }
 
-                if (Objects.equals(thisInterpretation.get("tags"), "com_zhiliaoapp_musically")) {
-                    evaluateTikTokAd(context, rootDirectory, thisInterpretation,
-                            objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
-                }
-
-                if (Objects.equals(thisInterpretation.get("tags"), "com_instagram_android")) {
-                    evaluateInstagramAd(context, rootDirectory, thisInterpretation,
-                            objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
-                }
             }
             platformRoutineAnalyzed ++;
             dataStoreWrite(context, "platformRoutineAnalyzed", platformRoutineAnalyzed.toString());
@@ -824,7 +845,6 @@ public class Platform {
             e.printStackTrace(); // TODO
         }
         Log.i(TAG, "Completed routine!");
-        dataStoreWrite(context, "platformRoutineRunning", "false");
         dataStoreWrite(context, "platformRoutineState", "COMPLETE");
         dataStoreWrite(context, "platformRoutineToAnalyze", "0");
         dataStoreWrite(context, "platformRoutineAnalyzed", "0");

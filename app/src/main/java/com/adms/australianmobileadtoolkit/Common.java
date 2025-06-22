@@ -149,6 +149,8 @@ public class Common {
          }
       } catch (java.lang.NullPointerException e) {
          return defaultValue;
+      } catch (java.lang.RuntimeException e2) { // Typically caused by corruption
+         return defaultValue;
       }
    }
 }

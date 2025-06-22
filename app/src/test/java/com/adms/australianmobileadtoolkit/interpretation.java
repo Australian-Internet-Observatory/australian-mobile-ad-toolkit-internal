@@ -3,6 +3,7 @@ package com.adms.australianmobileadtoolkit;
 import static com.adms.australianmobileadtoolkit.IsolatedTest.simulationsDirectory;
 import static com.adms.australianmobileadtoolkit.ObjectDetector.objectDetectorMachine;
 import static com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker.platformInterpretationRoutineContainer;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.platformInterpretationRoutine;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.readJSONFromFile;
 import static com.adms.australianmobileadtoolkit.machine.frameGrabMachine;
 import static com.adms.australianmobileadtoolkit.machine.getVideoMetadataMachine;
@@ -10,42 +11,47 @@ import static com.adms.australianmobileadtoolkit.machine.testContext;
 
 import android.util.Log;
 
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 import java.io.File;
+import java.util.function.Function;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = {33})
 public class interpretation {
 
     public static JSONXObject screenRecordingsMetadata = new JSONXObject(readJSONFromFile(new File(simulationsDirectory, "screenRecordingsMetadata.json")));
-    public static final File testScreenRecordingsFeb2025RootDirectory = (new File(simulationsDirectory, "instagram2025-closed-test-may"));
+    public static final File testScreenRecordingsFeb2025RootDirectory = (new File(simulationsDirectory, "youtube2025-closed-test-1"));
 
     @Test
-     public void testPlatformInterpretationRoutine() {
+     public void testPlatformInterpretationRoutine() throws Exception {
+
+        platformInterpretationRoutine(testContext, testScreenRecordingsFeb2025RootDirectory, getVideoMetadataMachine, frameGrabMachine, false, objectDetectorMachine);
 
 
-        platformInterpretationRoutineContainer(testContext);
 
         /*
+        //platformInterpretationRoutineContainer(testContext, false);
 
-            //org.bytedeco.javacpp.av_log_set_level(avutil.AV_LOG_QUIET);
         IsolatedTest thisTest = new IsolatedTest("practicalInterpretation");
-        thisTest.setCasesDirectory(testScreenRecordingsFeb2025Directory); // TODO - testScreenRecordingsDirectory
+        thisTest.setCasesDirectory(testScreenRecordingsFeb2025RootDirectory); // TODO - testScreenRecordingsDirectory
 
         Function<File, JSONObject> localRoutine = (x -> {
 
             File debugFile = prepareForPlatformInterpretationTest(thisTest, x, null);
             System.out.println(debugFile);
             if (debugFile != null) {
-                printJSON(debugFile);
                 platformInterpretationRoutine(testContext, debugFile, getVideoMetadataMachine, frameGrabMachine, false);
             }
             return new JSONObject();
         });
+        thisTest.applyToCases(localRoutine); // TODO
+
+            //org.bytedeco.javacpp.av_log_set_level(avutil.AV_LOG_QUIET);
 
         Function<File, JSONObject> evaluateRoutine = (x -> {
             JSONXObject output = new JSONXObject();
@@ -163,7 +169,6 @@ public class interpretation {
         });
 
 
-        thisTest.applyToCases(localRoutine); // TODO
 
         // OCR evaluation happens here
 
