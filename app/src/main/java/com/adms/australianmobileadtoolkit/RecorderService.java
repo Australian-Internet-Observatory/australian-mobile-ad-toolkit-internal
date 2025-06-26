@@ -28,6 +28,7 @@ import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RE
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_TITLE;
 import static com.adms.australianmobileadtoolkit.appSettings.get_RECORD_SERVICE_EXTRA_RESULT_CODE;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.appSettings.maxNumberOfVideos;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityService.triggerableAppPackageNames;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
@@ -159,7 +160,7 @@ public final class RecorderService extends Service {
         public void onReceive(Context context, Intent intent) {
             switch(intent.getAction()) {
                 case Intent.ACTION_SCREEN_ON:
-                    System.out.println( "The device's screen is on: start recording");
+                    logMessage(TAG,  "The device's screen is on: start recording");
                     if (android.os.Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                         mMediaRecorder.resume();
                     }
@@ -168,7 +169,7 @@ public final class RecorderService extends Service {
                             .putExtra("INTENT_ACTION", "SCREEN_IS_ON"));  // TODO - checked for API migration
                     break;
                 case Intent.ACTION_SCREEN_OFF:
-                    System.out.println( "The device's screen is off: stop recording and schedule the ..");
+                    logMessage(TAG,  "The device's screen is off: stop recording and schedule the ..");
                     screenOff = true;
                     sendBroadcast(new Intent(context, InactivityReceiver.class)
                             .putExtra("INTENT_ACTION", "SCREEN_IS_OFF"));  // TODO - checked for API migration
@@ -185,10 +186,10 @@ public final class RecorderService extends Service {
                         //stopRecording();
                         boolean didPrepare = configureMediaRecorder();
                         attemptToStartRecording(didPrepare, resultCode, data, false);
-                        Log.i(TAG, "configuration changed logged here");*/
+                        logMessage(TAG, "configuration changed logged here");*/
                     } else {
                         if (!screenOff) {
-                            //System.out.println( "The device's configuration has changed: restarting recording");
+                            //logMessage(TAG,  "The device's configuration has changed: restarting recording");
                             //stopRecording();
 
                             //projectionManager = (MediaProjectionManager) getApplicationContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
@@ -363,10 +364,10 @@ public final class RecorderService extends Service {
             tentativeRecordingFilename = orderedVideoPaths.get(orderedVideoPaths.size() - 1);
         }
 
-        Log.i(TAG, "The current recording at time of premature stop is:");
-        Log.i(TAG, tentativeRecordingFilename);//dataStoreRead(context, "TENTATIVE_RECORDING_FILENAME", "NULL"));
-        Log.i(TAG, dataStoreRead(context,"recorderServiceIntentTargetPlatform", "NULL"));
-        Log.i(TAG, dataStoreRead(context,"recorderServiceIntentTargetPlatform_CALL_TIME", "NULL"));
+        logMessage(TAG, "The current recording at time of premature stop is:");
+        logMessage(TAG, tentativeRecordingFilename);//dataStoreRead(context, "TENTATIVE_RECORDING_FILENAME", "NULL"));
+        logMessage(TAG, dataStoreRead(context,"recorderServiceIntentTargetPlatform", "NULL"));
+        logMessage(TAG, dataStoreRead(context,"recorderServiceIntentTargetPlatform_CALL_TIME", "NULL"));
 
         // At the point of starting a recording, it may not yet be classified (e.g. if we are not within the target app at starting the recording
         // but then go into it - thereafter, we abruptly stop the recording, causing it to be retained as an unclassified recording
@@ -376,16 +377,16 @@ public final class RecorderService extends Service {
         long cooldownOnCallTime = (10 * 1000);
         long tentativeCallTime = Long.parseLong((dataStoreRead(context,"recorderServiceIntentTargetPlatform_CALL_TIME", String.valueOf(0))));
 
-        Log.i(TAG, "cooldownOnCallTime: " + cooldownOnCallTime);
-        Log.i(TAG, "tentativeCallTime: " + tentativeCallTime);
+        logMessage(TAG, "cooldownOnCallTime: " + cooldownOnCallTime);
+        logMessage(TAG, "tentativeCallTime: " + tentativeCallTime);
 
         String tentativePlatform = dataStoreRead(context,"recorderServiceIntentTargetPlatform", "NULL");
         // If the recording is unclassified, the tentative platform is non-null, and the time of reading the tentative platform was not more than 10 seconds ago
         if ((tentativeRecordingFilename.contains("unclassified")) && (!tentativePlatform.equals("NULL")) && (Math.abs(System.currentTimeMillis() - tentativeCallTime) < cooldownOnCallTime)) {
-            Log.i(TAG, "Can recover!!!!");
+            logMessage(TAG, "Can recover!!!!");
             String newFilename = tentativeRecordingFilename.replace("unclassified", augmentAppPackageName(tentativePlatform));
-            Log.i(TAG, "Original filename: " + tentativeRecordingFilename);
-            Log.i(TAG, "New filename: " + newFilename);
+            logMessage(TAG, "Original filename: " + tentativeRecordingFilename);
+            logMessage(TAG, "New filename: " + newFilename);
             (new File(tentativeRecordingFilename)).renameTo(new File(newFilename));
         } else {
             (new File(tentativeRecordingFilename)).delete();
@@ -422,8 +423,8 @@ public final class RecorderService extends Service {
 
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        Log.i(TAG, "displayWidthAdjusted:"+displayWidth );
-        Log.i(TAG, "displayHeightAdjusted:"+displayHeight);
+        logMessage(TAG, "displayWidthAdjusted:"+displayWidth );
+        logMessage(TAG, "displayHeightAdjusted:"+displayHeight);
         mMediaRecorder.setVideoSize(displayWidth, displayHeight);
         mMediaRecorder.setMaxFileSize(videoRecordingMaximumFileSize); // 5mb (4.7mb)
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
@@ -440,7 +441,8 @@ public final class RecorderService extends Service {
             mMediaRecorder.prepare();
             didPrepare = true;
         } catch (Exception e) {
-            Log.e(TAG, "Failed on startRecording: ", e);
+            logMessage(TAG, "Failed on startRecording: ");
+            e.printStackTrace();
         }
         return didPrepare;
     }
@@ -472,7 +474,7 @@ public final class RecorderService extends Service {
             mMediaRecorder.setOnInfoListener((mr, what, extra) -> {
                 // If the maximum file size has been reached
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_NEXT_OUTPUT_FILE_STARTED) {
-                    //Log.i(TAG, );
+                    //logMessage(TAG, );
 
                     if (previousRecordingFilename != null) {
                         String tentativeAppPackageName = "";
@@ -530,7 +532,7 @@ public final class RecorderService extends Service {
                     previousRecordingFilename = tentativeRecordingFilename;
                 }
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_APPROACHING) {
-                    System.out.println("The media recorder has identified that the maximum file size has"
+                    logMessage(TAG, "The media recorder has identified that the maximum file size has"
                             + " been reached; setting new output file.");
 
                     // Change configuration of metrics
@@ -583,12 +585,12 @@ public final class RecorderService extends Service {
                             int numberExcessFiles = filesSeparated.size()-maxNumberOfVideos;
                             List<String> filesToDelete = filesSeparated.subList(0, numberExcessFiles);
                             for (String s : filesToDelete) {
-                                System.out.println( "Deleting file: "+videoDir+s);
+                                logMessage(TAG,  "Deleting file: "+videoDir+s);
                                 File thisFile = filePath(Arrays.asList(videoDir, s));
                                 thisFile.delete();
                             }
                         }
-                        System.out.println( "number of files in videos folder: "+filesSeparated.size());
+                        logMessage(TAG,  "number of files in videos folder: "+filesSeparated.size());
                     } catch(IOException e) {
                         e.printStackTrace();
                     }
@@ -599,10 +601,10 @@ public final class RecorderService extends Service {
             //mMediaRecorder.setProfile(cpLow);
             //CamcorderProfile cpHigh = CamcorderProfile.get(CamcorderProfile.QUALITY_);
 
-            /*Log.i(TAG, "cpHigh.videoBitRate: " + cpHigh.videoBitRate);
-            Log.i(TAG, "cpHigh.videoFrameWidth: " + cpHigh.videoFrameWidth);
-            Log.i(TAG, "cpHigh.videoFrameHeight: " + cpHigh.videoFrameHeight);
-            Log.i(TAG, "cpHigh.videoFrameRate: " + cpHigh.videoFrameRate);*/
+            /*logMessage(TAG, "cpHigh.videoBitRate: " + cpHigh.videoBitRate);
+            logMessage(TAG, "cpHigh.videoFrameWidth: " + cpHigh.videoFrameWidth);
+            logMessage(TAG, "cpHigh.videoFrameHeight: " + cpHigh.videoFrameHeight);
+            logMessage(TAG, "cpHigh.videoFrameRate: " + cpHigh.videoFrameRate);*/
 
 
             boolean didPrepare = configureMediaRecorder();
@@ -626,9 +628,9 @@ public final class RecorderService extends Service {
                         public void onStop() {
                             super.onStop();
                             dataStoreWrite( getApplicationContext(), "recordingStatus", "false");
-                            Log.i("recordingStatus", "Setting recordingStatus to false - recorderService");
+                            logMessage("recordingStatus", "Setting recordingStatus to false - recorderService");
                             dataStoreWrite(getApplicationContext(), "recorderServiceIntentLastCall", String.valueOf(System.currentTimeMillis()));
-                            Log.i(TAG, "RecorderService was possibly stopped prematurely.");
+                            logMessage(TAG, "RecorderService was possibly stopped prematurely.");
                             // This event is triggered one of a few ways - either from the status bar chip,
                             // from the screen lock 'auto stop' functionality, or from manually stopping the Media Projection
                             // In any case, we make it also stop the service.
@@ -654,14 +656,15 @@ public final class RecorderService extends Service {
                 mMediaRecorder.start();
                 didStart = true;
             } catch (Exception e) {
-                Log.e(TAG, "Failed on startRecording: ", e);
+                logMessage(TAG, "Failed on startRecording: ");
+                e.printStackTrace();
             }
         }
 
         if (didStart) {
             recordingInProgress = true;
             dataStoreWrite( getApplicationContext(), "recordingStatus", "true"); // TODO:14.04.25
-            // Log.i("recordingStatus", "Setting recordingStatus to true - 1");
+            // logMessage("recordingStatus", "Setting recordingStatus to true - 1");
 
             sendBroadcast(new Intent(this, InactivityReceiver.class)
                     .putExtra("INTENT_ACTION", "RECORDING_HAS_STARTED"));  // TODO - checked for API migration
@@ -676,8 +679,8 @@ public final class RecorderService extends Service {
      * */
     private void stopRecording() {
         // If the recording is in progress
-        System.out.println( "Recording has been forced to stop.");
-        System.out.println( "Service is running: "+recordingInProgress);
+        logMessage(TAG,  "Recording has been forced to stop.");
+        logMessage(TAG,  "Service is running: "+recordingInProgress);
         if (recordingInProgress) {
             // Attempt to stop the service
             boolean actionedStop = true;
@@ -685,25 +688,29 @@ public final class RecorderService extends Service {
                 mMediaRecorder.stop();
             } catch(Exception e) {
                 actionedStop = false;
-                Log.e(TAG, "Failed on stopRecording: ", e);
+                logMessage(TAG, "Failed on stopRecording: ");
+                e.printStackTrace();
             }
             try {
                 mMediaProjection.stop();
             } catch(Exception e) {
                 actionedStop = false;
-                Log.e(TAG, "Failed on stopRecording: ", e);
+                logMessage(TAG, "Failed on stopRecording: ");
+                e.printStackTrace();
             }
             try {
                 mMediaRecorder.release();
             } catch(Exception e) {
                 actionedStop = false;
-                Log.e(TAG, "Failed on stopRecording: ", e);
+                logMessage(TAG, "Failed on stopRecording: ");
+                e.printStackTrace();
             }
             try {
                 mVirtualDisplay.release();
             } catch(Exception e) {
                 actionedStop = false;
-                Log.e(TAG, "Failed on stopRecording: ", e);
+                logMessage(TAG, "Failed on stopRecording: ");
+                e.printStackTrace();
             }
             //if (actionedStop) { // TODO
             recordingInProgress = false;

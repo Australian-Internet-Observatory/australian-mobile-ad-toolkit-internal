@@ -2,7 +2,9 @@ package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.Common.makeDirectory;
+import static com.adms.australianmobileadtoolkit.MainActivity.PERIODIC_WORK_TAG;
 import static com.adms.australianmobileadtoolkit.appSettings.hardFixObserverIDRead;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.Sampler.basicReading;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Facebook.evaluateFacebookAd;
 import static com.adms.australianmobileadtoolkit.interpreter.platform.Instagram.evaluateInstagramAd;
@@ -18,6 +20,9 @@ import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
+
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 
 import com.adms.australianmobileadtoolkit.JSONXObject;
 import com.adms.australianmobileadtoolkit.appSettings;
@@ -50,7 +55,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Platform {
 
@@ -170,13 +177,13 @@ public class Platform {
 
     public static void printJSON(Object thisToJSON) {
         try {
-            System.out.println((new ObjectMapper().writer().withDefaultPrettyPrinter()).writeValueAsString(thisToJSON));
+            logMessage(TAG, (new ObjectMapper().writer().withDefaultPrettyPrinter()).writeValueAsString(thisToJSON));
         } catch (Exception e) {
             e.printStackTrace();
             try {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 String json = gson.toJson(thisToJSON);
-                System.out.println(json);
+                logMessage(TAG, json);
             } catch (Exception e2) {
                 e2.printStackTrace();}
         }
@@ -307,13 +314,13 @@ public class Platform {
             for (File thisAdSuperDirectory : adsFromDispatchDirectoryFiles) {
                 persistThread(context, TAG);
                 if (thisAdSuperDirectory.listFiles().length == 0) {
-                    Log.i("Dispatch", "Deleting empty super directory: "+thisAdSuperDirectory.getAbsolutePath());
+                    logMessage("Dispatch", "Deleting empty super directory: "+thisAdSuperDirectory.getAbsolutePath());
                     thisAdSuperDirectory.delete();
                 } else {
                     for (File thisAdDirectory : thisAdSuperDirectory.listFiles()) {
                         // A dispatch can only begin when the adContent file has been submitted - this prevents 'half-baked'
                         // entries from being prematurely uploaded.
-                        Log.i("Dispatch", (new File(thisAdDirectory, "metadata.json")).getAbsolutePath());
+                        logMessage("Dispatch", (new File(thisAdDirectory, "metadata.json")).getAbsolutePath());
                         if ((new File(thisAdDirectory, "metadata.json")).exists()) {
                             String thisAdUUID = thisAdDirectory.getName();
                             // Paginate over the files within thisAdDirectory
@@ -349,15 +356,15 @@ public class Platform {
                             }
                         } else {
                             deleteRecursive(thisAdDirectory);
-                            Log.i(TAG, "Deleting incomplete directory.");
+                            logMessage(TAG, "Deleting incomplete directory.");
                     /*
                     // If the folder is empty, delete it
                     if (thisAdDirectory.listFiles().length == 0) {
                         deleteRecursive(thisAdDirectory);
-                        Log.i(TAG, "Deleting empty directory.");
+                        logMessage(TAG, "Deleting empty directory.");
                     } else {
                         // Naively, we might assume that the upload of ad content is
-                        Log.i(TAG, "Bypassing upload of ad content as not ready yet.");
+                        logMessage(TAG, "Bypassing upload of ad content as not ready yet.");
                     }*/
                         }
                     }
@@ -477,10 +484,10 @@ public class Platform {
     }
 
     public static void deleteScreenRecordingAnalysis(File screenRecordingFile, File screenRecordingAnalysisDirectory, boolean implementedOnAndroid) {
-        Log.i(TAG, screenRecordingFile.getName());
+        logMessage(TAG, screenRecordingFile.getName());
         if (implementedOnAndroid) {
             deleteRecursive(screenRecordingAnalysisDirectory);
-            screenRecordingFile.delete();
+            screenRecordingFile.delete(); // TODO
         }
     }
 
@@ -561,15 +568,15 @@ public class Platform {
     }
 
     public static JSONXObject inferencePassthrough(Context context, Function<JSONXObject, JSONXObject> objectDetectorFunction,
-               String modelIdentifier, JSONXObject groupedAdsObject, File screenRecordingFile, File screenRecordingAnalysisDirectory) throws Exception {
+               String modelIdentifier, JSONXObject groupedAdsObject, File screenRecordingFile, File screenRecordingAnalysisDirectory, Boolean applyingQuantizedModels) throws Exception {
 
         dataStoreWrite(context, "platformRoutineState", "PERFORMING ANALYSIS");
         String thisModelIdentifier = "";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            Log.i(TAG, "Applying newer models");
+        if (applyingQuantizedModels) {
+            logMessage(TAG, "Applying newer models");
             thisModelIdentifier = "float32_"+modelIdentifier+"_int8.tflite";
         } else {
-            Log.i(TAG, "Applying older models");
+            logMessage(TAG, "Applying older models");
             thisModelIdentifier = "float16_"+modelIdentifier+".tflite";
         }
 
@@ -583,8 +590,45 @@ public class Platform {
                     .set("modelName", thisModelIdentifier)
                     .set("thisCase", ((modelIdentifier.contains("sponsored")) ? "Shallow" : "Deep"))
             );
-        if (result == null) { persistThread(context, TAG); }
+        if ((result != null) && (result.has("interrupted"))) { throw new InterruptedException(""); }
         return result;
+    }
+
+    public static boolean applyQuantizedModels(Context context, Function<JSONXObject, JSONXObject> objectDetectorFunction) throws Exception {
+
+        Function<Boolean, Integer> retrieveNMatchesForTest = quantized -> {
+            String modelIdentifier = "float16_facebook_sponsored.tflite";
+            if (quantized) {
+                modelIdentifier = "float32_facebook_sponsored_int8.tflite";
+            }
+            JSONXObject result = objectDetectorFunction.apply((new JSONXObject())
+                    .set("context", context)
+                    .set("analysisDirectory", null)
+                    .set("thisScreenRecordingFile", null)
+                    .set("retainedFrameFiles", List.of())
+                    .set("retainedFrames", List.of(0))
+                    .set("modelName", modelIdentifier)
+                    .set("thisCase", "Provision")
+            );
+            Integer nMatches = 0;
+            try {
+                nMatches = ((List<JSONObject>) ((JSONObject) result.get("inferencesByFrames")).get("0")).size();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return nMatches;
+        };
+
+        Integer nTests = 3;
+        // When the detector does work (for older devices), it may happen in one instance, and it may return a large number of responses - the way around this is to
+        // check for the existence of a test where no matches were found... we've determined that three tests is a good gauge for this (as newer devices consistently pass all tests)
+
+        List<Double> quantizedN = IntStream.range(0,nTests).boxed().map(x -> retrieveNMatchesForTest.apply(true)).collect(Collectors.toList()).stream().mapToDouble(x -> x.doubleValue()).boxed().collect(Collectors.toList());
+        logMessage(TAG, "quantizedN: " + quantizedN);
+        Double quantizedMin = quantizedN.stream().mapToDouble(Double::doubleValue).min().getAsDouble();
+        //Double nonQuantizedAverage = IntStream.range(0,nTests).boxed().map(x -> retrieveNMatchesForTest.apply(false)).collect(Collectors.toList()).stream().mapToDouble(x -> x.doubleValue()).average().getAsDouble();
+        logMessage(TAG, "quantizedMin: " + quantizedMin);
+        return (quantizedMin > 3.0);
     }
 
 
@@ -707,14 +751,25 @@ public class Platform {
 
     public static void persistThread(Context context, String thisTag) throws Exception {
         if (Thread.interrupted()) {
-            Log.i(thisTag, "Thread exited...");
-            throw new Exception("Deliberate thread interruption");
+            logMessage(thisTag, "XXX - Thread exited...");
+            throw new InterruptedException("Deliberate thread interruption");
         }
     }
 
     public static void platformInterpretationRoutine(Context context, File rootDirectory,
                                                      Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
                                                      Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid, Function<JSONXObject, JSONXObject> objectDetectorFunction) throws Exception {
+
+        boolean applyingQuantizedModels = applyQuantizedModels(context, objectDetectorFunction);
+        logMessage(TAG, "XXX - Beginning a platform interpretation...");
+        List<WorkInfo> thisPeriodicWorkerInfo = WorkManager.getInstance(context).getWorkInfosByTag(PERIODIC_WORK_TAG).get();
+        logMessage(TAG, "XXX - Number of periodic workers: "+thisPeriodicWorkerInfo.stream().collect(Collectors.toList()).size());
+
+        logMessage(TAG,"XXX - Threads: "+Thread.activeCount());
+        logMessage(TAG, "XXX - Number of periodic workers running: "+thisPeriodicWorkerInfo.stream().filter(x -> x.getState() == WorkInfo.State.RUNNING).collect(Collectors.toList()).size());
+
+        // When the app opens, a periodic worker is triggered. When the app is cleanly exited - reopening
+        // it triggers a new periodic worker that can (and will) overlap the previous periodic worker
 
         dataStoreWrite(context, "platformRoutineState", "STARTING");
         dataStoreWrite(context, "platformRoutineToAnalyze", "0");
@@ -725,7 +780,7 @@ public class Platform {
         List<HashMap<String,String>> recordingsClassified = new ArrayList<>();
         List<HashMap<String,String>> recordingsToDelete = new ArrayList<>();
 
-        Log.i(TAG, "Attempting dispatch...");
+        logMessage(TAG, "Attempting dispatch...");
         appStorageRecordingsDirectory = (new File (rootDirectory.getAbsolutePath(), "videos"));
         File dispatchDirectory = (new File (rootDirectory.getAbsolutePath(), "dispatch"));
 
@@ -750,7 +805,7 @@ public class Platform {
         }
 
         for (File thisFile : appStorageRecordingsDirectory.listFiles()) {
-            Log.i(TAG, thisFile.getAbsolutePath());
+            logMessage(TAG, thisFile.getAbsolutePath());
             try {
                 HashMap<String, String> thisInterpretation = interpretRecordingFileName(thisFile.getName());
                 if (thisInterpretation != null) {
@@ -780,7 +835,7 @@ public class Platform {
 
 
         dataStoreWrite(context, "platformRoutineToAnalyze", String.valueOf(recordingsClassified.size()));
-        Log.i(TAG, recordingsClassified.toString());
+        logMessage(TAG, recordingsClassified.toString());
         // Run the comprehensive sampling process
         // TODO - sort alphabetically to stop randomly starting differing entries
         for (HashMap<String, String> thisInterpretation : recordingsClassified) {
@@ -795,14 +850,18 @@ public class Platform {
             if (targetedPlatforms.contains(thisInterpretation.get("tags"))) {
                 File screenRecordingFile = (new File(appStorageRecordingsDirectory, thisInterpretation.get("filename")));
                 JSONXObject thisComprehensiveReading = new JSONXObject();
-                try {
-                    dataStoreWrite(context, "platformRoutineState", "SAMPLING IMAGERY");
-                    thisComprehensiveReading = basicReading(context, rootDirectory, screenRecordingAnalysisDirectory,
-                            screenRecordingFile, getVideoMetadataFunction, frameGrabFunction);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    if (screenRecordingFile.length() < 2000) {
-                        screenRecordingFile.delete(); // TODO - Due to empty file size - make more stringent
+                dataStoreWrite(context, "platformRoutineState", "SAMPLING IMAGERY");
+                if (screenRecordingFile.length() < 2000) {
+                    screenRecordingFile.delete(); // TODO - Due to empty file size - make more stringent
+                } else {
+                    try {
+                        thisComprehensiveReading = basicReading(context, rootDirectory, screenRecordingAnalysisDirectory,
+                                screenRecordingFile, getVideoMetadataFunction, frameGrabFunction, applyingQuantizedModels);
+                    } catch (InterruptedException e) {
+                        throw new InterruptedException("");
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
 
@@ -811,21 +870,21 @@ public class Platform {
                 } else {
                     if ((Objects.equals(thisInterpretation.get("tags"), "com_facebook_katana")) || (Objects.equals(thisInterpretation.get("tags"), "com_facebook_lite"))) {
                         evaluateFacebookAd(context, rootDirectory, thisInterpretation,
-                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid, applyingQuantizedModels);
                     }
 
                     if (Objects.equals(thisInterpretation.get("tags"), "com_zhiliaoapp_musically")) {
                         evaluateTikTokAd(context, rootDirectory, thisInterpretation,
-                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid, applyingQuantizedModels);
                     }
 
                     if (Objects.equals(thisInterpretation.get("tags"), "com_instagram_android")) {
                         evaluateInstagramAd(context, rootDirectory, thisInterpretation,
-                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid, applyingQuantizedModels);
                     }
                     if (Objects.equals(thisInterpretation.get("tags"), "com_google_android_youtube")) {
                         evaluateYoutubeAd(context, rootDirectory, thisInterpretation,
-                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid);
+                                objectDetectorFunction, thisComprehensiveReading, implementedOnAndroid, applyingQuantizedModels);
                     }
                 }
 
@@ -844,7 +903,7 @@ public class Platform {
         } catch (Exception e) {
             e.printStackTrace(); // TODO
         }
-        Log.i(TAG, "Completed routine!");
+        logMessage(TAG, "Completed routine!");
         dataStoreWrite(context, "platformRoutineState", "COMPLETE");
         dataStoreWrite(context, "platformRoutineToAnalyze", "0");
         dataStoreWrite(context, "platformRoutineAnalyzed", "0");

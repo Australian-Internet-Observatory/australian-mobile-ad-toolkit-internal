@@ -31,15 +31,10 @@ public class BaseActivity extends AppCompatActivity {
    protected void overridePendingTransitionExit() {
       overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right);
    }
-
-   private Toolbar mActionBarToolbar;
-
    protected Toolbar getActionBarToolbar() {
-      if (mActionBarToolbar == null) {
-         mActionBarToolbar = (Toolbar) findViewById(R.id.toolbar_actionbar);
-         if (mActionBarToolbar != null) {
-            setSupportActionBar(mActionBarToolbar);
-         }
+      Toolbar mActionBarToolbar = (Toolbar) findViewById(R.id.toolbar_actionbar);
+      if (mActionBarToolbar != null) {
+         setSupportActionBar(mActionBarToolbar);
       }
       return mActionBarToolbar;
    }
@@ -49,5 +44,4 @@ public class BaseActivity extends AppCompatActivity {
       super.setContentView(layoutResID);
       getActionBarToolbar();
    }
-
 }

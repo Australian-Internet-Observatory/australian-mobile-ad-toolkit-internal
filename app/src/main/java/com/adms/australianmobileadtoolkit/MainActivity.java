@@ -9,6 +9,7 @@ package com.adms.australianmobileadtoolkit;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
+import static com.adms.australianmobileadtoolkit.Common.dataStoreWriteToCorrupt;
 import static com.adms.australianmobileadtoolkit.Debugger.copyDebugData;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.cancelAllInactivityNotifications;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
@@ -19,12 +20,14 @@ import static com.adms.australianmobileadtoolkit.appSettings.get_APP_CHILD_DIREC
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_ID_NAME;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.appSettings.observerIDDefaultValue;
 import static com.adms.australianmobileadtoolkit.appSettings.observerRegisteredDefaultValue;
 import static com.adms.australianmobileadtoolkit.appSettings.hardFixObserverIDRead;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityService.wipeTemporals;
 import static com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker.httpRequestRegisterJoinedAt;
 import static com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain.safelySetToggleFromViewModel;
+import static com.example.KotlinInterop.yieldEmptyPreferences;
 
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
@@ -46,9 +49,11 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.datastore.core.CorruptionException;
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler;
 import androidx.datastore.preferences.core.Preferences;
 import androidx.datastore.preferences.rxjava3.RxPreferenceDataStoreBuilder;
@@ -61,15 +66,20 @@ import androidx.work.WorkManager;
 import com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
 import androidx.datastore.preferences.core.PreferencesSerializer;
+
+import com.adms.australianmobileadtoolkit.ui.dialogs.DialogSubmitAds;
 import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
 import com.example.KotlinInterop;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import kotlin.coroutines.Continuation;
+import kotlin.coroutines.CoroutineContext;
 import okio.BufferedSource;
 import okio.Okio;
 import okio.Source;
@@ -97,29 +107,52 @@ public class MainActivity extends BaseActivity {
 
     public static RxDataStore<Preferences> dataStore;
 
+    public static Thread manualAdDigestThread;
+
+    public static Preferences generateEmptyPreferences() {
+        // Return empty preferences to replace the corrupted data
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
+        Source source = Okio.source(inputStream);
+        BufferedSource bufferedSource = Okio.buffer(source);
+        // Kotlin coroutines interop; need to call the suspend function from Java
+        // Solution: call runBlocking using Kotlin helper (see below)
+        return KotlinInterop.runBlockingReadFrom(bufferedSource);
+    }
+
     public static void initiateDataStore(Context context) {
         if (dataStore == null) {
             ReplaceFileCorruptionHandler<Preferences> corruptionHandler = new ReplaceFileCorruptionHandler<>(
                     ex -> {
                         // Log the corruption exception for debugging purposes
                         System.err.println("DataStore corruption detected: " + ex.getMessage());
-                        // Return empty preferences to replace the corrupted data
-                        ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
-                        Source source = Okio.source(inputStream);
-                        BufferedSource bufferedSource = Okio.buffer(source);
-                        // Kotlin coroutines interop; need to call the suspend function from Java
-                        // Solution: call runBlocking using Kotlin helper (see below)
-                        return KotlinInterop.runBlockingReadFrom(bufferedSource);
+                        return yieldEmptyPreferences(); //
                     }
             );
-
             dataStore = new RxPreferenceDataStoreBuilder(context, /*name=*/ "settings").setCorruptionHandler(corruptionHandler).build();
+            CorruptionException xxx = new CorruptionException("fdsfdsf",new Throwable("dsfdsfsf"));
+            try {
+                corruptionHandler.handleCorruption(xxx, new Continuation<Preferences>() {
+                    @NonNull
+                    @Override
+                    public CoroutineContext getContext() {
+                        return null;
+                    }
+
+                    @Override
+                    public void resumeWith(@NonNull Object o) {
+
+                    }
+                });
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
 
     // TODO
     private static ItemViewModel viewModel;
+    // private BroadcastReceiver mScreenLockReceiver;  // any intention of using this in future should have a GC
     /*
      *
      * This method is called anytime the app spins up
@@ -129,8 +162,7 @@ public class MainActivity extends BaseActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-            initiateDataStore(this);
+        initiateDataStore(this);
 
             // TODO - apply loading dialog to start of recording event
 
@@ -145,7 +177,7 @@ public class MainActivity extends BaseActivity {
             // Determine whether the service is running, and use this to determine whether the mToggleButton
             // is then checked
             FragmentMain.setToggle(isServiceRunning());
-            Log.i(TAG, "on create was called");
+            logMessage(TAG, "on create was called");
             // Identify the main directory of the app
             mainDir = getMainDir(this.getApplicationContext());
             //prefs.edit().clear().commit(); // Uncomment this line to wipe the Shared Preferences
@@ -158,10 +190,10 @@ public class MainActivity extends BaseActivity {
 
 
             if (dataStoreRead(this, "observerFirstRun", "true").equals("true")) {
-                System.out.println( "First run: setting shared preferences and generating directories");
+                logMessage(TAG,  "First run: setting shared preferences and generating directories");
                 // Create the directory required by the app within the mainDir
                 if ((!mainDir.exists()) && (!mainDir.mkdirs())) {
-                    Log.e(TAG, "Failure on onCreate: couldn't create main directory");
+                    logMessage(TAG, "Failure on onCreate: couldn't create main directory");
                 }
                 // Create the directories that are necessary for the app's functionality
                 for (String value : directoriesToCreate) {
@@ -169,7 +201,7 @@ public class MainActivity extends BaseActivity {
                           + (File.separatorChar + value + File.separatorChar));
                     // Fail-safe (in case the directory already exists)
                     if ((!dir.exists()) && (!dir.mkdirs())) {
-                        Log.e(TAG, "Failure on onCreate: couldn't create sub-directories");
+                        logMessage(TAG, "Failure on onCreate: couldn't create sub-directories");
                     }
                 }
                 // Generate an observer ID for this device, to be later submitted with data donations
@@ -196,7 +228,7 @@ public class MainActivity extends BaseActivity {
 
 
             if (dataStoreRead(this, "joinedAtLogged", "false").equals("false")) {
-                Log.i("JOINED_AT", "First time run!");
+                logMessage("JOINED_AT", "First time run!");
                 PackageManager pm = this.getPackageManager();
                 ApplicationInfo appInfo = null;
                 try {
@@ -204,20 +236,20 @@ public class MainActivity extends BaseActivity {
                     String appFile = appInfo.sourceDir;
                     long installed = new File(appFile).lastModified(); //Epoch Time
                     dataStoreWrite(this, "joinedAtLogged", "true");
-                    Log.i("JOINED_AT", THIS_OBSERVER_ID);
-                    Log.i("JOINED_AT", String.valueOf(installed));
+                    logMessage("JOINED_AT", THIS_OBSERVER_ID);
+                    logMessage("JOINED_AT", String.valueOf(installed));
 
                     Thread thread = new Thread(() -> {
                         try {
                             httpRequestRegisterJoinedAt(String.valueOf(installed), THIS_OBSERVER_ID);
                         } catch (Exception e) {
-                            Log.e(TAG, e.getMessage());
+                            logMessage(TAG, e.getMessage());
                         }
                     });
                     thread.start();
 
 
-                    Log.i("JOINED_AT", "Applied");
+                    logMessage("JOINED_AT", "Applied");
                 } catch (PackageManager.NameNotFoundException e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);
@@ -288,8 +320,12 @@ public class MainActivity extends BaseActivity {
 
 
 
-            try { WorkManager.getInstance().cancelAllWorkByTag(PERIODIC_WORK_TAG).getResult(); } catch (Exception e) { /* Do nothing */ }
-            try {  WorkManager.getInstance().pruneWork().getResult(); } catch (Exception e) { /* Do nothing */ }
+            try { WorkManager.getInstance().cancelAllWorkByTag(PERIODIC_WORK_TAG).getResult(); } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {  WorkManager.getInstance().pruneWork().getResult(); } catch (Exception e) {
+                e.printStackTrace();
+            }
             try {
 
                 PeriodicWorkRequest periodicWork = new PeriodicWorkRequest.Builder(InterpreterWorker.class, 15, TimeUnit.MINUTES)
@@ -297,7 +333,7 @@ public class MainActivity extends BaseActivity {
                       .build();
                 // Do not start another worker if the current one is active
                 WorkManager.getInstance(this.getApplicationContext()).enqueueUniquePeriodicWork("workName", ExistingPeriodicWorkPolicy.KEEP,  periodicWork);
-                System.out.println( "WorkManager is set.");
+                logMessage(TAG,  "WorkManager is set.");
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -311,7 +347,7 @@ public class MainActivity extends BaseActivity {
 
             String dummyIdentifier = "1234";
             stateObject xxx = new stateObject(this, dummyIdentifier);
-            Log.i(TAG, xxx.toString());1
+            logMessage(TAG, xxx.toString());1
             if (!xxx.has("hello")) {
                 HashMap<Integer, Integer> yyy = new HashMap<>();
                 yyy.put(1,2);
@@ -321,24 +357,24 @@ public class MainActivity extends BaseActivity {
                 try {berg.put("a","b");}catch(Exception e){}
                 xxx.set("gerh", berg);
                 xxx.commit(this);
-                Log.i(TAG, "stateObject committed to memory");
+                logMessage(TAG, "stateObject committed to memory");
             } else {
-                Log.i(TAG, "stateObject retrieved from memory");
-                Log.i(TAG, xxx.toString());
+                logMessage(TAG, "stateObject retrieved from memory");
+                logMessage(TAG, xxx.toString());
                 try {
-                    Log.i(TAG, (String) ((JSONObject) xxx.get("gerh")).get("a"));
+                    logMessage(TAG, (String) ((JSONObject) xxx.get("gerh")).get("a"));
                 } catch (JSONException e) {
                     throw new RuntimeException(e);
                 }
             }*/
 
-
-        BroadcastReceiver mScreenLockReceiver = new ScreenLockReceiver();
+        /*
+        mScreenLockReceiver = new ScreenLockReceiver();
         IntentFilter screenStateFilter = new IntentFilter();
         screenStateFilter.addAction(Intent.ACTION_USER_PRESENT);
         screenStateFilter.addAction(Intent.ACTION_USER_UNLOCKED);
         screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
-        registerReceiver(mScreenLockReceiver, screenStateFilter);
+        registerReceiver(mScreenLockReceiver, screenStateFilter);*/
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
 
@@ -353,7 +389,7 @@ public class MainActivity extends BaseActivity {
     public void refreshIntent(Intent intentOfMainActivityAsIntent, Boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN) {
         // Deal with the intent (if the app was called by an intent)
         if (intentOfMainActivityAsIntent.hasExtra("INTENT_ACTION")) {
-            Log.i(TAG, "Called by intent: "+intentOfMainActivityAsIntent.getStringExtra("INTENT_ACTION"));
+            logMessage(TAG, "Called by intent: "+intentOfMainActivityAsIntent.getStringExtra("INTENT_ACTION"));
             switch (Objects.requireNonNull(intentOfMainActivityAsIntent.getStringExtra("INTENT_ACTION"))) {
                 case "REGISTER" :
                     // Ignoring cases where a register notification triggers a registered instance of the app
@@ -370,7 +406,7 @@ public class MainActivity extends BaseActivity {
                     cancelAllInactivityNotifications(this);
                     ; break ;
             }
-            Log.i(TAG, "Arrived at intent: "+intentOfMainActivity);
+            logMessage(TAG, "Arrived at intent: "+intentOfMainActivity);
         }
     }
 
@@ -402,7 +438,7 @@ public class MainActivity extends BaseActivity {
         FragmentMain.setToggle(serviceIsRunning);
         safelySetToggleInViewModel(serviceIsRunning); // we can't have this code here as it will be
         // called directly after issuing permission, with an outdated value for the toggle
-        Log.i(TAG, "on resume was called");
+        logMessage(TAG, "on resume was called");
 
 
         Intent intentOfMainActivityAsIntent = getIntent();
@@ -421,13 +457,13 @@ public class MainActivity extends BaseActivity {
         super.onActivityResult(requestCode, resultCode, data);
         // Inform us if the activity code doesn't correspond to a permission request
         if (requestCode != SCREEN_RECORDING_PERMISSION_CODE) {
-            Log.e(TAG, "Unknown request code: " + requestCode);
+            logMessage(TAG, "Unknown request code: " + requestCode);
             return;
         }
 
-        Log.i(TAG, String.valueOf(data));
-        Log.i(TAG, String.valueOf(requestCode));
-        Log.i(TAG, String.valueOf(resultCode));
+        logMessage(TAG, String.valueOf(data));
+        logMessage(TAG, String.valueOf(requestCode));
+        logMessage(TAG, String.valueOf(resultCode));
 
         // If given permission to record the device, begin recording
         if (resultCode == RESULT_OK) {
@@ -439,7 +475,7 @@ public class MainActivity extends BaseActivity {
             //safelySetToggleInViewModel(true);
         } else {
             // The mToggleButton must be forced off in case the permission request fails
-            Log.i(TAG, "Permission was not granted");
+            logMessage(TAG, "Permission was not granted");
             FragmentMain.setToggle(false);
             //safelySetToggleInViewModel(false);
         }
@@ -450,6 +486,9 @@ public class MainActivity extends BaseActivity {
         super.onDestroy();
         sendBroadcast(new Intent(this, InactivityReceiver.class)
               .putExtra("INTENT_ACTION", "APP_HAS_CLOSED"));  // TODO - checked for API migration
+        //killCurrentThread();
+
+        logMessage(TAG, "APP CLOSED");
     }
 
     /*
@@ -459,7 +498,7 @@ public class MainActivity extends BaseActivity {
      * */
     private void startRecordingService(int resultCode, Intent data) {
         Intent intent = RecorderService.newIntent(this, resultCode, data);
-        startService(intent);
+        startForegroundService(intent);
         //Intent intent2= new Intent(this, RecorderService.class);
         //bindService(intent2, serviceConnector, Context.BIND_AUTO_CREATE);
        //thisRecorderService.mMediaProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
@@ -467,7 +506,7 @@ public class MainActivity extends BaseActivity {
 
     public static void safelySetToggleInViewModel(Boolean thisValue) {
         if (viewModel != null) {
-            Log.i(TAG, "viewModel set toggle value: "+thisValue);
+            logMessage(TAG, "viewModel set toggle value: "+thisValue);
             viewModel.setToggleStatusInViewModel(thisValue);
             safelySetToggleFromViewModel();
         }
@@ -498,7 +537,7 @@ public class MainActivity extends BaseActivity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_POWER) {
             // Do something here...
-            Log.i(TAG, "testing key down");
+            logMessage(TAG, "testing key down");
             event.startTracking(); // Needed to track long presses
             return true;
         }
@@ -509,7 +548,7 @@ public class MainActivity extends BaseActivity {
     public boolean onKeyLongPress(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_POWER) {
             // Do something here...
-            Log.i(TAG, "testing key down");
+            logMessage(TAG, "testing key down");
             return true;
         }
         return super.onKeyLongPress(keyCode, event);
@@ -518,7 +557,7 @@ public class MainActivity extends BaseActivity {
     @Override
     public void onStop() {
        super.onStop();
-        Log.i(TAG, "running a stop event");
+        logMessage(TAG, "running a stop event");
     }
     public static RecorderService thisRecorderService;
     ServiceConnection serviceConnector;

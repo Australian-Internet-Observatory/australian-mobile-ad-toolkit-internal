@@ -3,6 +3,7 @@ package com.adms.australianmobileadtoolkit.ui.fragments;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.appSettings.USING_DEMOGRAPHIC_QUESTIONS;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 
 import android.content.DialogInterface;
 import android.content.res.Configuration;
@@ -29,6 +30,7 @@ import com.adms.australianmobileadtoolkit.ui.dialogs.DialogSuccessfulRegistratio
 import org.json.JSONObject;
 
 public class FragmentRegistration1 extends Fragment implements AsyncResponse {
+   private String TAG = "FragmentRegistration1";
    Registration asyncTask = new Registration();
    private Button mbuttonIAgree;
    private DialogLoading loadRegistration;
@@ -172,7 +174,7 @@ public class FragmentRegistration1 extends Fragment implements AsyncResponse {
 
 
    private void failedRegistration(DialogLoading loadRegistration) {
-      System.out.println( "got here");
+      logMessage(TAG,  "got here");
       loadRegistration.dismiss();
       loadFailedRegistration = new DialogFailedRegistration(requireContext());
       loadFailedRegistration.show();

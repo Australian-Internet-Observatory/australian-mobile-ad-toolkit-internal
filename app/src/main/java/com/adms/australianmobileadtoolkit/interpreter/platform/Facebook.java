@@ -1,6 +1,7 @@
 package com.adms.australianmobileadtoolkit.interpreter.platform;
 
 
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.compositeBoundingBox;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.deleteScreenRecordingAnalysis;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.detailDirectoryStructure;
@@ -34,7 +35,7 @@ public class Facebook {
 
 
     public static void evaluateFacebookAd(Context context, File rootDirectory, HashMap<String, String> thisInterpretation,
-                                       Function<JSONXObject, JSONXObject> objectDetectorFunction, JSONXObject thisComprehensiveReading, Boolean implementedOnAndroid) throws Exception {
+                                       Function<JSONXObject, JSONXObject> objectDetectorFunction, JSONXObject thisComprehensiveReading, Boolean implementedOnAndroid, Boolean applyingQuantizedModels) throws Exception {
 
         HashMap<String, File> directoryStructure = detailDirectoryStructure(rootDirectory);
 
@@ -49,7 +50,7 @@ public class Facebook {
 
             JSONXObject inferenceResultShallow = inferencePassthrough(context, objectDetectorFunction,"facebook_sponsored",
                     (new JSONXObject()).set("retainedFramesAsFiles", retainedFramesAsFiles).set("retainedFrames", retainedFrames),
-                    screenRecordingFile, screenRecordingAnalysisDirectory);
+                    screenRecordingFile, screenRecordingAnalysisDirectory, applyingQuantizedModels);
 
             // If the shallow inference result yields a null response, it is most likely due to a malformed image
             // that was originally obtained from the reading of the screen-recording file - otherwise, it might be
@@ -68,13 +69,13 @@ public class Facebook {
             JSONXObject inferencesByFrames = (JSONXObject) groupedAdsObject.get("inferencesByFrames");
 
             if (groupsOfAdFrames.isEmpty()) {
-                Log.i(TAG, "Deleting empty video");
+                logMessage(TAG, "Deleting empty video");
                 deleteScreenRecordingAnalysis(screenRecordingFile, screenRecordingAnalysisDirectory, implementedOnAndroid);
             } else {
 
                 // Undertake the deep-pass on all retained frames that contained 'Sponsored' texts
                 JSONXObject inferenceResultDeep = inferencePassthrough(context, objectDetectorFunction,
-                        "facebook_elements", groupedAdsObject, screenRecordingFile, screenRecordingAnalysisDirectory);
+                        "facebook_elements", groupedAdsObject, screenRecordingFile, screenRecordingAnalysisDirectory, applyingQuantizedModels);
 
 
                 // There are six kinds of ads that we have observed in Facebook
@@ -105,7 +106,7 @@ public class Facebook {
                 //  2. Whether the frames have the same classname
 
                 if (thisCheckPoint.container.has("inferenceDeep")) {
-                    Log.i(TAG, "Proceeding with ad object construction");
+                    logMessage(TAG, "Proceeding with ad object construction");
                     List<JSONXObject> thisAdFrameGroupMetadatasUnseparated = new ArrayList<>();
                     JSONXObject inferencesDeepByFrames = (new JSONXObject((JSONObject) inferenceResultDeep.get("inferencesByFrames"), true));
                     for (List<Integer> adFrameGroup : groupsOfAdFrames) {

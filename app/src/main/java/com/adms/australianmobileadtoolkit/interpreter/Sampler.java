@@ -1,6 +1,7 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.Common.makeDirectory;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.appSettings.prescribedMinVideoWidth;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.persistThread;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.saveBitmap;
@@ -107,7 +108,7 @@ public class Sampler {
         Double similarityPercentage = comprehensiveReadingGetFrameSimilarityPercentage(imageSample, lastFrame, thisFrame);
         String verdict = (similarityPercentage >= SIMILARITY_THRESHOLD) ? "SIMILAR" : "DIFFERENT";
 
-        Log.i(TAG, "lastFrame: "+lastFrame+" thisFrame: "+thisFrame+" verdict: "+verdict);
+        logMessage(TAG, "lastFrame: "+lastFrame+" thisFrame: "+thisFrame+" verdict: "+verdict);
 
         return (new JSONXObject())
                 .set("verdict", verdict)
@@ -178,7 +179,7 @@ public class Sampler {
 
     public static JSONXObject basicReading(Context context,
                                            File rootDirectory, File screenRecordingAnalysisDirectory, File thisScreenRecordingFile, Function<JSONXObject, JSONXObject> videoMetadataFunction,
-                                           Function<JSONXObject, Bitmap> frameGrabFunction) throws Exception {
+                                           Function<JSONXObject, Bitmap> frameGrabFunction, Boolean applyingQuantizedModels) throws Exception {
         //checkPoint checkPoint = new checkPoint(thisScreenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
 
         //if (checkPoint.container.has("comprehensiveReading")) {
@@ -223,7 +224,7 @@ public class Sampler {
                 } catch (Exception ignored) {};
             }
             totalFrames ++;
-            Log.i(TAG, "totalFrames: "+totalFrames.toString());
+            logMessage(TAG, "totalFrames: "+totalFrames.toString());
 
 
             // TODO - at this stage, we know exactly how many frames we are dealing with
@@ -233,7 +234,11 @@ public class Sampler {
             List<Integer> retainedFrames = new ArrayList<>();
             JSONXObject imageSample = new JSONXObject();
 
-            Integer nFramesToGetInSecond = 4; // Grab 4 frames a second by setting this as the step
+            // TODO - applying quantized models shouldn't equate better frame rate captures - we need to probably migrate this to a setting, that defaults to
+            // the quantized option, but that can be overrriden to suit the users need
+            //
+            // only capture more frames when we're certain the device supports quanitzed models
+            Integer nFramesToGetInSecond = (applyingQuantizedModels) ? 8 : 4; // Grab 4 frames a second by setting this as the step
             Integer frameIndexStep = (int) Math.max(1, Math.floor(FPS / nFramesToGetInSecond));
 
             for (int frameIndex = 0; frameIndex <= totalFrames; frameIndex += frameIndexStep) {
@@ -323,11 +328,11 @@ public class Sampler {
                 } catch (Exception ignored) {};
             }
             totalFrames ++;
-            Log.i(TAG, "totalFrames: "+totalFrames.toString());
+            logMessage(TAG, "totalFrames: "+totalFrames.toString());
 
             Integer frameSampleUpperThreshold = Math.toIntExact((long) Math.floor(FPS)); //(int) Math.floor(totalFrames / FPS);
-            Log.i(TAG, "frameSampleUpperThreshold: "+frameSampleUpperThreshold.toString());
-            Log.i(TAG, "FPS: "+FPS.toString());
+            logMessage(TAG, "frameSampleUpperThreshold: "+frameSampleUpperThreshold.toString());
+            logMessage(TAG, "FPS: "+FPS.toString());
             Integer frameSampleThresholdPrevious = null;
             Integer frameSampleThreshold = frameSampleUpperThreshold;
             List<List<Integer>> targetRanges = Arrays.asList(Arrays.asList(0, totalFrames-1));
@@ -375,7 +380,7 @@ public class Sampler {
                         if (thisFrame > thisRange.get(1)) {
                             thisFrame = thisRange.get(1);
                         }
-                        Log.i(TAG, "Indexing frame: "+thisFrame);
+                        logMessage(TAG, "Indexing frame: "+thisFrame);
                         // Generate the p-hash for the image
                         if (!(imageSample.has(thisFrame))) {
                             nFramesSampled ++;
@@ -397,7 +402,7 @@ public class Sampler {
                                     e.printStackTrace();
                                 }
                             } else {
-                                Log.i(TAG, "Discard frame " + thisFrame);
+                                logMessage(TAG, "Discard frame " + thisFrame);
                             }
                         }
 
@@ -447,7 +452,7 @@ public class Sampler {
             // Retrieve the retained frames
             JSONXObject retainedFramesResult = comprehensiveReadingRetainedFrames(masterFrameSimilarityReadings);
             List<Integer> retainedFrames = (List<Integer>) retainedFramesResult.get("retainedFrames");
-            Log.i(TAG, "Number of frames retained: "+retainedFrames);
+            logMessage(TAG, "Number of frames retained: "+retainedFrames);
             List<List<Integer>> similarityGroups = (List<List<Integer>>) retainedFramesResult.get("similarityGroups");
 
             JSONXObject contextualisedRetainedFrames = new JSONXObject();
@@ -458,13 +463,13 @@ public class Sampler {
                 contextualisedRetainedFrames.set(k,
                         comprehensiveReadingRetainedFrames((List<JSONXObject>) contextualisedFrameSimilarityReadings.get(k)).get("retainedFrames"));
             }
-            Log.i(TAG, "Number of frames sampled: "+nFramesSampled);
+            logMessage(TAG, "Number of frames sampled: "+nFramesSampled);
 
-            Log.i(TAG, "Number of frames retained: "+retainedFrames);
+            logMessage(TAG, "Number of frames retained: "+retainedFrames);
             retainedFrames = combineLists(retainedFrames, forcedRetainedFrames).stream().distinct().map(x -> (Integer) x).collect(Collectors.toList());
             retainedFrames.sort(Comparator.naturalOrder());
 
-            Log.i(TAG, "Number of frames retained: "+retainedFrames);
+            logMessage(TAG, "Number of frames retained: "+retainedFrames);
 
             // Do one final sweep over the frames to remove duplicates inserted by separated iterations
 
@@ -491,7 +496,7 @@ public class Sampler {
                     canExitDeduplication = true;
                 }
             }
-            Log.i(TAG, "Number of frames retained: "+retainedFrames);
+            logMessage(TAG, "Number of frames retained: "+retainedFrames);
             elapsedTime = Math.abs(Long.valueOf(System.currentTimeMillis()).doubleValue() - elapsedTime);
 
             output = (new JSONXObject())

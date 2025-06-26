@@ -43,7 +43,6 @@ public class interpretation {
         Function<File, JSONObject> localRoutine = (x -> {
 
             File debugFile = prepareForPlatformInterpretationTest(thisTest, x, null);
-            System.out.println(debugFile);
             if (debugFile != null) {
                 platformInterpretationRoutine(testContext, debugFile, getVideoMetadataMachine, frameGrabMachine, false);
             }

@@ -183,7 +183,6 @@ public class FragmentRegistration2 extends Fragment implements AsyncResponse {
    }
 
    private void failedRegistration(DialogLoading loadRegistration) {
-      System.out.println( "got here");
       loadRegistration.dismiss();
       loadFailedRegistration = new DialogFailedRegistration(requireContext());
       loadFailedRegistration.show();

@@ -1,5 +1,6 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.arthenica.ffmpegkit.Packages.getPackageName;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
@@ -27,11 +28,11 @@ public class AccessibilityServiceManager {
         for (AccessibilityServiceInfo enabledService : enabledServices) {
             ServiceInfo enabledServiceInfo = enabledService.getResolveInfo().serviceInfo;
             if (enabledServiceInfo.packageName.equals(context.getPackageName()) && enabledServiceInfo.name.equals(service.getName())) {
-                Log.i(TAG, "Accessibility Service Check Enabled: TRUE");
+                logMessage(TAG, "Accessibility Service Check Enabled: TRUE");
                 return true;
             }
         }
-        Log.i(TAG, "Accessibility Service Check Enabled: FALSE");
+        logMessage(TAG, "Accessibility Service Check Enabled: FALSE");
         return false;
     }
 }

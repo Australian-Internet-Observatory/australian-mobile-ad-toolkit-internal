@@ -1,6 +1,8 @@
 package com.adms.australianmobileadtoolkit.interpreter.detector;
 
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.persistThread;
+import static com.adms.australianmobileadtoolkit.interpreter.Sampler.basicReading;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -10,6 +12,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.adms.australianmobileadtoolkit.JSONXObject;
+import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.checkPoint;
 
 import org.json.JSONObject;
@@ -93,7 +96,7 @@ public class ObjectDetector {
         return boundingBoxesRecorded;
     }
 
-    public void setInferencesOnFrame(String modelName, List<Integer> retainedFrames, List<BoundingBox> inferenceOutcome) {
+    public void setInferencesOnFrame(String modelName, List<Integer> retainedFrames, List<BoundingBox> inferenceOutcome, String thisCase) {
         inferencesByFrames.set(currentFrame, inferencesOnFrame(modelName, inferenceOutcome));
         if (Objects.equals(currentFrame, retainedFrames.get(retainedFrames.size() - 1))) {
             thisDetector.close();
@@ -102,46 +105,57 @@ public class ObjectDetector {
             inferenceResult.set("nFramesAnalyzed", retainedFrames.size());
             inferenceResult.set("inferencesByFrames", inferencesByFrames.internalJSONObject);
             inferenceResult.set("elapsedTime", elapsedTime);
-            thisCheckPoint.set(inferenceCase, inferenceResult.internalJSONObject);
-            thisCheckPoint.save();
+            if (!thisCase.equals("Provision")) {
+                thisCheckPoint.set(inferenceCase, inferenceResult.internalJSONObject);
+                thisCheckPoint.save();
+            }
         }
     }
 
     // TODO - rename to inference event
     public ObjectDetector(Context context, File analysisDirectory, File thisScreenRecordingFile,
                            List<String> retainedFrameFiles, List<Integer> retainedFrames, String modelName, String thisCase) throws Exception {
-        Integer INFERENCE_IMAGE_WIDTH = 640;
-        Integer INFERENCE_IMAGE_HEIGHT = 640;
         inferenceCase = "inference"+thisCase;
 
-        thisCheckPoint = new checkPoint(thisScreenRecordingFile.getName(), new File(analysisDirectory, "checkpoint"));
+        Detector.DetectorListener thisDetectorListener = new Detector.DetectorListener() {
+            @Override
+            public void onEmptyDetect() {
+                setInferencesOnFrame(modelName, retainedFrames, (new ArrayList<>()), thisCase);
+            }
 
-        if (thisCheckPoint.container.has(inferenceCase)) {
-            inferenceResult = new JSONXObject((JSONObject) thisCheckPoint.container.get(inferenceCase), true);
-        } else {
-            Detector.DetectorListener thisDetectorListener = new Detector.DetectorListener() {
-                @Override
-                public void onEmptyDetect() {
-                    setInferencesOnFrame(modelName, retainedFrames, (new ArrayList<>()));
-                }
+            @Override
+            public void onDetect(@NonNull List<BoundingBox> boundingBoxes, long inferenceTime) {
+                setInferencesOnFrame(modelName, retainedFrames, boundingBoxes, thisCase);
+            }
+        };
 
-                @Override
-                public void onDetect(@NonNull List<BoundingBox> boundingBoxes, long inferenceTime) {
-                    setInferencesOnFrame(modelName, retainedFrames, boundingBoxes);
-                }
-            };
-
+        if (thisCase.equals("Provision")) {
             thisDetector = new Detector(context, modelName, null, thisDetectorListener);
-            Integer currentFrameIndex = 0;
-            for (String retainedFrameFile : retainedFrameFiles) {
-                persistThread(context, TAG);
-                Log.i(TAG, retainedFrameFile.toString());
-                try {
-                    currentFrame = retainedFrames.get(currentFrameIndex);
-                    thisDetector.detect(BitmapFactory.decodeFile(retainedFrameFile));
-                    currentFrameIndex ++;
-                } catch (Exception e) {
-                    e.printStackTrace();
+            persistThread(context, TAG);
+            try {
+                currentFrame = 0;
+                Bitmap thisBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.ad_detection_test_image_2);
+                thisDetector.detect(thisBitmap);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            thisCheckPoint = new checkPoint(thisScreenRecordingFile.getName(), new File(analysisDirectory, "checkpoint"));
+            if (thisCheckPoint.container.has(inferenceCase)) {
+                inferenceResult = new JSONXObject((JSONObject) thisCheckPoint.container.get(inferenceCase), true);
+            } else {
+                thisDetector = new Detector(context, modelName, null, thisDetectorListener);
+                Integer currentFrameIndex = 0;
+                for (String retainedFrameFile : retainedFrameFiles) {
+                    persistThread(context, TAG);
+                    logMessage(TAG, retainedFrameFile.toString());
+                    try {
+                        currentFrame = retainedFrames.get(currentFrameIndex);
+                        thisDetector.detect(BitmapFactory.decodeFile(retainedFrameFile));
+                        currentFrameIndex ++;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -158,7 +172,11 @@ public class ObjectDetector {
         try {
             return new ObjectDetector(context, analysisDirectory, thisScreenRecordingFile,
                     retainedFrameFiles, retainedFrames, modelName, thisCase).inferenceResult;
-        } catch (Exception e) {
+        }
+        catch (InterruptedException e) {
+            return new JSONXObject().set("interrupted", true);
+        }
+        catch (Exception e) {
             e.printStackTrace();
             return null;
         }

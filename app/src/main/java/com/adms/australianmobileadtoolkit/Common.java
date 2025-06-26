@@ -138,6 +138,15 @@ public class Common {
       });
    }
 
+   public static void dataStoreWriteToCorrupt(Context context, String key) {
+      initiateDataStore(context);
+      Single<Preferences> updateResult = dataStore.updateDataAsync(prefsIn -> {
+         MutablePreferences mutablePreferences = prefsIn.toMutablePreferences();
+         mutablePreferences.set(PreferencesKeys.stringKey(key), new String(new byte[0]));
+         return Single.just(mutablePreferences);
+      });
+   }
+
    public static String dataStoreRead(Context context, String key, String defaultValue) {
       initiateDataStore(context);
       try {

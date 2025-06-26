@@ -2,6 +2,7 @@ package com.adms.australianmobileadtoolkit;
 
 import static com.adms.australianmobileadtoolkit.Common.filePath;
 import static com.adms.australianmobileadtoolkit.MainActivity.mainDir;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 
 import static java.util.Arrays.asList;
 
@@ -54,7 +55,8 @@ public class Debugger {
          // Attempt to create the necessary files
          createDebugDataDuplicates(context, fileIDs);
       } catch (Exception e) {
-         Log.e(TAG, "Failed on : Debugger", e);
+         logMessage(TAG, "Failed on : Debugger");
+         e.printStackTrace();
       }
    }
 
@@ -96,7 +98,8 @@ public class Debugger {
             outputStream.close();
          }
       } catch (Exception e) {
-         Log.e(TAG, "Failed on createDebugDataDuplicates: ", e);
+         logMessage(TAG, "Failed on createDebugDataDuplicates: ");
+         e.printStackTrace();
       }
 
    }

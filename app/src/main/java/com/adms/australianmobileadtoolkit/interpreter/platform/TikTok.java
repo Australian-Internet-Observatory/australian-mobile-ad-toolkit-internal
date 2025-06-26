@@ -1,6 +1,7 @@
 package com.adms.australianmobileadtoolkit.interpreter.platform;
 
 
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.deleteScreenRecordingAnalysis;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.detailDirectoryStructure;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.evaluationPostMethod;
@@ -43,7 +44,7 @@ public class TikTok {
     }
 
     public static void evaluateTikTokAd(Context context, File rootDirectory, HashMap<String, String> thisInterpretation,
-                                       Function<JSONXObject, JSONXObject> objectDetectorFunction, JSONXObject thisComprehensiveReading, Boolean implementedOnAndroid) throws Exception {
+                                       Function<JSONXObject, JSONXObject> objectDetectorFunction, JSONXObject thisComprehensiveReading, Boolean implementedOnAndroid, Boolean applyingQuantizedModels) throws Exception {
 
         HashMap<String, File> directoryStructure = detailDirectoryStructure(rootDirectory);
 
@@ -55,30 +56,30 @@ public class TikTok {
         if (!thisComprehensiveReading.keys().isEmpty()) {
 
             // Undertake preliminary inference
-            Log.i(TAG, "a");
+            logMessage(TAG, "a");
             // TODO - improve nano reading model
             List<Integer> retainedFrames = (List<Integer>) thisComprehensiveReading.get("retainedFrames");
             List<String> retainedFramesAsFiles = (List<String>) thisComprehensiveReading.get("retainedFramesAsFiles");
 
             JSONXObject inferenceResultShallow = inferencePassthrough(context, objectDetectorFunction,"tiktok_sponsored",
                     (new JSONXObject()).set("retainedFramesAsFiles", retainedFramesAsFiles).set("retainedFrames", retainedFrames),
-                    screenRecordingFile, screenRecordingAnalysisDirectory);
+                    screenRecordingFile, screenRecordingAnalysisDirectory, applyingQuantizedModels);
 
             // Group together ads that are adjacent
             JSONXObject groupedAdsObject = groupAdjacentAds(inferenceResultShallow, retainedFrames, retainedFramesAsFiles);
             List<List<Integer>> groupsOfAdFrames = (List<List<Integer>>) groupedAdsObject.get("groupsOfAdFrames");
             JSONXObject inferencesByFrames = (JSONXObject) groupedAdsObject.get("inferencesByFrames");
 
-            Log.i(TAG, groupsOfAdFrames.toString());
+            logMessage(TAG, groupsOfAdFrames.toString());
 
             if (groupsOfAdFrames.isEmpty()) {
-                Log.i(TAG, "Deleting empty video");
+                logMessage(TAG, "Deleting empty video");
                 deleteScreenRecordingAnalysis(screenRecordingFile, screenRecordingAnalysisDirectory, implementedOnAndroid);
             } else {
 
                 // Undertake the deep-pass on all retained frames that contained 'Sponsored' texts
                 JSONXObject inferenceResultDeep = inferencePassthrough(context, objectDetectorFunction,
-                        "tiktok_elements", groupedAdsObject, screenRecordingFile, screenRecordingAnalysisDirectory);
+                        "tiktok_elements", groupedAdsObject, screenRecordingFile, screenRecordingAnalysisDirectory, applyingQuantizedModels);
 
                 // TODO - note: This part requires a logic that is specialised to tiktok, and should be represented as such
                 // There are three kinds of ads that we have observed in TikTok - thumbnail ads, home ads, and search ads
@@ -108,7 +109,7 @@ public class TikTok {
                 //  2. Whether the frames have the same classname
 
                 if (thisCheckPoint.container.has("inferenceDeep")) {
-                    Log.i(TAG, "Proceeding with ad object construction");
+                    logMessage(TAG, "Proceeding with ad object construction");
                     List<JSONXObject> thisAdFrameGroupMetadatasUnseparated = new ArrayList<>();
                     JSONXObject inferencesDeepByFrames = (new JSONXObject((JSONObject) inferenceResultDeep.get("inferencesByFrames"), true));
                     for (List<Integer> adFrameGroup : groupsOfAdFrames) {

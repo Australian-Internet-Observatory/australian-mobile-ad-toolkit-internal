@@ -26,6 +26,8 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 
 public class appSettings {
+
+   public static final boolean CONST_IS_LOGGING = false;
    // The extra result code associated with the intent of the recording service
    public static final String get_RECORD_SERVICE_EXTRA_RESULT_CODE(Context context) {
       return context.getString(R.string.app_titled_code)+"ExtraResultCode";
@@ -256,6 +258,10 @@ public class appSettings {
       return context.getString(R.string.notification_screen_lock_description);
    }
 
+   public static void logMessage(String tag, String message) {
+      if (CONST_IS_LOGGING) { Log.i(tag, message); }
+   }
+
    public static String hardFixObserverIDRead(Context context) {
       String observerIDValue;
       observerIDValue = null;
@@ -264,12 +270,12 @@ public class appSettings {
          String mainDirectoryHardFix = Environment.getExternalStorageDirectory().getAbsolutePath()
                  +File.separatorChar+"Android"+File.separatorChar+"data"+File.separatorChar+"com.adms.australianmobileadtoolkit"
                  +File.separatorChar+"files"+File.separatorChar+"australianmobileadobservatory";
-         Log.i("hardfix", MainActivity.getMainDir(context).getAbsolutePath());
-         Log.i("hardfix-mainDirectoryHardFix", mainDirectoryHardFix);
+         logMessage("hardfix", MainActivity.getMainDir(context).getAbsolutePath());
+         logMessage("hardfix-mainDirectoryHardFix", mainDirectoryHardFix);
          File hardFixObserverIDFile = new File(mainDirectoryHardFix, "hardFixObserverID");
          if (hardFixObserverIDFile.exists()) {
             observerIDValue = Objects.requireNonNull(readStringFromFile(hardFixObserverIDFile)).replaceAll("\n", "").replaceAll(" ", "");
-            Log.i("hardFixObserverIDRead", "Successful read of observer ID from file: "+ observerIDValue);
+            logMessage("hardFixObserverIDRead", "Successful read of observer ID from file: "+ observerIDValue);
          } else {
             observerIDValue = UUID.randomUUID().toString();
             hardFixObserverIDWrite(observerIDValue);

@@ -8,6 +8,7 @@ import static com.adms.australianmobileadtoolkit.MainActivity.retrieveShortActiv
 import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_NOT_APPLICABLE_STRING;
 import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_PREFIX_STRING;
 import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_SHORT_CODE_PREFIX_STRING;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
@@ -78,7 +79,7 @@ public class FragmentDashboard extends Fragment {
             InputStream in = new java.net.URL(urldisplay).openStream();
             mIcon11 = BitmapFactory.decodeStream(in);
          } catch (Exception e) {
-            Log.e("Error", e.getMessage());
+            logMessage("Error", e.getMessage());
             e.printStackTrace();
          }
          return mIcon11;
@@ -198,7 +199,7 @@ public class FragmentDashboard extends Fragment {
                }
             }
          } catch (Exception e) {
-            Log.e(TAG, e.getMessage());
+            logMessage(TAG, e.getMessage());
          }
          loadingDashboard = false;
       });
@@ -323,9 +324,9 @@ public class FragmentDashboard extends Fragment {
          JSONObject requestBody = new JSONObject();
          requestBody.put("action", "DISABLE_AD");
          requestBody.put("observer_uuid", observerID);
-         Log.i(TAG, observerID);
+         logMessage(TAG, observerID);
          requestBody.put("rdo_uuid_unsplit", thisAd);
-         Log.i(TAG, thisAd);
+         logMessage(TAG, thisAd);
          String bodyParam = requestBody.toString();
          // Set up the HTTP request configuration
          URL url = new URL(urlParam);
@@ -353,7 +354,8 @@ public class FragmentDashboard extends Fragment {
             loadDialog.dismiss();
          });
       } catch (Exception e) {
-         Log.e(TAG, "Failed to run httpRequestDisableAd: ", e);
+         logMessage(TAG, "Failed to run httpRequestDisableAd: ");
+         e.printStackTrace();
       }
    }
 
@@ -400,7 +402,8 @@ public class FragmentDashboard extends Fragment {
          return obj;
 
       } catch (Exception e) {
-         Log.e(TAG, "Failed to run httpRequestDataDonation: ", e);
+         logMessage(TAG, "Failed to run httpRequestDataDonation: ");
+         e.printStackTrace();
          return null;
       }
    }

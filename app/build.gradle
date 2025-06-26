@@ -19,8 +19,8 @@ android {
         multiDexEnabled  true
         minSdk 26
         targetSdk 34
-        versionCode 1033
-        versionName "1.033"
+        versionCode 1035
+        versionName "1.035"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets {
@@ -105,6 +105,9 @@ dependencies {
     testImplementation 'org.robolectric:robolectric:4.9'
     //testImplementation("org.bytedeco:javacv-platform:1.5.10")
     testImplementation("org.bytedeco:javacv-platform:1.5.10")
+
+    //debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.12'
+
 
     //testImplementation("org.bytedeco:javacpp-platform:1.5.10")
     //testImplementation("org.bytedeco:ffmpeg:6.1.1-1.5.10")

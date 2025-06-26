@@ -2,11 +2,12 @@ package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.MainActivity.PERIODIC_WORK_TAG;
+import static com.adms.australianmobileadtoolkit.MainActivity.manualAdDigestThread;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.getVideoMetadataAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.platformInterpretationRoutine;
 import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.objectDetectorAndroid;
-import static com.adms.australianmobileadtoolkit.ui.dialogs.DialogSubmitAds.accessableTentativeThread;
 
 import android.content.Context;
 import android.os.SystemClock;
@@ -43,7 +44,7 @@ public class InterpreterWorker extends Worker {
    }
 
    public static void platformInterpretationRoutineInterruption(Context context) {
-      Log.i(TAG, "Perhaps thread related?...");
+      logMessage(TAG, "Perhaps thread related?...");
       dataStoreWrite(context, "platformRoutineState", "COMPLETE");
       dataStoreWrite(context, "platformRoutineToAnalyze", "0");
       dataStoreWrite(context, "platformRoutineAnalyzed", "0");
@@ -63,10 +64,10 @@ public class InterpreterWorker extends Worker {
    public Result doWork() {
       localThread = Thread.currentThread();
       // This check stops a periodic worker from overlapping on a manual process
-      if ((accessableTentativeThread != null) ? (!accessableTentativeThread.isAlive()) : true) {
+      if ((manualAdDigestThread != null) ? (!manualAdDigestThread.isAlive()) : true) {
          platformInterpretationRoutineContainer(getApplicationContext(), true);
       } else {
-         Log.i(TAG, "Periodic worker has been cancelled due to manual process...");
+         logMessage(TAG, "Periodic worker has been cancelled due to manual process...");
       }
 
       // Indicate success or failure with your return value:
@@ -110,7 +111,8 @@ public class InterpreterWorker extends Worker {
                  connection.getInputStream()));
          return true;
       } catch (Exception e) {
-         Log.e(TAG, "Failed to run httpRequestPing: ", e);
+         logMessage(TAG, "Failed to run httpRequestPing: ");
+         e.printStackTrace();
          return false;
       }
    }
@@ -118,7 +120,7 @@ public class InterpreterWorker extends Worker {
    @Override
    public void onStopped() {
       super.onStopped();
-      Log.i(TAG, "Periodic worker was stopped!!!!!!!!");
+      logMessage(TAG, "XXX - Periodic worker was stopped!!!!!!!!");
       if (localThread == null) { // There is a possibility we have a null thread here...
          localThread = Thread.currentThread();
       }

@@ -1,6 +1,7 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.Common.filePath;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static java.util.Arrays.asList;
 import android.content.Context;
 import android.content.res.Resources;
@@ -65,7 +66,7 @@ public class FFmpegFrameGrabberAndroid {
          FFprobeSession session = FFprobeKit.execute("-v quiet -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 "+videoFile.getAbsolutePath());
          String result = session.getOutput();
          if (!ReturnCode.isSuccess(session.getReturnCode())) {
-            Log.d(TAG, "Command failed. Please check output for the details.");
+            logMessage(TAG, "Command failed. Please check output for the details.");
          } else {
             result = result.replaceAll("[^0-9]", "");
             METADATA_KEY_VIDEO_FRAME_COUNT = Integer.parseInt(result);
@@ -75,7 +76,7 @@ public class FFmpegFrameGrabberAndroid {
          session = FFprobeKit.execute("-i "+videoFile.getAbsolutePath()+" -show_entries format=duration -v quiet -of csv=\"p=0\"");
          result = session.getOutput();
          if (!ReturnCode.isSuccess(session.getReturnCode())) {
-            Log.d(TAG, "Command failed. Please check output for the details.");
+            logMessage(TAG, "Command failed. Please check output for the details.");
          } else {
             result = result.replaceAll("[^0-9\\.]", "");
             METADATA_KEY_DURATION_RETAINED = Double.parseDouble(result);
@@ -102,7 +103,7 @@ public class FFmpegFrameGrabberAndroid {
          derivedFrameRate = 30.0;
       }
       output.set("METADATA_DERIVED_FRAMERATE",derivedFrameRate );
-      Log.i(TAG, String.valueOf(output));
+      logMessage(TAG, String.valueOf(output));
       return output;
    }
 
@@ -142,18 +143,18 @@ public class FFmpegFrameGrabberAndroid {
 
       File tempBitmapFile = filePath(asList(MainActivity.getMainDir(context).getAbsolutePath(), "ffmpeg_cache", identifier+".bmp"));
       String command = String.format("-ss %1$s -i %2$s -update true -frames:v 1 -s "+adjustedDimensions.first+"x"+adjustedDimensions.second+" %3$s -hide_banner -loglevel panic ", timeSignature, videoFile.getAbsolutePath(), tempBitmapFile.getAbsolutePath());
-      Log.i(TAG, command);
+      logMessage(TAG, command);
       FFmpegSession session = FFmpegKit.execute(command);
       if (ReturnCode.isSuccess(session.getReturnCode())) {
          Bitmap thisBitmap = BitmapFactory.decodeFile(tempBitmapFile.getAbsolutePath());
          try {
             if (thisBitmap == null) {
-               Log.i(TAG, tempBitmapFile.getAbsolutePath());
+               logMessage(TAG, tempBitmapFile.getAbsolutePath());
                try {
                   FFmpegKit.cancel();
                   while (!FFmpegKit.listSessions().isEmpty()) {
                      TimeUnit.SECONDS.sleep(1);
-                     Log.i(TAG, "waiting on n sessions to close: "+ FFmpegKit.listSessions().size());
+                     logMessage(TAG, "waiting on n sessions to close: "+ FFmpegKit.listSessions().size());
                      FFmpegKitConfig.clearSessions();
                   }
                } catch (Exception e) {
@@ -173,10 +174,10 @@ public class FFmpegFrameGrabberAndroid {
             return null;
          }
       } else if (ReturnCode.isCancel(session.getReturnCode())) {
-         Log.i(TAG, "return code error");
+         logMessage(TAG, "return code error");
          // TODO
       } else {
-         Log.d(TAG, String.format("Command failed with state %s and rc %s.%s", session.getState(), session.getReturnCode(), session.getFailStackTrace()));
+         logMessage(TAG, String.format("Command failed with state %s and rc %s.%s", session.getState(), session.getReturnCode(), session.getFailStackTrace()));
       }
       session.cancel();
       return null;

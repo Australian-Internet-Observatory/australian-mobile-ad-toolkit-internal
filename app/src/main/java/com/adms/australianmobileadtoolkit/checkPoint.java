@@ -1,5 +1,6 @@
 package com.adms.australianmobileadtoolkit;
 
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.createDirectory;
 
 import android.util.Log;
@@ -21,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class checkPoint {
-
+    public static String TAG = "checkPoint";
     public String id;
     public JSONXObject container;
     public JSONXObject flats;
@@ -55,7 +56,7 @@ public class checkPoint {
                 Object v = flats.get(k);
                 String thisType = (String) types.get(k);
                 if (thisType == null) {
-                    System.out.println(k);
+                    logMessage(TAG, k);
                 }
                 if (thisType.equals("STRING")) {
                     initialized.put(k, true);
@@ -132,7 +133,6 @@ public class checkPoint {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("Reinitiating as unstable data - 1");
                 // Any error during assessment indicates a malformation in the data structure
                 types = new JSONXObject();
                 flats = new JSONXObject();
@@ -186,7 +186,6 @@ public class checkPoint {
             } else {
                 //preContainer = new JSONXObject();
                 //initialized = new HashMap<>();
-                System.out.println("Reinitiating as unstable data - 2");
 
             }
 
@@ -279,8 +278,8 @@ public class checkPoint {
                 }
                 flats.set(k, objectHashMap);
             } else {
-                Log.i("serialObject", "Dealing with unknown object for reference: "+k);
-                Log.i("serialObject", String.valueOf(v.getClass()));
+                logMessage("serialObject", "Dealing with unknown object for reference: "+k);
+                logMessage("serialObject", String.valueOf(v.getClass()));
             }
         }
     }
@@ -342,7 +341,7 @@ public class checkPoint {
     }
 
     public void delete() {
-        Log.i("checkPoint","SERIAL OBJECT" + (new File(outputDirectory, id+".flats.json")).getAbsolutePath());
+        logMessage("checkPoint","SERIAL OBJECT" + (new File(outputDirectory, id+".flats.json")).getAbsolutePath());
         try { (new File(outputDirectory, id+".flats.json")).delete(); } catch (Exception e) {
             e.printStackTrace();
         }

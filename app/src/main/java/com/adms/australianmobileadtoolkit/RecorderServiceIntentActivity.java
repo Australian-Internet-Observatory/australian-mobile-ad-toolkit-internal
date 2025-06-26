@@ -2,6 +2,7 @@ package com.adms.australianmobileadtoolkit;
 
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -36,13 +37,13 @@ public class RecorderServiceIntentActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         // Inform us if the activity code doesn't correspond to a permission request
         if (requestCode != SCREEN_RECORDING_PERMISSION_CODE) {
-            Log.e(TAG, "Unknown request code: " + requestCode);
+            logMessage(TAG, "Unknown request code: " + requestCode);
             return;
         }
 
-        Log.i(TAG, String.valueOf(data));
-        Log.i(TAG, String.valueOf(requestCode));
-        Log.i(TAG, String.valueOf(resultCode));
+        logMessage(TAG, String.valueOf(data));
+        logMessage(TAG, String.valueOf(requestCode));
+        logMessage(TAG, String.valueOf(resultCode));
 
         // If given permission to record the device, begin recording
         if (resultCode == RESULT_OK) {
@@ -64,6 +65,12 @@ public class RecorderServiceIntentActivity extends Activity {
 
     private void startRecordingService(int resultCode, Intent data) {
         Intent intent = RecorderService.newIntent(this, resultCode, data);
-        startService(intent);
+        /*
+        *
+        * In order to start a foregrond service, the startForegroundService method should be used instead of startService
+        * https://stackoverflow.com/questions/45525214/are-there-any-benefits-to-using-context-startforegroundserviceintent-instead-o#:~:text=So%2C%20if%20your,stop%20the%20service.
+        *
+        * */
+        startForegroundService(intent);
     }
 }

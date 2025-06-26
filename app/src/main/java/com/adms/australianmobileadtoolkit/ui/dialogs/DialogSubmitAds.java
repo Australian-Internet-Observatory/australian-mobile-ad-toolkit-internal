@@ -3,6 +3,8 @@ package com.adms.australianmobileadtoolkit.ui.dialogs;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.MainActivity.PERIODIC_WORK_TAG;
+import static com.adms.australianmobileadtoolkit.MainActivity.manualAdDigestThread;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker.platformInterpretationRoutineContainer;
 import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.objectDetectorAndroid;
 
@@ -23,6 +25,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentManager;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
@@ -37,13 +40,9 @@ import java.util.List;
 public class DialogSubmitAds extends Dialog implements android.view.View.OnClickListener {
 
     private static String TAG = "DialogSubmitAds";
-    private Thread tentativeThread;
-    public static Thread accessableTentativeThread;
 
     private DialogLoading loadKillAdDigest;
-    private DialogSubmitAds thisDialogSubmitAds;
 
-    Activity ownerActivity;
 
     public DialogSubmitAds(@NonNull Context context, @NonNull FragmentManager fragmentManager) {
         super(context);
@@ -55,7 +54,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
     public void runThis() {
         getOwnerActivity().getParent().runOnUiThread(()-> {
-            Log.i(TAG, "Hellop");
+            logMessage(TAG, "Hellop");
         });
     }
 
@@ -65,7 +64,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
             //WorkManager.getInstance(context.getApplicationContext()).cancelAllWorkByTag(MANUAL_WORK_TAG);
             //WorkManager.getInstance(context.getApplicationContext()).cancelAllWork();
             WorkManager.getInstance(context.getApplicationContext()).cancelUniqueWork("workName");
-            Log.i(TAG, "killPeriodicWorker iteration");
+            logMessage(TAG, "killPeriodicWorker iteration");
 
         }
     }
@@ -85,7 +84,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
         // Set a thread to attempt to refresh the dialog when the process is complete
         if (instance != null) {
             (new Thread(() -> {
-                instance.ownerActivity.runOnUiThread(()-> {
+                instance.getOwnerActivity().runOnUiThread(()-> {
                     ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_annotation)).setText("Your ads are now processing...");
                     ((RelativeLayout) instance.findViewById(R.id.loadingPanel)).setVisibility(View.VISIBLE);
                     ((Button) instance.findViewById(R.id.buttonExitProcessMyAdDigest)).setVisibility(View.VISIBLE);
@@ -106,7 +105,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
 
                     try {
-                        Log.i(TAG, "Sleeping on adDigestProcess...");
+                        logMessage(TAG, "Sleeping on adDigestProcess...");
 
                         String tentativePlatformRoutineState = dataStoreRead(context, "platformRoutineState", "LOADING");
 
@@ -151,7 +150,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
                         final Integer progressReadingAnalyzedF = progressReadingAnalyzed;
                         final Integer progressReadingRelayedF = progressReadingRelayed;
 
-                        instance.ownerActivity.runOnUiThread(()-> {
+                        instance.getOwnerActivity().runOnUiThread(()-> {
 
                             ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_status)).setText("STATUS: " + formalPlatformRoutineState);
 
@@ -183,7 +182,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
 
 
-                instance.ownerActivity.runOnUiThread(()-> {
+                instance.getOwnerActivity().runOnUiThread(()-> {
                     ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_status)).setText("STATUS: COMPLETE" );
                     ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText("100%");
                     ProgressBar progressBarAnalyzed = ((ProgressBar) instance.findViewById(R.id.progress_bar_processing));
@@ -195,11 +194,11 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
                     throw new RuntimeException(e);
                 }
 
-                Log.i(TAG, "Complete with process...");
+                logMessage(TAG, "Complete with process...");
 
                 final Integer platformRoutineToAnalyzeFinal = platformRoutineToAnalyze;
 
-                instance.ownerActivity.runOnUiThread(()-> {
+                instance.getOwnerActivity().runOnUiThread(()-> {
                     //instance.refreshDialog(context);
                     ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_annotation)).setText("A total of "+platformRoutineToAnalyzeFinal+" files have been processed.");
                     ((Button) instance.findViewById(R.id.buttonExitProcessMyAdDigest)).setVisibility(View.GONE);
@@ -215,9 +214,8 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
     public boolean attemptProcessOnThread(Context context) {
         if (!adDigestIsRunning(context)) {
-            tentativeThread = constructProcessThread(context);
-            tentativeThread.start();
-            accessableTentativeThread = tentativeThread;
+            manualAdDigestThread = constructProcessThread(context);
+            manualAdDigestThread.start();
             refreshDialog(context);
 
 
@@ -227,17 +225,40 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
     }
 
     public boolean isManualProcessRunning() {
-        if (tentativeThread == null) {
+        if (manualAdDigestThread == null) {
             return false;
         } else {
-            return tentativeThread.isAlive();
+            return manualAdDigestThread.isAlive();
         }
     }
 
     public void killThread() {
         try {
             if (isManualProcessRunning()) {
-                tentativeThread.interrupt();
+                logMessage(TAG, "XXX - Manual thread was interrupted...");
+                manualAdDigestThread.interrupt();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void forceThreadDeath() {
+        try {
+            if (isManualProcessRunning()) {
+                logMessage(TAG, "XXX - Forcing thread death...");
+                manualAdDigestThread.stop();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void killCurrentThread() {
+        try {
+            if ((manualAdDigestThread != null) && (manualAdDigestThread.isAlive())) {
+                manualAdDigestThread.interrupt();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -245,6 +266,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
     }
 
     public boolean adDigestIsRunning(Context context) {
+        logMessage(TAG, "XXX - isManualProcessRunning:"+isPeriodicWorkerRunning(context));
         return ((isPeriodicWorkerRunning(context)) || (isManualProcessRunning()));
     }
 
@@ -260,8 +282,8 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
     }
 
     public void killAdDigestProcess(Context context) {
-        ownerActivity.runOnUiThread(()-> {
-            thisDialogSubmitAds.hide();
+        getOwnerActivity().runOnUiThread(()-> {
+            this.hide();
             loadKillAdDigest = new DialogLoading(context);
             loadKillAdDigest.setOnDismissListener((l)->{
                 l = null;
@@ -276,17 +298,17 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
             while (adDigestIsRunning(context)) {
                 try {
-                    Log.i(TAG, "Sleeping on killAdDigestProcesss...");
+                    logMessage(TAG, "Sleeping on killAdDigestProcesss...");
                     Thread.currentThread().sleep(1000);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
-            Log.i(TAG, "Complete with 'kill' process...");
+            logMessage(TAG, "Complete with 'kill' process...");
 
-            ownerActivity.runOnUiThread(()-> {
+            getOwnerActivity().runOnUiThread(()-> {
                 loadKillAdDigest.dismiss();
-                thisDialogSubmitAds.show();
+                this.show();
                 refreshDialog(context);
             });
         })).start();
@@ -295,38 +317,39 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
     public void refreshDialog(Context context) {
         if (!adDigestIsRunning(context)) {
-            thisDialogSubmitAds.findViewById(R.id.dialog_submit_ads_process_ad_digest).setVisibility(View.VISIBLE);
-            thisDialogSubmitAds.findViewById(R.id.dialog_submit_ads_processing_ad_digest).setVisibility(View.GONE);
+            this.findViewById(R.id.dialog_submit_ads_process_ad_digest).setVisibility(View.VISIBLE);
+            this.findViewById(R.id.dialog_submit_ads_processing_ad_digest).setVisibility(View.GONE);
 
             // Process My Ads Button
-            Button mbuttonProcessMyAdDigest = (Button)thisDialogSubmitAds.findViewById(R.id.buttonProcessMyAdDigest);
+            Button mbuttonProcessMyAdDigest = (Button)this.findViewById(R.id.buttonProcessMyAdDigest);
             mbuttonProcessMyAdDigest.setOnClickListener((v) -> {
                 attemptProcessOnThread(v.getContext());
             });
 
             // Go Back Button
-            Button mbuttonGoBack = (Button)thisDialogSubmitAds.findViewById(R.id.buttonGoBackFromProcessMyAdDigest);
+            Button mbuttonGoBack = (Button)this.findViewById(R.id.buttonGoBackFromProcessMyAdDigest);
             mbuttonGoBack.setOnClickListener(v ->{
-                thisDialogSubmitAds.dismiss();
+                this.dismiss();
             });
 
 
         } else {
-            thisDialogSubmitAds.findViewById(R.id.dialog_submit_ads_process_ad_digest).setVisibility(View.GONE);
-            thisDialogSubmitAds.findViewById(R.id.dialog_submit_ads_processing_ad_digest).setVisibility(View.VISIBLE);
+            this.findViewById(R.id.dialog_submit_ads_process_ad_digest).setVisibility(View.GONE);
+            this.findViewById(R.id.dialog_submit_ads_processing_ad_digest).setVisibility(View.VISIBLE);
 
             // Cancel process
-            Button mbuttonExitProcessMyAdDigest = (Button)thisDialogSubmitAds.findViewById(R.id.buttonExitProcessMyAdDigest);
+            Button mbuttonExitProcessMyAdDigest = (Button)this.findViewById(R.id.buttonExitProcessMyAdDigest);
             mbuttonExitProcessMyAdDigest.setOnClickListener(v ->{
                 if (adDigestIsRunning(getContext())) {
+                    logMessage(TAG, "XXY - CANCEL PROCESS IN EFFECT");
                     killAdDigestProcess(getContext());
                 }
             });
 
             // Go Back Button
-            Button mbuttonGoBack = (Button)thisDialogSubmitAds.findViewById(R.id.buttonGoBackFromProcessMyAdDigestAlternative);
+            Button mbuttonGoBack = (Button)this.findViewById(R.id.buttonGoBackFromProcessMyAdDigestAlternative);
             mbuttonGoBack.setOnClickListener(v ->{
-                thisDialogSubmitAds.dismiss();
+                this.dismiss();
             });
 
             pollAdDigest(this, context);
@@ -340,20 +363,10 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.dialog_submit_ads);
-
-        ownerActivity = getOwnerActivity();
-
-        thisDialogSubmitAds = this;
-
         //Button mbuttonEnableAccessibilityServices = (Button)findViewById(R.id.buttonEnableAccessibilityServices);
         //mbuttonEnableAccessibilityServices.setOnClickListener(this);
 
         refreshDialog(getContext());
-
-
-
-
-
 
         setCancelable(false);
         setCanceledOnTouchOutside(false);

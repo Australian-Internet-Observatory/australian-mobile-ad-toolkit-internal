@@ -5,6 +5,7 @@ import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.MainActivity.retrieveShortActivationCode;
 import static com.adms.australianmobileadtoolkit.MainActivity.safelySetToggleInViewModel;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
+import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.appSettings.observerRegisteredDefaultValue;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
 
@@ -49,7 +50,6 @@ public class FragmentMain extends Fragment {
    private static Switch mToggleButton;
    // TODO - comment
    private Button mregisterButton;
-   private Button mRTD;
    // De-bouncer variable on toggler
    private static boolean mToggleButtonDebouncerActivated;
 
@@ -105,9 +105,9 @@ public class FragmentMain extends Fragment {
                   createIntentForScreenRecording(getActivity());
                }
             }
-            Log.v(TAG, "Screen-recording has started");
+            logMessage(TAG, "Screen-recording has started");
          } else {
-            Log.v(TAG, "Screen-recording has stopped");
+            logMessage(TAG, "Screen-recording has stopped");
             getActivity().stopService(new Intent(getActivity(), RecorderService.class));
          }
          mToggleButtonDebouncerActivated = true;
@@ -207,7 +207,7 @@ public class FragmentMain extends Fragment {
 
       startAccessibilityService();
 
-      Log.i(TAG, "Starting FragmentMain");
+      logMessage(TAG, "Starting FragmentMain");
 
       return view;
 
@@ -243,7 +243,7 @@ public class FragmentMain extends Fragment {
    public static void safelySetToggleFromViewModel() {
       if (viewModel != null) {
          Boolean thisValue = viewModel.getToggleStatusInViewModel().getValue();
-         System.out.println( "viewModel get toggle value: "+thisValue);
+         logMessage(TAG,  "viewModel get toggle value: "+thisValue);
          setToggle(thisValue);
       }
    }
@@ -261,9 +261,9 @@ public class FragmentMain extends Fragment {
 
 
       Intent intentOfMainActivityAsIntent = getActivity().getIntent();
-      Log.i(TAG, String.valueOf(intentOfMainActivityAsIntent));
+      logMessage(TAG, String.valueOf(intentOfMainActivityAsIntent));
       if (intentOfMainActivityAsIntent.hasExtra("INTENT_ACTION")) {
-         Log.i(TAG, "Interpreted value of intent: "+ (Objects.requireNonNull(intentOfMainActivityAsIntent.getStringExtra("INTENT_ACTION"))) );
+         logMessage(TAG, "Interpreted value of intent: "+ (Objects.requireNonNull(intentOfMainActivityAsIntent.getStringExtra("INTENT_ACTION"))) );
       }
 
       String intentOfMainActivity = MainActivity.intentOfMainActivity;
@@ -289,7 +289,7 @@ public class FragmentMain extends Fragment {
       }
 
       updateAccessibilityServicesButtonText(requireContext(), view);
-      Log.i(TAG, "Resuming FragmentMain");
+      logMessage(TAG, "Resuming FragmentMain");
 
    }
 
@@ -333,4 +333,23 @@ public class FragmentMain extends Fragment {
          }
       });*/
    }
+
+   @Override
+   public void onDestroyView() {
+      super.onDestroyView();
+      logMessage(TAG, "VIEW WAS DESTROYED");
+      if (submitAdsDialog != null) {
+         submitAdsDialog.killThread();//forceThreadDeath();
+         submitAdsDialog.dismiss();
+      }
+      if (enableAccessibilityService != null) {
+         enableAccessibilityService.dismiss();
+      }
+
+      if (enableAccessibilityServiceIntermediate != null) {
+         enableAccessibilityServiceIntermediate.dismiss();
+      }
+
+   }
+
 }
