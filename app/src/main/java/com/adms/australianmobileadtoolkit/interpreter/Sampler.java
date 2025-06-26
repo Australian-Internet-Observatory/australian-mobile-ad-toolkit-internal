@@ -11,7 +11,6 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.adms.australianmobileadtoolkit.JSONXObject;
-import com.adms.australianmobileadtoolkit.checkPoint;
 
 import org.json.JSONObject;
 

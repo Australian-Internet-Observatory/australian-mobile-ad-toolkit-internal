@@ -18,7 +18,6 @@ import android.content.Context;
 import android.util.Log;
 
 import com.adms.australianmobileadtoolkit.JSONXObject;
-import com.adms.australianmobileadtoolkit.checkPoint;
 
 import org.json.JSONObject;
 
@@ -110,14 +109,14 @@ public class Youtube {
 
                 // TODO - functionalize
                 // Construct ad objects
-                checkPoint thisCheckPoint = new checkPoint(screenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
+                //checkPoint thisCheckPoint = new checkPoint(screenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
 
                 // TODO - Confirm that the ad frames belong to the same ads
                 // There are two giveaways for this -
                 //  1. whether the crop areas have any degree of overlap between frames
                 //  2. Whether the frames have the same classname
 
-                if (thisCheckPoint.container.has("inferenceDeep")) {
+                //if (thisCheckPoint.container.has("inferenceDeep")) {
                     logMessage(TAG, "Proceeding with ad object construction");
                     List<JSONXObject> thisAdFrameGroupMetadatasUnseparated = new ArrayList<>();
                     JSONXObject inferencesDeepByFrames = (new JSONXObject((JSONObject) inferenceResultDeep.get("inferencesByFrames"), true));
@@ -232,7 +231,7 @@ public class Youtube {
                     evaluationPostMethod( context, thisAdFrameGroupMetadatasUnseparated,  thisInterpretation,
                             thisComprehensiveReading,  implementedOnAndroid,  inferenceResultShallow,  inferenceResultDeep,
                             rootDirectory,  screenRecordingAnalysisDirectory,  screenRecordingFile, "YOUTUBE");
-                }
+                //}
             }
 
         }

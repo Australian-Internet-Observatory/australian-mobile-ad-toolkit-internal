@@ -6,6 +6,7 @@ import static com.adms.australianmobileadtoolkit.MainActivity.manualAdDigestThre
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.getVideoMetadataAndroid;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.getSystemInformation;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.platformInterpretationRoutine;
 import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.objectDetectorAndroid;
 
@@ -90,6 +91,7 @@ public class InterpreterWorker extends Worker {
          requestBody.put("action","JOINED");
          requestBody.put("observerID",observerID);
          requestBody.put("joinedAt",joinedAt);
+         requestBody.put("systemInformation", getSystemInformation().internalJSONObject.toString());
          String bodyParam = requestBody.toString();
          // Set up the HTTP request configuration
          URL url = new URL(urlParam);

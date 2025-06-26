@@ -24,7 +24,6 @@ public class ObjectDetector {
     public JSONXObject inferenceResult = new JSONXObject();
     private Double elapsedTime = Long.valueOf(System.currentTimeMillis()).doubleValue();
     private String inferenceCase;
-    private checkPoint thisCheckPoint;
 
     public static List<JSONObject> simulatedYOLODetection(String modelPath, String imagePath) {
         final String PYTHON_EXECUTABLE = "/Users/obei/anaconda3/envs/keras-env-1/bin/python";
@@ -55,26 +54,18 @@ public class ObjectDetector {
     public ObjectDetector(File analysisDirectory, File thisScreenRecordingFile,
                            List<String> retainedFrameFiles, List<Integer> retainedFrames, String modelName, String thisCase) {
         inferenceCase = "inference"+thisCase;
-        thisCheckPoint = new checkPoint(thisScreenRecordingFile.getName(), (new File(analysisDirectory, "checkpoint")));
-
-        if (thisCheckPoint.container.has(inferenceCase)) {
-            inferenceResult = new JSONXObject((JSONObject) thisCheckPoint.container.get(inferenceCase), true);
-        } else {
-                String adjustedModelPath = filePath(asList(((new File(".")).getAbsolutePath()), "..", "..", "pt_models", modelName)).getAbsolutePath().replace(".tflite", ".pt").replace("float16", "float32");
-                Integer currentFrameIndex = 0;
-                for (String retainedFrameFile : retainedFrameFiles) {
-                    currentFrame = retainedFrames.get(currentFrameIndex);
-                    inferencesByFrames.set(currentFrame, simulatedYOLODetection(adjustedModelPath, retainedFrameFile));
-                    if (Objects.equals(currentFrame, retainedFrames.get(retainedFrames.size() - 1))) {
-                        elapsedTime = Math.abs(elapsedTime - Long.valueOf(System.currentTimeMillis()).doubleValue()) / 1000;
-                        inferenceResult.set("nFramesAnalyzed", retainedFrames.size());
-                        inferenceResult.set("inferencesByFrames", inferencesByFrames.internalJSONObject);
-                        inferenceResult.set("elapsedTime", elapsedTime);
-                        thisCheckPoint.set(inferenceCase, inferenceResult.internalJSONObject);
-                        thisCheckPoint.save();
-                    }
-                    currentFrameIndex ++;
-                }
+        String adjustedModelPath = filePath(asList(((new File(".")).getAbsolutePath()), "..", "..", "pt_models", modelName)).getAbsolutePath().replace(".tflite", ".pt").replace("float16", "float32");
+        Integer currentFrameIndex = 0;
+        for (String retainedFrameFile : retainedFrameFiles) {
+            currentFrame = retainedFrames.get(currentFrameIndex);
+            inferencesByFrames.set(currentFrame, simulatedYOLODetection(adjustedModelPath, retainedFrameFile));
+            if (Objects.equals(currentFrame, retainedFrames.get(retainedFrames.size() - 1))) {
+                elapsedTime = Math.abs(elapsedTime - Long.valueOf(System.currentTimeMillis()).doubleValue()) / 1000;
+                inferenceResult.set("nFramesAnalyzed", retainedFrames.size());
+                inferenceResult.set("inferencesByFrames", inferencesByFrames.internalJSONObject);
+                inferenceResult.set("elapsedTime", elapsedTime);
+            }
+            currentFrameIndex ++;
         }
     }
 

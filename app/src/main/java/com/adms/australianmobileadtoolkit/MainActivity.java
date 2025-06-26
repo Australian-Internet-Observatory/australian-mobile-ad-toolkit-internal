@@ -10,7 +10,6 @@ import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWriteToCorrupt;
-import static com.adms.australianmobileadtoolkit.Debugger.copyDebugData;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.cancelAllInactivityNotifications;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.setPeriodicNotifications;
@@ -209,11 +208,6 @@ public class MainActivity extends BaseActivity {
                 // This code block has finished - commit the observerFirstRun variable,
                 // to ensure it doesn't run again
                 dataStoreWrite(this, "observerFirstRun", "false");
-            }
-
-
-            if (DEBUG) {
-                copyDebugData(this);
             }
             // Set the observer ID
             try {

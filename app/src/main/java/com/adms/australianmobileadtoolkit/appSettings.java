@@ -70,7 +70,7 @@ public class appSettings {
 
    // The directories that will need to be created
    //         "videos" (Required by screen-recorder)
-   public static List<String> DIRECTORIES_TO_CREATE = (DEBUG) ? Arrays.asList("videos", "debug", "ffmpeg_cache", "logs", "serializations") : Arrays.asList("videos", "ffmpeg_cache", "logs", "serializations");
+   public static List<String> DIRECTORIES_TO_CREATE = Arrays.asList("videos", "ffmpeg_cache");
 
    // The child directory to instantiate for the app
    public static String get_APP_CHILD_DIRECTORY(Context context) {
@@ -87,7 +87,6 @@ public class appSettings {
    public static String IDENTIFIER_REGISTRATION = "REGISTRATION";
    public static String IDENTIFIER_AD_LEADS = "AD_LEADS";
 
-   public static String DEBUG_TARGET_VIDEO = "light_5_long.mp4";//"debug_new_2.mp4";//"debug2.mp4"; //"debug3.mp4";//"debug_new_3.mp4";//
 
    public static int AWS_LAMBDA_ENDPOINT_CONNECTION_TIMEOUT = 30000;
    public static int AWS_LAMBDA_ENDPOINT_READ_TIMEOUT = 30000;
@@ -259,7 +258,7 @@ public class appSettings {
    }
 
    public static void logMessage(String tag, String message) {
-      if (CONST_IS_LOGGING) { Log.i(tag, message); }
+      if (CONST_IS_LOGGING) { Log.i(tag, message); } // TODO - move to proguard
    }
 
    public static String hardFixObserverIDRead(Context context) {

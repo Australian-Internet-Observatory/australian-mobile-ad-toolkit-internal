@@ -320,8 +320,8 @@ public class Platform {
                     for (File thisAdDirectory : thisAdSuperDirectory.listFiles()) {
                         // A dispatch can only begin when the adContent file has been submitted - this prevents 'half-baked'
                         // entries from being prematurely uploaded.
-                        logMessage("Dispatch", (new File(thisAdDirectory, "metadata.json")).getAbsolutePath());
                         if ((new File(thisAdDirectory, "metadata.json")).exists()) {
+                            logMessage("Dispatch", (new File(thisAdDirectory, "metadata.json")).getAbsolutePath());
                             String thisAdUUID = thisAdDirectory.getName();
                             // Paginate over the files within thisAdDirectory
                             File[] filesWithinThisAdDirectory = thisAdDirectory.listFiles();
@@ -614,6 +614,7 @@ public class Platform {
             try {
                 nMatches = ((List<JSONObject>) ((JSONObject) result.get("inferencesByFrames")).get("0")).size();
             } catch (Exception e) {
+                logMessage(TAG, "We can neglect a null pointer here:");
                 e.printStackTrace();
             }
             return nMatches;
@@ -631,7 +632,13 @@ public class Platform {
         return (quantizedMin > 3.0);
     }
 
-
+    public static JSONXObject getSystemInformation() {
+        return (new JSONXObject())
+                .set("operatingSystemVersion", System.getProperty("os.version") + "(" + Build.VERSION.INCREMENTAL + ")")
+                .set("apiLevel", Build.VERSION.SDK_INT)
+                .set("device", Build.DEVICE)
+                .set("model", Build.MODEL + " (" + Build.PRODUCT + ")");
+    }
 
     public static boolean prepareForDispatch(Context context, File rootDirectory, HashMap<String, String> thisInterpretation,
                                           List<JSONXObject> advertisementObjects, File screenRecordingAnalysisDirectory,
@@ -676,15 +683,11 @@ public class Platform {
                         .set("observedAt", thisInterpretation.get("timestamp"))
                         .set("preparedAt", ((int) Math.floor(System.currentTimeMillis() / (double) 1000)))
                         .set("platform", platform)
-                        .set("systemInformation", (new JSONXObject())
-                                .set("operatingSystemVersion", System.getProperty("os.version") + "(" + Build.VERSION.INCREMENTAL + ")")
-                                .set("apiLevel", Build.VERSION.SDK_INT)
-                                .set("device", Build.DEVICE)
+                        .set("systemInformation", getSystemInformation()
                                 .set("screenDimensions", (new JSONXObject())
                                         .set("w", w.toString())
                                         .set("h", h.toString())
                                 )
-                                .set("model", Build.MODEL + " (" + Build.PRODUCT + ")")
                         )
                         .set("recordingInformation", (new JSONXObject())
                                 .set("FPS", thisComprehensiveReading.get("fps"))

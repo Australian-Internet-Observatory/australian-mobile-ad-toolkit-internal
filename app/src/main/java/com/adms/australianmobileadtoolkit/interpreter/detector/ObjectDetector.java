@@ -1,7 +1,10 @@
 package com.adms.australianmobileadtoolkit.interpreter.detector;
 
+import static com.adms.australianmobileadtoolkit.Common.readStringFromFile;
+import static com.adms.australianmobileadtoolkit.Common.writeToFile;
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.persistThread;
+import static com.adms.australianmobileadtoolkit.interpreter.Platform.writeToJSON;
 import static com.adms.australianmobileadtoolkit.interpreter.Sampler.basicReading;
 
 import android.content.Context;
@@ -13,7 +16,6 @@ import androidx.annotation.NonNull;
 
 import com.adms.australianmobileadtoolkit.JSONXObject;
 import com.adms.australianmobileadtoolkit.R;
-import com.adms.australianmobileadtoolkit.checkPoint;
 
 import org.json.JSONObject;
 
@@ -31,8 +33,7 @@ public class ObjectDetector {
     private JSONXObject inferencesByFrames = new JSONXObject();
     public JSONXObject inferenceResult = new JSONXObject();
     private Double elapsedTime = Long.valueOf(System.currentTimeMillis()).doubleValue();
-    private String inferenceCase;
-    private checkPoint thisCheckPoint;
+    private String inferenceCase; // purely included for diagnostic purposes
     private Detector thisDetector;
 
 
@@ -96,19 +97,31 @@ public class ObjectDetector {
         return boundingBoxesRecorded;
     }
 
-    public void setInferencesOnFrame(String modelName, List<Integer> retainedFrames, List<BoundingBox> inferenceOutcome, String thisCase) {
+    public File inferencesFilename(File analysisDirectory, Integer thisFrame, String thisCase) {
+        return new File(new File(analysisDirectory, "frames"), thisFrame.toString()+"."+thisCase+".jsond");
+    }
+
+    public List<JSONObject> readInferences(File thisFrameInferenceFilename) {
+        List<JSONObject> inferences = new ArrayList<>();
+        String[] rawInferences = readStringFromFile(thisFrameInferenceFilename).split("\n");
+        for (String x : rawInferences) {
+            try {
+                inferences.add(new JSONObject(x));
+            } catch (Exception e) {}
+        }
+        return inferences;
+    }
+
+    public void setInferencesOnFrame(String modelName, List<Integer> retainedFrames, List<BoundingBox> inferenceOutcome, String thisCase, File analysisDirectory) {
         inferencesByFrames.set(currentFrame, inferencesOnFrame(modelName, inferenceOutcome));
-        if (Objects.equals(currentFrame, retainedFrames.get(retainedFrames.size() - 1))) {
-            thisDetector.close();
-            elapsedTime = Math.abs(elapsedTime - Long.valueOf(System.currentTimeMillis()).doubleValue()) / 1000;
-            // when the process is complete, add to checkpoint
-            inferenceResult.set("nFramesAnalyzed", retainedFrames.size());
-            inferenceResult.set("inferencesByFrames", inferencesByFrames.internalJSONObject);
-            inferenceResult.set("elapsedTime", elapsedTime);
-            if (!thisCase.equals("Provision")) {
-                thisCheckPoint.set(inferenceCase, inferenceResult.internalJSONObject);
-                thisCheckPoint.save();
+        if (!thisCase.equals("Provision")) {
+            // Create the file for this inference...
+            String inferencesOnFrame = "";
+            for (JSONObject x : ((List<JSONObject>) inferencesByFrames.get(currentFrame.toString()))) {
+                inferencesOnFrame += x.toString() + "\n";
             }
+            File thisFrameInferenceFilename = inferencesFilename(analysisDirectory, currentFrame, thisCase);
+            writeToFile(thisFrameInferenceFilename, inferencesOnFrame);
         }
     }
 
@@ -120,12 +133,12 @@ public class ObjectDetector {
         Detector.DetectorListener thisDetectorListener = new Detector.DetectorListener() {
             @Override
             public void onEmptyDetect() {
-                setInferencesOnFrame(modelName, retainedFrames, (new ArrayList<>()), thisCase);
+                setInferencesOnFrame(modelName, retainedFrames, (new ArrayList<>()), thisCase, analysisDirectory);
             }
 
             @Override
             public void onDetect(@NonNull List<BoundingBox> boundingBoxes, long inferenceTime) {
-                setInferencesOnFrame(modelName, retainedFrames, boundingBoxes, thisCase);
+                setInferencesOnFrame(modelName, retainedFrames, boundingBoxes, thisCase, analysisDirectory);
             }
         };
 
@@ -140,24 +153,28 @@ public class ObjectDetector {
                 e.printStackTrace();
             }
         } else {
-            thisCheckPoint = new checkPoint(thisScreenRecordingFile.getName(), new File(analysisDirectory, "checkpoint"));
-            if (thisCheckPoint.container.has(inferenceCase)) {
-                inferenceResult = new JSONXObject((JSONObject) thisCheckPoint.container.get(inferenceCase), true);
-            } else {
-                thisDetector = new Detector(context, modelName, null, thisDetectorListener);
-                Integer currentFrameIndex = 0;
-                for (String retainedFrameFile : retainedFrameFiles) {
-                    persistThread(context, TAG);
-                    logMessage(TAG, retainedFrameFile.toString());
-                    try {
-                        currentFrame = retainedFrames.get(currentFrameIndex);
-                        thisDetector.detect(BitmapFactory.decodeFile(retainedFrameFile));
-                        currentFrameIndex ++;
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            thisDetector = new Detector(context, modelName, null, thisDetectorListener);
+            Integer currentFrameIndex = 0;
+            for (String retainedFrameFile : retainedFrameFiles) {
+                persistThread(context, TAG);
+                currentFrame = retainedFrames.get(currentFrameIndex);
+                File thisInferenceFile = inferencesFilename(analysisDirectory, currentFrame, thisCase);
+                logMessage(TAG, retainedFrameFile.toString());
+                if (!thisInferenceFile.exists()) {
+                    logMessage(TAG, "\t - detecting...");
+                    thisDetector.detect(BitmapFactory.decodeFile(retainedFrameFile));
+                } else {
+                    File thisFrameInferenceFilename = inferencesFilename(analysisDirectory, currentFrame, thisCase);
+                    inferencesByFrames.set(currentFrame, readInferences(thisFrameInferenceFilename));
                 }
+                currentFrameIndex ++;
             }
+            thisDetector.close();
+            elapsedTime = Math.abs(elapsedTime - Long.valueOf(System.currentTimeMillis()).doubleValue()) / 1000;
+            // when the process is complete, add to checkpoint
+            inferenceResult.set("nFramesAnalyzed", retainedFrames.size());
+            inferenceResult.set("inferencesByFrames", inferencesByFrames.internalJSONObject);
+            inferenceResult.set("elapsedTime", elapsedTime);
         }
     }
 
@@ -181,26 +198,4 @@ public class ObjectDetector {
             return null;
         }
     };
-
-    // SPONSORED
-
-    // Inference (small model) takes
-    // 0.2s on Google Pixel Pro 9
-    // 1.2s on samsung a30
-    // 0.24s on Google Pixel Pro 7
-    // 0.15s on Oppo A79
-
-
-    // Inference (nano model) takes
-    // 0.16s on Google Pixel Pro 9
-    // 0.41s on samsung a30
-    // 0.15s on Google Pixel Pro 7
-    // 0.12s on Oppo A79
-
-    // GENERAL V1
-
-    // Inference (small model) takes
-    // 0.22s on Google Pixel Pro 9
-    // 2.18s on samsung a30
-    // 0.26s on Google Pixel Pro 7
 }
