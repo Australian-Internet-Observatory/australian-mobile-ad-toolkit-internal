@@ -63,6 +63,10 @@ public class Platform {
 
 
     private static String TAG = "Platform";
+    private static boolean deleteOnCompletion = false;
+    private static boolean deleteOnMaxHeld = false;
+    private static boolean deleteOnUnclassified = false;
+    private static boolean dispatchOnCompleteAnalysis = false;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,7 +140,9 @@ public class Platform {
             for (File child : Objects.requireNonNull(fileOrDirectory.listFiles()))
                 deleteRecursive(child);
 
-        fileOrDirectory.delete();
+        if (deleteOnCompletion) {
+            fileOrDirectory.delete();
+        }
     }
 
     public static void createDirectory(File folderToCreate, Boolean repopulate) {
@@ -295,7 +301,7 @@ public class Platform {
         List<File> adsFromDispatchDirectoryFiles = generateOrderedAdFiles(dispatchDirectory);
 
         // Prior to dispatching ads, a check is done to ensure that the folder is not overflowing
-        if (adsFromDispatchDirectoryFiles.size() > maximumNumberOfHeldAds) {
+        if ((adsFromDispatchDirectoryFiles.size() > maximumNumberOfHeldAds) && (deleteOnMaxHeld)) {
             for (File thisFile : adsFromDispatchDirectoryFiles.subList(0, numberOfAdsToDelete)) {
                 thisFile.delete();
             }
@@ -315,7 +321,9 @@ public class Platform {
                 persistThread(context, TAG);
                 if (thisAdSuperDirectory.listFiles().length == 0) {
                     logMessage("Dispatch", "Deleting empty super directory: "+thisAdSuperDirectory.getAbsolutePath());
-                    thisAdSuperDirectory.delete();
+                    if (deleteOnCompletion) {
+                        thisAdSuperDirectory.delete();
+                    }
                 } else {
                     for (File thisAdDirectory : thisAdSuperDirectory.listFiles()) {
                         // A dispatch can only begin when the adContent file has been submitted - this prevents 'half-baked'
@@ -328,7 +336,7 @@ public class Platform {
 
                             Function<File, Boolean> dispatchThenDelete = x -> {
                                 Boolean successfullyDispatched = dispatchAdFile(thisParticipantUUID, thisAdUUID, x, "DATA_DONATION_V3");
-                                if (successfullyDispatched) {
+                                if ((successfullyDispatched) && (deleteOnCompletion)) {
                                     x.delete();
                                 }
                                 return successfullyDispatched;
@@ -485,9 +493,9 @@ public class Platform {
 
     public static void deleteScreenRecordingAnalysis(File screenRecordingFile, File screenRecordingAnalysisDirectory, boolean implementedOnAndroid) {
         logMessage(TAG, screenRecordingFile.getName());
-        if (implementedOnAndroid) {
+        if ((implementedOnAndroid) && (deleteOnCompletion)) {
             deleteRecursive(screenRecordingAnalysisDirectory);
-            screenRecordingFile.delete(); // TODO
+            screenRecordingFile.delete();
         }
     }
 
@@ -795,14 +803,16 @@ public class Platform {
 
         for (File thisFile : appStorageRecordingsDirectory.listFiles()) {
             persistThread(context, TAG);
-            if (thisFile.getAbsolutePath().contains("unclassified")) {
+            if ((thisFile.getAbsolutePath().contains("unclassified")) && (deleteOnUnclassified)) {
                 thisFile.delete();
             }
         }
 
         try {
             dataStoreWrite(context, "platformRoutineState", "RELAYING DATA");
-            dispatchAdsV2(context, observerID, dispatchDirectory);
+            if (dispatchOnCompleteAnalysis) {
+                dispatchAdsV2(context, observerID, dispatchDirectory);
+            }
         } catch (Exception e) {
             e.printStackTrace(); // TODO
         }
@@ -854,7 +864,7 @@ public class Platform {
                 File screenRecordingFile = (new File(appStorageRecordingsDirectory, thisInterpretation.get("filename")));
                 JSONXObject thisComprehensiveReading = new JSONXObject();
                 dataStoreWrite(context, "platformRoutineState", "SAMPLING IMAGERY");
-                if (screenRecordingFile.length() < 2000) {
+                if ((screenRecordingFile.length() < 2000) && (deleteOnCompletion)) {
                     screenRecordingFile.delete(); // TODO - Due to empty file size - make more stringent
                 } else {
                     try {

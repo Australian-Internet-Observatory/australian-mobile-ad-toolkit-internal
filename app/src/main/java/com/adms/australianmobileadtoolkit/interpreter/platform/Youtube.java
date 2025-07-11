@@ -216,6 +216,7 @@ public class Youtube {
                                         yEnd = Math.max(tempYStart, yEnd);
 
                                         JSONXObject boundingBoxCropped = compositeBoundingBox(yStart, yEnd, xEnd, xStart);
+                                        thisAdFrameData.set("adType", tentativeAdType);
                                         thisAdFrameData.set("inference", (new JSONXObject())
                                                 .set("boundingBoxCropped", boundingBoxCropped)
                                                 .set("boundingBoxSponsored", boundingBoxSponsored)

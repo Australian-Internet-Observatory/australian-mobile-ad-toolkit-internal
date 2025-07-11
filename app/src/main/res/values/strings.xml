@@ -98,5 +98,8 @@
 
     <string name="fragment_accessibility_disclosure_description_overview_4">To begin observing ads, you must firstly enable accessibility services.\n\nThis app uses accessibility services for necessary functionality that is not related to accessibility.</string>
 
+
+    <string name="fragment_settings_title">APP SETTINGS</string>
+
 </resources>
 

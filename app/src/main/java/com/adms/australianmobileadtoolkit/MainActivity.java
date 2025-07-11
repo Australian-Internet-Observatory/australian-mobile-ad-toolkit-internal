@@ -108,43 +108,15 @@ public class MainActivity extends BaseActivity {
 
     public static Thread manualAdDigestThread;
 
-    public static Preferences generateEmptyPreferences() {
-        // Return empty preferences to replace the corrupted data
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
-        Source source = Okio.source(inputStream);
-        BufferedSource bufferedSource = Okio.buffer(source);
-        // Kotlin coroutines interop; need to call the suspend function from Java
-        // Solution: call runBlocking using Kotlin helper (see below)
-        return KotlinInterop.runBlockingReadFrom(bufferedSource);
-    }
-
     public static void initiateDataStore(Context context) {
         if (dataStore == null) {
             ReplaceFileCorruptionHandler<Preferences> corruptionHandler = new ReplaceFileCorruptionHandler<>(
                     ex -> {
-                        // Log the corruption exception for debugging purposes
                         System.err.println("DataStore corruption detected: " + ex.getMessage());
                         return yieldEmptyPreferences(); //
                     }
             );
             dataStore = new RxPreferenceDataStoreBuilder(context, /*name=*/ "settings").setCorruptionHandler(corruptionHandler).build();
-            CorruptionException xxx = new CorruptionException("fdsfdsf",new Throwable("dsfdsfsf"));
-            try {
-                corruptionHandler.handleCorruption(xxx, new Continuation<Preferences>() {
-                    @NonNull
-                    @Override
-                    public CoroutineContext getContext() {
-                        return null;
-                    }
-
-                    @Override
-                    public void resumeWith(@NonNull Object o) {
-
-                    }
-                });
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 

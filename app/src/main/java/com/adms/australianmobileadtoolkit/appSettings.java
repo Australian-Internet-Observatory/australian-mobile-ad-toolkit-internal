@@ -4,30 +4,19 @@ import static com.adms.australianmobileadtoolkit.Common.readStringFromFile;
 import static com.adms.australianmobileadtoolkit.Common.writeToFile;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.os.Environment;
 import android.util.Log;
-
-import androidx.datastore.preferences.core.MutablePreferences;
-import androidx.datastore.preferences.core.Preferences;
-import androidx.datastore.preferences.core.PreferencesKeys;
-import androidx.datastore.preferences.rxjava3.RxPreferenceDataStoreBuilder;
-import androidx.datastore.rxjava3.RxDataStore;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Single;
 
 public class appSettings {
 
-   public static final boolean CONST_IS_LOGGING = false;
+   public static final boolean CONST_IS_LOGGING = true;
    // The extra result code associated with the intent of the recording service
    public static final String get_RECORD_SERVICE_EXTRA_RESULT_CODE(Context context) {
       return context.getString(R.string.app_titled_code)+"ExtraResultCode";

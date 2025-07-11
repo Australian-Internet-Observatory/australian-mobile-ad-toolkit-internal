@@ -4,6 +4,9 @@ package com.adms.australianmobileadtoolkit.interpreter.detector
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
+import androidx.core.content.ContentProviderCompat.requireContext
+import com.adms.australianmobileadtoolkit.Common
+import com.adms.australianmobileadtoolkit.appSettings.logMessage
 import com.adms.australianmobileadtoolkit.interpreter.detector.MetaData.extractNamesFromLabelFile
 import com.adms.australianmobileadtoolkit.interpreter.detector.MetaData.extractNamesFromMetadata
 import org.tensorflow.lite.DataType
@@ -24,6 +27,7 @@ class Detector(
     private val detectorListener: DetectorListener
 ) {
 
+    private var TAG = "Detector"
     private var interpreter: Interpreter
     private var labels = mutableListOf<String>()
 
@@ -41,15 +45,22 @@ class Detector(
         val compatList = CompatibilityList()
 
         val options = Interpreter.Options().apply{
-            if(compatList.isDelegateSupportedOnThisDevice){
+            if ((Common.dataStoreRead(context,"overrideDefaultAdDetectionSettings","false") == "false") && (compatList.isDelegateSupportedOnThisDevice)) {
+                logMessage(TAG, "Recommending best options for device");
                 val delegateOptions = compatList.bestOptionsForThisDevice
                 this.addDelegate(GpuDelegate(delegateOptions))
             } else {
+                logMessage(TAG, "Applying override on device");
                 this.setNumThreads(4)
             }
         }
 
+
+        //val model = FileUtil.loadMappedFile(context, "float32_facebook_sponsored_int8.tflite")
+
         val model = FileUtil.loadMappedFile(context, modelPath)
+        //val model = FileUtil.loadMappedFile(context, "float16_facebook_sponsored.tflite")
+        //interpreter = Interpreter(model, options)
         interpreter = Interpreter(model, options)
 
         val inputShape = interpreter.getInputTensor(0)?.shape()

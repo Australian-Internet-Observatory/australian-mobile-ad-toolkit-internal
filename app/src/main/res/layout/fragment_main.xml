@@ -225,6 +225,17 @@
             android:width="48dp"
             android:height="48dp"
             android:theme="@style/Switch"/>
+                <!--
+            <ImageButton
+                android:layout_width="80dp"
+                android:layout_height="60dp"
+                android:scaleType="fitCenter"
+                android:layout_gravity="center_horizontal"
+                android:id="@+id/searchImageButton"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentRight="true"
+                android:src="@drawable/screen_recording_off_button"
+                android:theme="@style/PrimaryButton" />-->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -334,6 +345,14 @@
             android:layout_height="2dp"
             android:background="@color/yellow_primary"/>
 
+        <Button
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:id="@+id/buttonSettings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/fragment_settings_title"
+            android:theme="@style/PrimaryButton"/>
         <TextView
             android:id="@+id/fragment_main_privacy_policy"
             android:layout_width="match_parent"

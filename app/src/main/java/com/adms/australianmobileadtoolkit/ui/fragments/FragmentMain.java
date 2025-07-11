@@ -192,6 +192,24 @@ public class FragmentMain extends Fragment {
       buttonAccessibilityDisclosureB.setOnClickListener(commonAccessibilityServicesProminentDisclosureRoutine);
 
 
+      Button buttonSettings = (Button) view.findViewById(R.id.buttonSettings);
+      buttonSettings.setOnClickListener((v -> {
+         Fragment fragment = new FragmentAppSettings();
+
+         FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+         transaction.setCustomAnimations(
+                 R.anim.enter_from_left,  // enter
+                 R.anim.exit_to_right,  // exit
+                 R.anim.enter_from_right,   // popEnter
+                 R.anim.exit_to_left  // popExit
+         );
+         transaction.replace(R.id.fragmentContainerView, fragment);
+         transaction.addToBackStack(null);
+         transaction.commit();
+      }));
+
+
+
       // TODO - check accessibility permissions status and then relay to button design
 
       Button buttonAccessibilityDisclosureAER = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureAER);

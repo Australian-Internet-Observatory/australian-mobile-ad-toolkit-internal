@@ -3,3 +3,5 @@
 app/.DS_Store
 app/logs/*
 app/release/*
+models/*
+modelsquantized/*
