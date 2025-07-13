@@ -97,31 +97,39 @@ public class ObjectDetector {
         return boundingBoxesRecorded;
     }
 
-    public File inferencesFilename(File analysisDirectory, Integer thisFrame, String thisCase) {
+    public static File inferencesFilename(File analysisDirectory, Integer thisFrame, String thisCase) {
         return new File(new File(analysisDirectory, "frames"), thisFrame.toString()+"."+thisCase+".jsond");
     }
 
-    public List<JSONObject> readInferences(File thisFrameInferenceFilename) {
+    public static List<JSONObject> readInferences(File thisFrameInferenceFilename) {
         List<JSONObject> inferences = new ArrayList<>();
         String[] rawInferences = readStringFromFile(thisFrameInferenceFilename).split("\n");
         for (String x : rawInferences) {
             try {
-                inferences.add(new JSONObject(x));
+                JSONXObject thisObject = new JSONXObject(new JSONObject(x));
+                Arrays.asList("x1", "x2", "y1", "y2", "cx", "cy", "w", "h", "confidence").forEach(thisKey -> {
+                    thisObject.set(thisKey, Double.valueOf((double) thisObject.get(thisKey)));
+                });
+                inferences.add(thisObject.internalJSONObject);
             } catch (Exception e) {}
         }
         return inferences;
     }
 
+    public static void generateInferencesOnFrameAsFile(File analysisDirectory, String thisCase, Integer thisFrame, List<JSONObject> inferencesToWrite) {
+        // Create the file for this inference...
+        String inferencesOnFrame = "";
+        for (JSONObject x : inferencesToWrite) {
+            inferencesOnFrame += x.toString() + "\n";
+        }
+        File thisFrameInferenceFilename = inferencesFilename(analysisDirectory, thisFrame, thisCase);
+        writeToFile(thisFrameInferenceFilename, inferencesOnFrame);
+    }
+
     public void setInferencesOnFrame(String modelName, List<Integer> retainedFrames, List<BoundingBox> inferenceOutcome, String thisCase, File analysisDirectory) {
         inferencesByFrames.set(currentFrame, inferencesOnFrame(modelName, inferenceOutcome));
         if (!thisCase.equals("Provision")) {
-            // Create the file for this inference...
-            String inferencesOnFrame = "";
-            for (JSONObject x : ((List<JSONObject>) inferencesByFrames.get(currentFrame.toString()))) {
-                inferencesOnFrame += x.toString() + "\n";
-            }
-            File thisFrameInferenceFilename = inferencesFilename(analysisDirectory, currentFrame, thisCase);
-            writeToFile(thisFrameInferenceFilename, inferencesOnFrame);
+            generateInferencesOnFrameAsFile(analysisDirectory, thisCase, currentFrame, ((List<JSONObject>) inferencesByFrames.get(currentFrame.toString())));
         }
     }
 
@@ -158,13 +166,12 @@ public class ObjectDetector {
             for (String retainedFrameFile : retainedFrameFiles) {
                 persistThread(context, TAG);
                 currentFrame = retainedFrames.get(currentFrameIndex);
-                File thisInferenceFile = inferencesFilename(analysisDirectory, currentFrame, thisCase);
+                File thisFrameInferenceFilename = inferencesFilename(analysisDirectory, currentFrame, thisCase);
                 logMessage(TAG, retainedFrameFile.toString());
-                if (!thisInferenceFile.exists()) {
+                if (!thisFrameInferenceFilename.exists()) {
                     logMessage(TAG, "\t - detecting...");
                     thisDetector.detect(BitmapFactory.decodeFile(retainedFrameFile));
                 } else {
-                    File thisFrameInferenceFilename = inferencesFilename(analysisDirectory, currentFrame, thisCase);
                     inferencesByFrames.set(currentFrame, readInferences(thisFrameInferenceFilename));
                 }
                 currentFrameIndex ++;

@@ -11,11 +11,14 @@ import static com.adms.australianmobileadtoolkit.interpreter.Platform.inferenceP
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.persistThread;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.rectangularAreaOverlap;
 
+import static java.lang.Integer.parseInt;
+
 import android.content.Context;
 import android.util.Log;
 
 import com.adms.australianmobileadtoolkit.JSONXObject;
 
+import org.checkerframework.checker.units.qual.A;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -108,6 +111,8 @@ public class Facebook {
                     logMessage(TAG, "Proceeding with ad object construction");
                     List<JSONXObject> thisAdFrameGroupMetadatasUnseparated = new ArrayList<>();
                     JSONXObject inferencesDeepByFrames = (new JSONXObject((JSONObject) inferenceResultDeep.get("inferencesByFrames"), true));
+
+
                     for (List<Integer> adFrameGroup : groupsOfAdFrames) {
                         JSONXObject thisAdFrameGroupMetadata = new JSONXObject();
                         for (Integer adFrame : adFrameGroup) {
@@ -183,6 +188,8 @@ public class Facebook {
                                     upperMostY = (Double) videoButtonsElement.get("y1");
                                 } else
                                 if (Objects.equals(tentativeAdType, "MARKETPLACE_BASED")) {
+
+                                    /*
                                     try {
                                         // Occassionally, a 'Sponsored by sellers' section may be confused as a 'Sponsored' ad, and so we have to disregard it
                                         // TODO - this can cause data loss from sections that contain both 'Sponsored by sellers' content, and actual ads - adjust the logic
@@ -218,6 +225,9 @@ public class Facebook {
                                     } catch (Exception ignored) {
                                         // The post header element may not exist
                                     }
+                                    */
+
+
                                 } else
                                 if (Objects.equals(tentativeAdType, "STORY_BASED")) {
                                     // Cut directly from the post header and go downwards
@@ -235,11 +245,16 @@ public class Facebook {
                                                 .collect(Collectors.toList()).get(0);
                                         upperMostY = (Double) postHeaderElement.get("y1");
                                         // Find the post header (or footer) (or end of page), and declare it as the lower bound of the ad
-                                        lowerMostY = Math.min(Collections.min(boundingBoxesDeep.stream()
-                                                .filter(x -> ((x.get("className").equals("POST_HEADER")) || (x.get("className").equals("POST_FOOTER")))
-                                                        && (rectangularAreaOverlap(x, boundingBoxSponsored) <= 0.0)
-                                                        && (((Double) x.get("cy")) > sponsoredTextCenterY)).map(y -> (Double) y.get("y1")).collect(Collectors.toList())), 1.0);
+                                        try {
+                                            lowerMostY = Math.min(Collections.min(boundingBoxesDeep.stream()
+                                                    .filter(x -> ((x.get("className").equals("POST_HEADER")) || (x.get("className").equals("POST_FOOTER")))
+                                                            && (rectangularAreaOverlap(x, boundingBoxSponsored) <= 0.0)
+                                                            && (((Double) x.get("cy")) > sponsoredTextCenterY)).map(y -> (Double) y.get("y1")).collect(Collectors.toList())), 1.0);
+                                        } catch (Exception e) {
+                                            lowerMostY = 1.0; // When the bottom of the ad cannot refer to a post header or post footer, simply grab the entire lower portion of the screen.
+                                        }
                                     } catch (Exception ignored) {
+                                        ignored.printStackTrace();
                                         // The post header may not exist
                                     }
                                 }
@@ -263,6 +278,148 @@ public class Facebook {
                         }
                         thisAdFrameGroupMetadatasUnseparated.add(thisAdFrameGroupMetadata);
                     }
+
+                    List<JSONXObject> adFrameGroupsMarketplaceFrames = new ArrayList<>();
+                    for (List<Integer> adFrameGroup : groupsOfAdFrames) {
+                        JSONXObject thisMarketplaceFrames = new JSONXObject();
+                        for (Integer adFrame : adFrameGroup) {
+                            List<JSONXObject> boundingBoxesShallow = ((List<JSONObject>) inferencesByFrames.get(adFrame)).stream().map(x -> (new JSONXObject(x, true))).collect(Collectors.toList());
+                            List<JSONXObject> boundingBoxesDeep = ((List<JSONObject>) inferencesDeepByFrames.get(adFrame)).stream().map(x -> (new JSONXObject(x, true))).collect(Collectors.toList());
+
+                            // DETERMINE AD TYPE FOR FRAME
+                            // Determine the type of ad we are dealing with...
+                            String tentativeAdType = null;
+
+                            if (!boundingBoxesDeep.isEmpty()) { // TODO - only proceed for this frame if there are 'deep' bounding boxes - note that if there are no bounding boxes, we can't determine where the contents of the ad is
+
+                                if (boundingBoxesDeep.stream().anyMatch(x -> (x.get("className").equals("MARKETPLACE_ELEMENT")))) {
+                                    tentativeAdType = "MARKETPLACE_BASED";
+                                }
+
+                                // TODO - while MARKETPLACE_BASED ads can come in doubles - we'll only regard the first of the two for the time being
+
+                                // We assert that there is only ever one bounding box for a Sponsored text on any ad, and it is the one with the highest confidence
+                                List<JSONXObject> boundingBoxesSponsored = boundingBoxesShallow.stream().filter(x -> x.get("className").equals("SPONSORED_TEXT")).collect(Collectors.toList());
+
+
+                                if (Objects.equals(tentativeAdType, "MARKETPLACE_BASED")) {
+                                    List<JSONXObject> thisMarketplaceElements = new ArrayList<>();
+                                    for (JSONXObject boundingBoxSponsored : boundingBoxesSponsored) {
+
+                                        Double sponsoredTextCenterX = (Double) boundingBoxSponsored.get("cx");
+                                        Double sponsoredTextCenterY = (Double) boundingBoxSponsored.get("cy");
+                                        // PRODUCE CROPPING REGION
+                                        Double lowerMostY = null;
+                                        Double upperMostY = null;
+                                        Double lowerMostX = 0.0;
+                                        Double upperMostX = 1.0;
+
+
+
+
+                                        try {
+                                            // Occassionally, a 'Sponsored by sellers' section may be confused as a 'Sponsored' ad, and so we have to disregard it
+                                            if (boundingBoxesDeep.stream().noneMatch(x -> (x.get("className").equals("SPONSORED_BY_SELLERS_TEXT") && (rectangularAreaOverlap(x, boundingBoxSponsored) > 0.0) ))) {
+                                                // Find a post header that overlaps the sponsored text - this is the post header of the ad
+                                                JSONXObject postHeaderElement = boundingBoxesDeep.stream()
+                                                        .filter(x -> (x.get("className").equals("POST_HEADER")
+                                                                && (rectangularAreaOverlap(x, boundingBoxSponsored) > 0.0) )).collect(Collectors.toList()).get(0);
+
+                                                // Find a marketplace element with a y that is larger than that of the sponsored text, but that encapsulates its x axis
+                                                List<JSONXObject> tentativeMarketplaceElements = boundingBoxesDeep.stream()
+                                                        .filter(x -> (x.get("className").equals("MARKETPLACE_ELEMENT")
+                                                                && (((Double) x.get("cy")) > sponsoredTextCenterY)
+                                                                && (sponsoredTextCenterX >= (Double) x.get("x1"))
+                                                                && (sponsoredTextCenterX <= (Double) x.get("x2")))).collect(Collectors.toList());
+
+                                                // For all candidates, isolate the one that with the smallest cy
+                                                Double minimumYOfMarketplaceElement = 1.0;
+                                                JSONXObject marketplaceElement = null;
+                                                for (JSONXObject x : tentativeMarketplaceElements) {
+                                                    Double thisCY = (Double) x.get("cy");
+                                                    if (thisCY < minimumYOfMarketplaceElement) {
+                                                        marketplaceElement = x;
+                                                        minimumYOfMarketplaceElement = thisCY;
+                                                    } // TODO - not used
+                                                }
+
+                                                lowerMostX = (Double) marketplaceElement.get("x1");
+                                                upperMostX = (Double) marketplaceElement.get("x2");
+                                                upperMostY = (Double) postHeaderElement.get("y1");
+                                                lowerMostY = (Double) marketplaceElement.get("y2");
+                                            }
+                                        } catch (Exception ignored) {
+                                            // The post header element may not exist
+                                        }
+
+
+                                        // For all three currently retrieved ad types, the upperMost and lowerMost Y crop the ad using the
+                                        // same method
+                                        if ((lowerMostY != null) && (upperMostY != null)) {
+                                            JSONXObject thisAdFrameData = new JSONXObject();
+                                            // Correct y axis issues
+                                            Double tempUpperMostY = upperMostY;
+                                            upperMostY = Math.min(upperMostY, lowerMostY);
+                                            lowerMostY = Math.max(tempUpperMostY, lowerMostY);
+
+                                            JSONXObject boundingBoxCropped = compositeBoundingBox(upperMostY, lowerMostY, upperMostX, lowerMostX);
+                                            thisAdFrameData.set("adType", tentativeAdType);
+                                            thisAdFrameData.set("inference", (new JSONXObject())
+                                                    .set("boundingBoxCropped", boundingBoxCropped)
+                                                    .set("boundingBoxSponsored", boundingBoxSponsored)
+                                                    .set("boundingBoxes", boundingBoxesDeep));
+                                            thisMarketplaceElements.add(thisAdFrameData);
+                                        }
+                                    }
+                                    thisMarketplaceFrames.set(adFrame, thisMarketplaceElements);
+                                }
+                            }
+                        }
+                        adFrameGroupsMarketplaceFrames.add(thisMarketplaceFrames);
+                    }
+
+                    for (JSONXObject thisGroup : adFrameGroupsMarketplaceFrames) {
+                        List<JSONXObject> groupedAdFrames = new ArrayList<>();
+                        List<String> orderedFrames = thisGroup.keys().stream().map(Integer::parseInt).sorted().map(Object::toString).collect(Collectors.toList());
+                        for (String thisFrame : orderedFrames) {
+                            // For each element in this frame, if it overlaps any elements of the previous frames,
+                            for (JSONXObject thisElement : (List<JSONXObject>) thisGroup.get(thisFrame)) {
+
+                                boolean foundOverlap = false;
+                                // If not dealing with first frame
+                                if (!Objects.equals(thisFrame, orderedFrames.get(0))) {
+                                    String previousFrame = orderedFrames.get(orderedFrames.indexOf(thisFrame)-1);
+                                    // Find all overlaps
+                                    List<Double> overlaps = groupedAdFrames.stream().map(x -> x.has(previousFrame) ?
+                                            rectangularAreaOverlap( ((JSONXObject) ((JSONXObject) thisElement.get("inference")).get("boundingBoxCropped")),
+                                                    (JSONXObject) ((JSONXObject) ((JSONXObject) x.get(previousFrame)).get("inference")).get("boundingBoxCropped")
+                                            ) : 0.0).collect(Collectors.toList());
+                                    if (!overlaps.isEmpty()) {
+                                        Double maxOverlap = Collections.max(overlaps);
+                                        // Assert that a grouping can be linked if there is a strong overlpa
+                                        if (maxOverlap > 0.0) {
+                                            Integer maxOverlapIndex = overlaps.indexOf(maxOverlap);
+                                            JSONXObject thisElements = groupedAdFrames.get(maxOverlapIndex);
+                                            thisElements.set(thisFrame, thisElement);
+                                            foundOverlap = true;
+                                        }
+                                    }
+                                }
+
+                                // If no overlap is found, create a new group
+                                if (!foundOverlap) {
+                                    JSONXObject thisGroupedAdFrames = new JSONXObject().set(thisFrame, thisElement);
+                                    groupedAdFrames.add(thisGroupedAdFrames);
+                                }
+                            }
+                        }
+                        thisAdFrameGroupMetadatasUnseparated.addAll(groupedAdFrames);
+                    }
+
+
+                    // TODO - attach ad type
+
+                    // Evaluating Marketplace ads need to take place separately
 
                     evaluationPostMethod( context, thisAdFrameGroupMetadatasUnseparated,  thisInterpretation,
                              thisComprehensiveReading,  implementedOnAndroid,  inferenceResultShallow,  inferenceResultDeep,

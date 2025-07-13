@@ -25,7 +25,7 @@ import java.util.function.Function;
 public class interpretation {
 
     public static JSONXObject screenRecordingsMetadata = new JSONXObject(readJSONFromFile(new File(simulationsDirectory, "screenRecordingsMetadata.json")));
-    public static final File testScreenRecordingsFeb2025RootDirectory = (new File(simulationsDirectory, "youtube2025-closed-test-1"));
+    public static final File testScreenRecordingsFeb2025RootDirectory = (new File(simulationsDirectory, "test-video-july"));
 
     @Test
      public void testPlatformInterpretationRoutine() throws Exception {

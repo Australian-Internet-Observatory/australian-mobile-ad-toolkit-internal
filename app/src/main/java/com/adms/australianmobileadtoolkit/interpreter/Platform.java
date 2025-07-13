@@ -63,10 +63,12 @@ public class Platform {
 
 
     private static String TAG = "Platform";
-    private static boolean deleteOnCompletion = false;
-    private static boolean deleteOnMaxHeld = false;
-    private static boolean deleteOnUnclassified = false;
-    private static boolean dispatchOnCompleteAnalysis = false;
+    private static boolean deleteOnCompletion = true;
+    private static boolean deleteOnMaxHeld = true;
+    private static boolean deleteOnUnclassified = true;
+    private static boolean dispatchOnCompleteAnalysis = true;
+    private static boolean dispatchOnBeginAnalysis = true;
+    private static boolean allowQuantization = true;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -580,11 +582,11 @@ public class Platform {
 
         dataStoreWrite(context, "platformRoutineState", "PERFORMING ANALYSIS");
         String thisModelIdentifier = "";
-        if (applyingQuantizedModels) {
-            logMessage(TAG, "Applying newer models");
+        if ((applyingQuantizedModels) && (allowQuantization)) {
+            logMessage(TAG, "Applying quantized models");
             thisModelIdentifier = "float32_"+modelIdentifier+"_int8.tflite";
         } else {
-            logMessage(TAG, "Applying older models");
+            logMessage(TAG, "Applying non-quantized models");
             thisModelIdentifier = "float16_"+modelIdentifier+".tflite";
         }
 
@@ -602,7 +604,11 @@ public class Platform {
         return result;
     }
 
-    public static boolean applyQuantizedModels(Context context, Function<JSONXObject, JSONXObject> objectDetectorFunction) throws Exception {
+    public static boolean applyQuantizedModels(Context context, Function<JSONXObject, JSONXObject> objectDetectorFunction, boolean implementedOnAndroid) throws Exception {
+
+        if (!implementedOnAndroid) {
+            return false;
+        }
 
         Function<Boolean, Integer> retrieveNMatchesForTest = quantized -> {
             String modelIdentifier = "float16_facebook_sponsored.tflite";
@@ -771,14 +777,17 @@ public class Platform {
                                                      Function<JSONXObject, JSONXObject> getVideoMetadataFunction,
                                                      Function<JSONXObject, Bitmap> frameGrabFunction, Boolean implementedOnAndroid, Function<JSONXObject, JSONXObject> objectDetectorFunction) throws Exception {
 
-        boolean applyingQuantizedModels = applyQuantizedModels(context, objectDetectorFunction);
+        boolean applyingQuantizedModels = applyQuantizedModels(context, objectDetectorFunction, implementedOnAndroid);
         logMessage(TAG, "XXX - Beginning a platform interpretation...");
-        List<WorkInfo> thisPeriodicWorkerInfo = WorkManager.getInstance(context).getWorkInfosByTag(PERIODIC_WORK_TAG).get();
-        logMessage(TAG, "XXX - Number of periodic workers: "+thisPeriodicWorkerInfo.stream().collect(Collectors.toList()).size());
+        if (implementedOnAndroid) {
 
-        logMessage(TAG,"XXX - Threads: "+Thread.activeCount());
-        logMessage(TAG, "XXX - Number of periodic workers running: "+thisPeriodicWorkerInfo.stream().filter(x -> x.getState() == WorkInfo.State.RUNNING).collect(Collectors.toList()).size());
+            List<WorkInfo> thisPeriodicWorkerInfo = WorkManager.getInstance(context).getWorkInfosByTag(PERIODIC_WORK_TAG).get();
+            logMessage(TAG, "XXX - Number of periodic workers: "+thisPeriodicWorkerInfo.stream().collect(Collectors.toList()).size());
 
+            logMessage(TAG,"XXX - Threads: "+Thread.activeCount());
+            logMessage(TAG, "XXX - Number of periodic workers running: "+thisPeriodicWorkerInfo.stream().filter(x -> x.getState() == WorkInfo.State.RUNNING).collect(Collectors.toList()).size());
+
+        }
         // When the app opens, a periodic worker is triggered. When the app is cleanly exited - reopening
         // it triggers a new periodic worker that can (and will) overlap the previous periodic worker
 
@@ -810,7 +819,7 @@ public class Platform {
 
         try {
             dataStoreWrite(context, "platformRoutineState", "RELAYING DATA");
-            if (dispatchOnCompleteAnalysis) {
+            if (dispatchOnBeginAnalysis) {
                 dispatchAdsV2(context, observerID, dispatchDirectory);
             }
         } catch (Exception e) {
@@ -911,7 +920,9 @@ public class Platform {
         try {
             if (implementedOnAndroid) {
                 dataStoreWrite(context, "platformRoutineState", "RELAYING DATA");
-                dispatchAdsV2(context, observerID, dispatchDirectory);
+                if (dispatchOnCompleteAnalysis) {
+                    dispatchAdsV2(context, observerID, dispatchDirectory);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace(); // TODO

@@ -1,6 +1,9 @@
 package com.adms.australianmobileadtoolkit;
 
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.filePath;
+import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.generateInferencesOnFrameAsFile;
+import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.inferencesFilename;
+import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.readInferences;
 import static com.google.gson.JsonParser.parseString;
 
 import static java.util.Arrays.asList;
@@ -58,7 +61,18 @@ public class ObjectDetector {
         Integer currentFrameIndex = 0;
         for (String retainedFrameFile : retainedFrameFiles) {
             currentFrame = retainedFrames.get(currentFrameIndex);
-            inferencesByFrames.set(currentFrame, simulatedYOLODetection(adjustedModelPath, retainedFrameFile));
+
+            File thisFrameInferenceFilename = inferencesFilename(analysisDirectory, currentFrame, thisCase);
+            if (thisFrameInferenceFilename.exists()) {
+                // Load from file
+                inferencesByFrames.set(currentFrame, readInferences(thisFrameInferenceFilename));
+            } else {
+                // Generate here and now...
+                List<JSONObject> inferencesOnFrame = simulatedYOLODetection(adjustedModelPath, retainedFrameFile);
+                inferencesByFrames.set(currentFrame,inferencesOnFrame);
+                generateInferencesOnFrameAsFile(analysisDirectory, thisCase, currentFrame, inferencesOnFrame);
+            }
+
             if (Objects.equals(currentFrame, retainedFrames.get(retainedFrames.size() - 1))) {
                 elapsedTime = Math.abs(elapsedTime - Long.valueOf(System.currentTimeMillis()).doubleValue()) / 1000;
                 inferenceResult.set("nFramesAnalyzed", retainedFrames.size());
