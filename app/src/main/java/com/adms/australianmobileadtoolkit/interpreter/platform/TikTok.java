@@ -10,6 +10,9 @@ import static com.adms.australianmobileadtoolkit.interpreter.Platform.inferenceP
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.rectangularArea;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.rectangularAreaOverlap;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.yAgnosticCompositeBoundingBox;
+import static com.adms.australianmobileadtoolkit.interpreter.platform.Common.consumerOverGroupedAdFrames;
+import static com.adms.australianmobileadtoolkit.interpreter.platform.Common.deriveAds;
+import static com.adms.australianmobileadtoolkit.interpreter.platform.Common.organizeAds;
 
 import static java.util.Arrays.asList;
 
@@ -21,7 +24,10 @@ import com.adms.australianmobileadtoolkit.JSONXObject;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -76,173 +82,120 @@ public class TikTok {
                 deleteScreenRecordingAnalysis(screenRecordingFile, screenRecordingAnalysisDirectory, implementedOnAndroid);
             } else {
 
+
                 // Undertake the deep-pass on all retained frames that contained 'Sponsored' texts
                 JSONXObject inferenceResultDeep = inferencePassthrough(context, objectDetectorFunction,
                         "tiktok_elements", groupedAdsObject, screenRecordingFile, screenRecordingAnalysisDirectory, applyingQuantizedModels);
+                logMessage(TAG, "Proceeding with ad object construction");
+                List<JSONXObject> thisAdFrameGroupMetadatasUnseparated = new ArrayList<>();
+                JSONXObject inferencesDeepByFrames = (new JSONXObject((JSONObject) inferenceResultDeep.get("inferencesByFrames"), true));
 
-                // TODO - note: This part requires a logic that is specialised to tiktok, and should be represented as such
-                // There are three kinds of ads that we have observed in TikTok - thumbnail ads, home ads, and search ads
-                // for each frame, bounding boxes are assessed to determine the kind of ad we are dealing with...
+                // Firstly determine the types of ads that may be present within the ad
+                JSONXObject tentativeAdTypes = new JSONXObject();
+                consumerOverGroupedAdFrames(groupsOfAdFrames,inferencesByFrames,inferencesDeepByFrames,(i -> adFrameGroup -> adFrame -> boundingBoxesShallow -> boundingBoxesDeep -> {
+                    if (!tentativeAdTypes.has(i)) { tentativeAdTypes.set(i, new JSONXObject()); }
+                    JSONXObject adTypesForGroup = (JSONXObject) tentativeAdTypes.get(i);
+
+                    List<String> tentativeAdTypesForFrame = new ArrayList<>();
+
+                    boolean sponsoredTextIsPresent = boundingBoxesShallow.stream().anyMatch(x -> Arrays.asList("PAID_PARTNERSHIP_TEXT", "SPONSORED_TEXT", "PROMOTIONAL_CONTENT_TEXT").contains(x.get("className")));
+                    if ((!boundingBoxesDeep.isEmpty()) && (sponsoredTextIsPresent)) {
+
+                        if (boundingBoxesDeep.stream().anyMatch(x -> (x.get("className").equals("POST_THUMBNAIL")))) {
+                            tentativeAdTypesForFrame.add("THUMBNAIL");
+                        }
+
+                        if ((boundingBoxesDeep.stream().anyMatch(x -> (x.get("className").equals("REEL_SEARCH_INPUT")))) || (boundingBoxesDeep.stream().anyMatch(x -> Arrays.asList("ENGAGEMENT_BUTTONS").contains(x.get("className"))))) {
+                            tentativeAdTypesForFrame.add("REEL_FROM_SEARCH");
+                        }
+
+                        if (boundingBoxesDeep.stream().anyMatch(x -> Arrays.asList("LIVE_BUTTON", "SEARCH_BUTTON").contains(x.get("className")))) {
+                            tentativeAdTypesForFrame.add("REEL_FROM_HOME");
+                        }
+                    }
+
+                    //Guarding logic (against overloads)
+                    if (tentativeAdTypesForFrame.contains("REEL_FROM_SEARCH") && (tentativeAdTypesForFrame.contains("REEL_FROM_HOME"))) {
+                        tentativeAdTypesForFrame = tentativeAdTypesForFrame.stream()
+                                .filter(x -> !Objects.equals("REEL_FROM_HOME", x)).collect(Collectors.toList());
+                    }
+                    if (tentativeAdTypesForFrame.contains("THUMBNAIL") && (tentativeAdTypesForFrame.contains("REEL_FROM_SEARCH") || tentativeAdTypesForFrame.contains("REEL_FROM_HOME"))) {
+                        tentativeAdTypesForFrame = tentativeAdTypesForFrame.stream()
+                                .filter(x -> !Arrays.asList("THUMBNAIL").contains(x)).collect(Collectors.toList());
+                    }
+
+                    adTypesForGroup.set(adFrame, tentativeAdTypesForFrame);
+                }));
 
 
-                // thumbnail ads - go over each thumbnail, and check if it encases the majority of a sponsored text - if so, its an ad
+                JSONXObject adFrameGroupsAdsFrames = deriveAds(List.of("PAID_PARTNERSHIP_TEXT", "SPONSORED_TEXT", "PROMOTIONAL_CONTENT_TEXT"), tentativeAdTypes, groupsOfAdFrames, inferencesByFrames, inferencesDeepByFrames,
+                        (tentativeAdType -> boundingBoxesDeep -> boundingBoxSponsored -> sponsoredTextCenterX -> sponsoredTextCenterY -> {
 
-                // home ads - take upper most y of live and search buttons, and lowermost y of sponsored text and engagement buttons
+                    // PRODUCE CROPPING REGION
+                    Double lowerMostY = null;
+                    Double upperMostY = null;
+                    Double lowerMostX = 0.0;
+                    Double upperMostX = 1.0;
 
-                // search reel ads - take upper most y of serach reel input and lowermost y of sponsored text and engagmeent buttons
+                    // TODO - technically, the way around this is to have a consistent(ly large) number of training candidates for all terms, although we have enough in practise to get a stable confidence threshold
+                    // for classes that have fewer candidates - enforce a stronger confidence threshold
+                    if ((((Double) boundingBoxSponsored.get("confidence") >= 0.1) && ((String) boundingBoxSponsored.get("className")).equals("SPONSORED_TEXT")) ||
+                            (((Double) boundingBoxSponsored.get("confidence") >= 0.5) && (!((String) boundingBoxSponsored.get("className")).equals("SPONSORED_TEXT")))) {
 
-                // Crop out ad images
-
-
-                // TODO - unclassified ads are currently being ignored in processing
-
-                // TODO - currently there is an error experienced where two frames both have sponsored text but belong to different ads, however are grouped
-
-                // TODO - functionalize
-                // Construct ad objects
-                //checkPoint thisCheckPoint = new checkPoint(screenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
-
-                // TODO - Confirm that the ad frames belong to the same ads
-                // There are two giveaways for this -
-                //  1. whether the crop areas have any degree of overlap between frames
-                //  2. Whether the frames have the same classname
-
-                //if (thisCheckPoint.container.has("inferenceDeep")) {
-                    logMessage(TAG, "Proceeding with ad object construction");
-                    List<JSONXObject> thisAdFrameGroupMetadatasUnseparated = new ArrayList<>();
-                    JSONXObject inferencesDeepByFrames = (new JSONXObject((JSONObject) inferenceResultDeep.get("inferencesByFrames"), true));
-                    for (List<Integer> adFrameGroup : groupsOfAdFrames) {
-                        JSONXObject thisAdFrameGroupMetadata = new JSONXObject();
-                        for (Integer adFrame : adFrameGroup) {
-                            JSONXObject thisAdFrameData = new JSONXObject();
-                            List<JSONXObject> boundingBoxesShallow = ((List<JSONObject>) inferencesByFrames.get(adFrame)).stream().map(x -> (new JSONXObject(x, true))).collect(Collectors.toList());
-                            List<JSONXObject> boundingBoxesDeep = ((List<JSONObject>) inferencesDeepByFrames.get(adFrame)).stream().map(x -> (new JSONXObject(x, true))).collect(Collectors.toList());
-
-
-                            // Determine the type of ad we are dealing with...
-                            String tentativeAdType = null;
-                            // Note that a thumbnail ad supercedes all other alternatives
-                            // if there is at least one thumbnail - then we are dealing with a thumbnail
-                            // otherwise
-                            // if there is a serach reel inpuit - we are dealing with a search
-                            // otherwise
-                            // if there is either a live or search button, we are dealing with a home ad
-                            if (!boundingBoxesDeep.isEmpty()) { // TODO - only proceed for this frame if there are 'deep' bounding boxes - note that if there are no bounding boxes, we can't determine where the contents of the ad is
-                                for (JSONXObject boundingBox : boundingBoxesDeep) {
-                                    if (boundingBox.get("className").equals("POST_THUMBNAIL")) {
-                                        tentativeAdType = "THUMBNAIL";
+                        if (Objects.equals(tentativeAdType, "THUMBNAIL")) {
+                            Double maxOverlap = Collections.max(boundingBoxesDeep.stream().map(x -> (rectangularAreaOverlap(x, boundingBoxSponsored) / rectangularArea(boundingBoxSponsored))).collect(Collectors.toList()));
+                            for (JSONXObject boundingBoxThumbnail : boundingBoxesDeep) {
+                                if (boundingBoxThumbnail.get("className").equals("POST_THUMBNAIL")) {
+                                    Double intersectionPercentage = (rectangularAreaOverlap(boundingBoxThumbnail, boundingBoxSponsored)
+                                            / rectangularArea(boundingBoxSponsored));
+                                    if ((intersectionPercentage.equals(maxOverlap)) && (!intersectionPercentage.equals(0.0))) {
+                                        lowerMostX = (Double) boundingBoxThumbnail.get("x1");
+                                        upperMostX = (Double) boundingBoxThumbnail.get("x2");
+                                        upperMostY = (Double) boundingBoxThumbnail.get("y1");
+                                        lowerMostY = (Double) boundingBoxThumbnail.get("y2");
                                         break;
-                                    } else {
-                                        if (boundingBox.get("className").equals("REEL_SEARCH_INPUT")) {
-                                            tentativeAdType = "REEL_FROM_SEARCH";
-                                        } else if (((boundingBox.get("className").equals("LIVE_BUTTON")) || (boundingBox.get("className").equals("SEARCH_BUTTON"))) && (tentativeAdType == null)) {
-                                            tentativeAdType = "REEL_FROM_HOME";
-                                        }
                                     }
-                                }
-                                thisAdFrameData.set("adType", tentativeAdType);
-                                Double SPONSORSHIP_INTERSECTION_THRESHOLD = 0.8;
-                                List<String> sponsoredAdTexts = asList("SPONSORED_TEXT", "PROMOTIONAL_CONTENT_TEXT", "PAID_PARTNERSHIP_TEXT");
-
-                                // We assert that there is only ever one bounding box for a Sponsored text on any ad
-                                JSONXObject boundingBoxSponsored = boundingBoxesShallow.stream().filter(x ->
-                                        sponsoredAdTexts.contains((String) x.get("className"))).collect(Collectors.toList()).get(0);
-
-                                // Evaluate thumbnail ads
-                                if (Objects.equals(tentativeAdType, "THUMBNAIL")) {
-                                    // Retrieve the first thumbnail that significantly intersects a Sponsored text (we note that we only ever expect
-                                    // to see one at any given time
-                                    for (JSONXObject boundingBoxThumbnail : boundingBoxesDeep) {
-                                        if (boundingBoxThumbnail.get("className").equals("POST_THUMBNAIL")) {
-                                            Double intersectionPercentage = (rectangularAreaOverlap(boundingBoxThumbnail, boundingBoxSponsored)
-                                                    / rectangularArea(boundingBoxSponsored));
-                                            if (intersectionPercentage >= SPONSORSHIP_INTERSECTION_THRESHOLD) {
-                                                thisAdFrameData.set("inference", (new JSONXObject())
-                                                        .set("boundingBoxCropped", boundingBoxThumbnail)
-                                                        .set("boundingBoxSponsored", boundingBoxSponsored)
-                                                        .set("boundingBoxes", boundingBoxesDeep));
-                                                break;
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    Double lowerMostY = tiktokLowerMostY(boundingBoxesDeep, boundingBoxSponsored);
-                                    Double upperMostY = 0.0;
-
-                                    if (Objects.equals(tentativeAdType, "REEL_FROM_SEARCH")) {
-                                        // Identify the comprising bounding boxes
-                                        JSONXObject boundingBoxSearchInput = boundingBoxesDeep.stream().filter(x ->
-                                                x.get("className").equals("REEL_SEARCH_INPUT")).collect(Collectors.toList()).get(0);
-                                        upperMostY = (double) boundingBoxSearchInput.get("y1");
-                                    } else if (Objects.equals(tentativeAdType, "REEL_FROM_HOME")) {
-                                        List<JSONXObject> boundingBoxLiveButtonsTentative = boundingBoxesDeep.stream().filter(x ->
-                                                x.get("className").equals("LIVE_BUTTON")).collect(Collectors.toList());
-                                        List<JSONXObject> boundingBoxSearchButtonsTentative = boundingBoxesDeep.stream().filter(x ->
-                                                x.get("className").equals("SEARCH_BUTTON")).collect(Collectors.toList());
-                                        Double y1LiveButton = (!boundingBoxLiveButtonsTentative.isEmpty()) ? (double) boundingBoxLiveButtonsTentative.get(0).get("y1") : 1.0;
-                                        Double y1SearchButton = (!boundingBoxSearchButtonsTentative.isEmpty()) ? (double) boundingBoxSearchButtonsTentative.get(0).get("y1") : 1.0;
-                                        upperMostY = Math.min(y1LiveButton, y1SearchButton);
-                                    }
-
-                                    JSONXObject boundingBoxCropped = yAgnosticCompositeBoundingBox(upperMostY, lowerMostY);
-                                    thisAdFrameData.set("inference", (new JSONXObject())
-                                            .set("boundingBoxCropped", boundingBoxCropped)
-                                            .set("boundingBoxSponsored", boundingBoxSponsored)
-                                            .set("boundingBoxes", boundingBoxesDeep));
-                                }
-                                if (thisAdFrameData.has("inference")) {
-                                    thisAdFrameGroupMetadata.set(adFrame, thisAdFrameData);
                                 }
                             }
                         }
-                        thisAdFrameGroupMetadatasUnseparated.add(thisAdFrameGroupMetadata);
+
+                        if (Objects.equals(tentativeAdType, "REEL_FROM_SEARCH")) {
+                            lowerMostY = tiktokLowerMostY(boundingBoxesDeep, boundingBoxSponsored);
+                            // Identify the comprising bounding boxes
+                            try {
+                                JSONXObject boundingBoxSearchInput = boundingBoxesDeep.stream().filter(x ->
+                                        x.get("className").equals("REEL_SEARCH_INPUT")).collect(Collectors.toList()).get(0);
+                                upperMostY = (double) boundingBoxSearchInput.get("y1");
+                            } catch (Exception ignored) {
+                                upperMostY = 0.15; // The search input element is difficult to locate sometimes - so then rather than throw the ad, we simply set the uppermost y as such
+                            }
+                        }
+
+                        if (Objects.equals(tentativeAdType, "REEL_FROM_HOME")) {
+                            lowerMostY = tiktokLowerMostY(boundingBoxesDeep, boundingBoxSponsored);
+                            List<JSONXObject> boundingBoxLiveButtonsTentative = boundingBoxesDeep.stream().filter(x ->
+                                    x.get("className").equals("LIVE_BUTTON")).collect(Collectors.toList());
+                            List<JSONXObject> boundingBoxSearchButtonsTentative = boundingBoxesDeep.stream().filter(x ->
+                                    x.get("className").equals("SEARCH_BUTTON")).collect(Collectors.toList());
+                            Double y1LiveButton = (!boundingBoxLiveButtonsTentative.isEmpty()) ? (double) boundingBoxLiveButtonsTentative.get(0).get("y1") : 1.0;
+                            Double y1SearchButton = (!boundingBoxSearchButtonsTentative.isEmpty()) ? (double) boundingBoxSearchButtonsTentative.get(0).get("y1") : 1.0;
+                            upperMostY = Math.min(y1LiveButton, y1SearchButton);
+                        }
                     }
 
-                    evaluationPostMethod( context, thisAdFrameGroupMetadatasUnseparated,  thisInterpretation,
-                            thisComprehensiveReading,  implementedOnAndroid,  inferenceResultShallow,  inferenceResultDeep,
-                            rootDirectory,  screenRecordingAnalysisDirectory,  screenRecordingFile, "TIKTOK");
-                //}
+                    return (new JSONXObject())
+                            .set("lowerMostX", lowerMostX)
+                            .set("upperMostX", upperMostX)
+                            .set("upperMostY", upperMostY)
+                            .set("lowerMostY", lowerMostY);
+                }));
+
+                organizeAds(thisAdFrameGroupMetadatasUnseparated, adFrameGroupsAdsFrames);
+
+                evaluationPostMethod( context, thisAdFrameGroupMetadatasUnseparated,  thisInterpretation,
+                        thisComprehensiveReading,  implementedOnAndroid,  inferenceResultShallow,  inferenceResultDeep,
+                        rootDirectory,  screenRecordingAnalysisDirectory,  screenRecordingFile, "TIKTOK");
             }
-
-            // Undertake comprehensive inference
-
-            // assume y axis is point of shift
-            // let a strong overlap between two frames be defined as some offset where the elements link share a union of
-
-            // the union is more than the symmetric difference
-
-            // union is part where elements are identical
-            // differenec is part where elements are unidentical or dont overlap
-
-
-            // it is very possible that two frames can be for two completely different posts
-
-            // invent a really strict criteria
-            // for two adjacent frames - if the sponsored text appears in both, align them and their posts and perform the cropouts
-
-
-            // Consider from the retained frames those that have been flagged as containing the 'Sponsored Text' and that are adjacent - these can be
-            // grouped into a single ad reading
-
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

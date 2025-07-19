@@ -106,12 +106,25 @@ public class ObjectDetector {
         String[] rawInferences = readStringFromFile(thisFrameInferenceFilename).split("\n");
         for (String x : rawInferences) {
             try {
-                JSONXObject thisObject = new JSONXObject(new JSONObject(x));
-                Arrays.asList("x1", "x2", "y1", "y2", "cx", "cy", "w", "h", "confidence").forEach(thisKey -> {
-                    thisObject.set(thisKey, Double.valueOf((double) thisObject.get(thisKey)));
-                });
-                inferences.add(thisObject.internalJSONObject);
-            } catch (Exception e) {}
+                if (!x.trim().isEmpty()) {
+                    JSONXObject thisObject = new JSONXObject(new JSONObject(x));
+                    Arrays.asList("x1", "x2", "y1", "y2", "cx", "cy", "w", "h", "confidence", "className").forEach(thisKey -> {
+                        Object thisValue = thisObject.get(thisKey);
+                        if (thisValue instanceof Integer) {
+                            thisObject.set(thisKey, ((Integer) thisValue).doubleValue());
+                        }
+                        else if (thisValue instanceof Double) {
+                            thisObject.set(thisKey, (double) thisValue);
+                        }
+                        else if (thisValue instanceof String) {
+                            thisObject.set(thisKey, String.valueOf(thisValue));
+                        }
+                    });
+                    inferences.add(thisObject.internalJSONObject);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         return inferences;
     }
