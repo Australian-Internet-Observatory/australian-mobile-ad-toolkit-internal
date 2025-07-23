@@ -78,7 +78,40 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_width="match_parent"
             android:layout_height="2dp"
             android:background="@color/yellow_primary" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:height="15dp" />
 
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:textStyle="bold"
+            android:textColor="@color/yellow_primary"
+            android:text="Manually submit log information"
+            android:paddingBottom="10dp"
+            />
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="italic"
+            android:textSize="5pt"
+            android:text="While the app is designed to periodically send log information about the ads you see on your mobile device, you can also manually initiate this process by clicking the button below."
+            android:paddingBottom="10dp" />
+
+        <Button
+            android:id="@+id/buttonProcessLogs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Process Your Logs"
+            android:theme="@style/PrimaryButton"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginTop="15dp"
+            android:background="@color/yellow_primary" />
 
         <TextView
             android:layout_width="match_parent"
@@ -89,7 +122,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:id="@+id/buttonBackToMain"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Go Back"
+            android:text="@string/fragment_dashboard_back_text"
             android:theme="@style/SecondaryButton" />
 
         <TextView

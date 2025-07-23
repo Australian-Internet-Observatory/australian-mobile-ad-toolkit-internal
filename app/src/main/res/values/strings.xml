@@ -71,6 +71,23 @@
 
 
 
+    <string name="dialog_logs_error_title">LOG SUBMISSION FAILED</string>
+    <string name="dialog_logs_error_description">Unfortunately there was an error when attempting to submit your logs. Please try again later.</string>
+    <string name="dialog_logs_error_back">BACK</string>
+
+    <string name="dialog_logs_success_title">LOGS SUBMITTED</string>
+    <string name="dialog_logs_success_description">Your logs have now been submitted.</string>
+    <string name="dialog_logs_success_back">CLOSE</string>
+
+    <string name="dialog_outcome_template_title">TITLE GOES HERE</string>
+    <string name="dialog_outcome_template_description">Desciption goes here.</string>
+    <string name="dialog_outcome_template_dismiss">DISMISS</string>
+
+
+
+
+
+
     <string name="fragment_main_accessibility_title">Important Notice</string>
     <string name="fragment_main_accessibility_description">This app uses accessibility services for necessary functionality not relating to accessibility.</string>
     <string name="fragment_main_accessibility_services">LEARN MORE</string>

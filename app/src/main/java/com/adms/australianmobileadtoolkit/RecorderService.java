@@ -15,13 +15,11 @@ import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
 import static com.adms.australianmobileadtoolkit.Common.filePath;
 import static com.adms.australianmobileadtoolkit.Common.getFilesInDirectory;
 import static com.adms.australianmobileadtoolkit.Common.readStringFromFile;
-import static com.adms.australianmobileadtoolkit.Common.writeToFile;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNotification;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.constructNotificationForward;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
-import static com.adms.australianmobileadtoolkit.InactivityReceiver.sendScreenLockNotification;
+import static com.adms.australianmobileadtoolkit.logging.Logging.addALog;
 import static com.adms.australianmobileadtoolkit.MainActivity.SCREEN_RECORDING_PERMISSION_CODE;
-import static com.adms.australianmobileadtoolkit.MainActivity.mProjectionManager;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_CHANNEL_DESCRIPTION;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_CHANNEL_ID;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_RECORDING_CHANNEL_ID_NAME;
@@ -56,16 +54,13 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.Process;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
 import android.view.WindowManager;
 
 import androidx.core.app.NotificationCompat;
-import androidx.fragment.app.FragmentActivity;
 
 import com.adms.australianmobileadtoolkit.interpreter.AccessibilityService;
-import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
 
 import java.io.File;
 import java.io.IOException;
@@ -655,6 +650,7 @@ public final class RecorderService extends Service {
                 // Start the recording
                 mMediaRecorder.start();
                 didStart = true;
+                addALog(getApplicationContext(), "REC-BGN");
             } catch (Exception e) {
                 logMessage(TAG, "Failed on startRecording: ");
                 e.printStackTrace();
@@ -714,6 +710,7 @@ public final class RecorderService extends Service {
             }
             //if (actionedStop) { // TODO
             recordingInProgress = false;
+            addALog(getApplicationContext(), "REC-END");
             sendBroadcast(new Intent(this, InactivityReceiver.class)
                     .putExtra("INTENT_ACTION", "RECORDING_HAS_STOPPED"));  // TODO - checked for API migration
             //MainActivity.safelySetToggleInViewModel(false);
@@ -742,6 +739,7 @@ public final class RecorderService extends Service {
         stopRecording();
         unregisterReceiver(mScreenStateReceiver);
         wakeLock.release();
+        addALog(getApplicationContext(), "REC-KLL");
         super.onDestroy();
     }
 }

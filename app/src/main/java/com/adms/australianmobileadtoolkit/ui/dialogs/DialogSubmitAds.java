@@ -1,38 +1,30 @@
 package com.adms.australianmobileadtoolkit.ui.dialogs;
 
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
-import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
+import static com.adms.australianmobileadtoolkit.logging.Logging.addALog;
 import static com.adms.australianmobileadtoolkit.MainActivity.PERIODIC_WORK_TAG;
 import static com.adms.australianmobileadtoolkit.MainActivity.manualAdDigestThread;
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker.platformInterpretationRoutineContainer;
-import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.objectDetectorAndroid;
 
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.Window;
-import android.view.animation.Animation;
-import android.view.animation.Transformation;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentManager;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
-import com.adms.australianmobileadtoolkit.MainActivity;
 import com.adms.australianmobileadtoolkit.R;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Arrays;
 import java.util.List;
@@ -63,14 +55,18 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
             //WorkManager.getInstance(context.getApplicationContext()).cancelAllWorkByTag(PERIODIC_WORK_TAG);
             //WorkManager.getInstance(context.getApplicationContext()).cancelAllWorkByTag(MANUAL_WORK_TAG);
             //WorkManager.getInstance(context.getApplicationContext()).cancelAllWork();
-            WorkManager.getInstance(context.getApplicationContext()).cancelUniqueWork("workName");
+            WorkManager.getInstance(context.getApplicationContext()).cancelUniqueWork("periodicInterpreterWorkerName");
             logMessage(TAG, "killPeriodicWorker iteration");
 
         }
     }
 
     public Thread constructProcessThread(Context context) {
-        return new Thread(() -> platformInterpretationRoutineContainer(context, true));
+        return new Thread(() -> {
+            platformInterpretationRoutineContainer(context, true);
+            // Error-handling is done inside the container, and so we can be reassured that the log is called in any case
+            addALog(context, "MNL-END");
+        });
     }
 
     public static Integer safeIntegerRead(Context context, String key) {
@@ -216,6 +212,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
         if (!adDigestIsRunning(context)) {
             manualAdDigestThread = constructProcessThread(context);
             manualAdDigestThread.start();
+            addALog(context, "MNL-BGN");
             refreshDialog(context);
 
 

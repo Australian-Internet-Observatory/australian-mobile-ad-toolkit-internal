@@ -2,26 +2,27 @@ package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
+import static com.adms.australianmobileadtoolkit.Common.readStringFromFile;
 import static com.adms.australianmobileadtoolkit.Common.writeToFile;
+import static com.adms.australianmobileadtoolkit.logging.Logging.addALog;
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 
 import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 
 import com.adms.australianmobileadtoolkit.MainActivity;
 import com.adms.australianmobileadtoolkit.RecorderService;
 import com.adms.australianmobileadtoolkit.RecorderServiceIntentActivity;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.io.File;
-import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class AccessibilityService extends android.accessibilityservice.AccessibilityService{
     public static AccessibilityService instance;
@@ -43,6 +44,14 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
             "com.zhiliaoapp.musically", // TikTok
             "com.google.android.youtube" // Youtube
     );
+
+    Map<String, String> platformAliases = new HashMap<>() {{
+        put("com.facebook.katana", "FBK");
+        put("com.facebook.lite", "FBL");
+        put("com.instagram.android", "IGM");
+        put("com.zhiliaoapp.musically", "TOK");
+        put("com.google.android.youtube", "YTB");
+    }};
 
     public static boolean withinCooldown(String lastCallMillis, String currentCallMillis) {
         Long differenceOfMilliseconds = Math.abs(Long.valueOf(lastCallMillis) - Long.valueOf(currentCallMillis));
@@ -128,10 +137,29 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
                     //}
                 }
 
+
+                // TODO - applying the trigger for entering or exiting the target apps
                 File rootDirectoryPath = MainActivity.getMainDir(this);
-                if (!accessibilityEvent.getPackageName().toString().contains("australianmobileadtoolkit")) {
-                    writeToFile(new File(rootDirectoryPath, "withinTargetApplication"),isTargetPlatform(accessibilityEvent.getPackageName().toString()));
+                File withinTargetApplicationFile = new File(rootDirectoryPath, "withinTargetApplication");
+                String withinTargetApplicationValuePrevious = readStringFromFile(withinTargetApplicationFile).trim();
+                String thisPackageName = (accessibilityEvent.getPackageName().toString());
+                String withinTargetApplicationValueCurrent = isTargetPlatform(thisPackageName);
+                if (!withinTargetApplicationValuePrevious.equals(withinTargetApplicationValueCurrent)) {
+                    String thisPlatform = platformAliases.get(thisPackageName);
+                    if (!Objects.equals(withinTargetApplicationValueCurrent, "NULL")) {
+                        addALog(this, thisPlatform+"-BGN");
+                    } else {
+                        addALog(this, "TGT-END");
+                    }
+
+                    // Updated in both entering and exiting target apps...
+                    if (!accessibilityEvent.getPackageName().toString().contains("australianmobileadtoolkit")) {
+                        writeToFile(withinTargetApplicationFile, withinTargetApplicationValueCurrent);
+                    }
                 }
+
+
+
 
             }
         } catch (Exception e) {

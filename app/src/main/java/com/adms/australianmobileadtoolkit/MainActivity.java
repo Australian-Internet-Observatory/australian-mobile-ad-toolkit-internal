@@ -9,11 +9,10 @@ package com.adms.australianmobileadtoolkit;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
-import static com.adms.australianmobileadtoolkit.Common.dataStoreWriteToCorrupt;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.cancelAllInactivityNotifications;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.generateNotificationChannel;
 import static com.adms.australianmobileadtoolkit.InactivityReceiver.setPeriodicNotifications;
-import static com.adms.australianmobileadtoolkit.appSettings.DEBUG;
+import static com.adms.australianmobileadtoolkit.logging.Logging.addALog;
 import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_SHORT_DEFAULT;
 import static com.adms.australianmobileadtoolkit.appSettings.get_APP_CHILD_DIRECTORY;
 import static com.adms.australianmobileadtoolkit.appSettings.get_NOTIFICATION_PERIODIC_CHANNEL_DESCRIPTION;
@@ -29,10 +28,8 @@ import static com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain.safel
 import static com.example.KotlinInterop.yieldEmptyPreferences;
 
 import android.app.ActivityManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -44,15 +41,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.datastore.core.CorruptionException;
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler;
 import androidx.datastore.preferences.core.Preferences;
 import androidx.datastore.preferences.rxjava3.RxPreferenceDataStoreBuilder;
@@ -63,25 +57,15 @@ import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import com.adms.australianmobileadtoolkit.interpreter.InterpreterWorker;
+import com.adms.australianmobileadtoolkit.logging.LoggingWorker;
 import com.adms.australianmobileadtoolkit.ui.ItemViewModel;
-import androidx.datastore.preferences.core.PreferencesSerializer;
 
-import com.adms.australianmobileadtoolkit.ui.dialogs.DialogSubmitAds;
 import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
-import com.example.KotlinInterop;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-
-import kotlin.coroutines.Continuation;
-import kotlin.coroutines.CoroutineContext;
-import okio.BufferedSource;
-import okio.Okio;
-import okio.Source;
 
 // TODO do further testing on intermittent stops
 
@@ -294,12 +278,11 @@ public class MainActivity extends BaseActivity {
             }
             try {
 
-                PeriodicWorkRequest periodicWork = new PeriodicWorkRequest.Builder(InterpreterWorker.class, 15, TimeUnit.MINUTES)
-                      .addTag(PERIODIC_WORK_TAG)
-                      .build();
-                // Do not start another worker if the current one is active
-                WorkManager.getInstance(this.getApplicationContext()).enqueueUniquePeriodicWork("workName", ExistingPeriodicWorkPolicy.KEEP,  periodicWork);
-                logMessage(TAG,  "WorkManager is set.");
+                PeriodicWorkRequest periodicInterpreterWork = new PeriodicWorkRequest.Builder(InterpreterWorker.class, 15, TimeUnit.MINUTES).addTag(PERIODIC_WORK_TAG).build();
+                WorkManager.getInstance(this.getApplicationContext()).enqueueUniquePeriodicWork("periodicInterpreterWorkerName", ExistingPeriodicWorkPolicy.KEEP,  periodicInterpreterWork);
+
+                PeriodicWorkRequest periodicLoggingWork = new PeriodicWorkRequest.Builder(LoggingWorker.class, 15, TimeUnit.MINUTES).addTag(PERIODIC_WORK_TAG).build();
+                WorkManager.getInstance(this.getApplicationContext()).enqueueUniquePeriodicWork("periodicLoggingWorkerName", ExistingPeriodicWorkPolicy.KEEP,  periodicLoggingWork);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -411,6 +394,14 @@ public class MainActivity extends BaseActivity {
         boolean THIS_REGISTRATION_STATUS_AS_BOOLEAN = (!Objects.equals(dataStoreRead(this, "observerRegistered",
                 observerRegisteredDefaultValue), observerRegisteredDefaultValue));
         refreshIntent(intentOfMainActivityAsIntent, THIS_REGISTRATION_STATUS_AS_BOOLEAN);
+
+        addALog(this, "APP-BGN");
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        addALog(this, "APP-END");
     }
 
     /*

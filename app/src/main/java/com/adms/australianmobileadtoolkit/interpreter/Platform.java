@@ -63,12 +63,12 @@ public class Platform {
 
 
     private static String TAG = "Platform";
-    private static boolean deleteOnCompletion = false;
-    private static boolean deleteOnMaxHeld = false;
-    private static boolean deleteOnUnclassified = false;
-    private static boolean dispatchOnCompleteAnalysis = false;
-    private static boolean dispatchOnBeginAnalysis = false;
-    private static boolean allowQuantization = false;
+    private static boolean deleteOnCompletion = true;
+    private static boolean deleteOnMaxHeld = true;
+    private static boolean deleteOnUnclassified = true;
+    private static boolean dispatchOnCompleteAnalysis = true;
+    private static boolean dispatchOnBeginAnalysis = true;
+    private static boolean allowQuantization = true;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -217,6 +217,7 @@ public class Platform {
 
         // Assemble the request JSON object
         JSONObject requestBody = new JSONObject();
+
         try {
             requestBody.put("action",identifierDataDonation);
             requestBody.put("ad_id",thisAdUUID);

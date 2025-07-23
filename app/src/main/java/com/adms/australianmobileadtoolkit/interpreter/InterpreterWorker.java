@@ -1,7 +1,7 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.Common.dataStoreWrite;
-import static com.adms.australianmobileadtoolkit.MainActivity.PERIODIC_WORK_TAG;
+import static com.adms.australianmobileadtoolkit.logging.Logging.addALog;
 import static com.adms.australianmobileadtoolkit.MainActivity.manualAdDigestThread;
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.interpreter.FFmpegFrameGrabberAndroid.frameGrabAndroid;
@@ -11,18 +11,13 @@ import static com.adms.australianmobileadtoolkit.interpreter.Platform.platformIn
 import static com.adms.australianmobileadtoolkit.interpreter.detector.ObjectDetector.objectDetectorAndroid;
 
 import android.content.Context;
-import android.os.SystemClock;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.work.WorkInfo;
-import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.adms.australianmobileadtoolkit.MainActivity;
 import com.adms.australianmobileadtoolkit.appSettings;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.json.JSONObject;
 
@@ -33,7 +28,6 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 public class InterpreterWorker extends Worker {
 
@@ -66,7 +60,9 @@ public class InterpreterWorker extends Worker {
       localThread = Thread.currentThread();
       // This check stops a periodic worker from overlapping on a manual process
       if ((manualAdDigestThread != null) ? (!manualAdDigestThread.isAlive()) : true) {
+         addALog(getApplicationContext(), "BKG-BGN");
          platformInterpretationRoutineContainer(getApplicationContext(), true);
+         addALog(getApplicationContext(), "BKG-END");
       } else {
          logMessage(TAG, "Periodic worker has been cancelled due to manual process...");
       }

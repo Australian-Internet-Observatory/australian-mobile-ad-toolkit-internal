@@ -162,4 +162,15 @@ public class Common {
          return defaultValue;
       }
    }
+
+   public static <T> List<T> safeSublist(List<T> list, int fromIndex, int toIndex) {
+      int safeFrom = Math.max(0, fromIndex);
+      int safeTo = Math.min(list.size(), toIndex);
+
+      if (safeFrom >= safeTo) {
+         return new ArrayList<>(); // or Collections.emptyList()
+      }
+
+      return list.subList(safeFrom, safeTo);
+   }
 }
