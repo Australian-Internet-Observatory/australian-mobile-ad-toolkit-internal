@@ -86,84 +86,76 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
-        try {
-            if (triggerableEvents.contains(accessibilityEvent.getEventType())) {
-                if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
-                    if (logging) { logMessage(TAG, "AccessibilityEvent.TYPE_WINDOWS_CHANGED"); }
-                }
-
-                if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                    if (logging) { logMessage(TAG, "AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED"); }
-                }
-
-                if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-                    if (logging) { logMessage(TAG, "AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED"); }
-                }
-
-                if (logging) { logMessage(TAG,accessibilityEvent.getPackageName().toString()); }
-                // Within target platform...
-                if (isTargetPlatformBoolean(accessibilityEvent.getPackageName().toString())) {
-                    if (logging) { logMessage(TAG, "Within target platform..."); }
-                    dataStoreWrite(this, "recorderServiceIntentTargetPlatform", accessibilityEvent.getPackageName().toString());
-                    dataStoreWrite(this, "recorderServiceIntentTargetPlatform_CALL_TIME", String.valueOf(System.currentTimeMillis()));
-                    // Recording intent hasn't opened...
-                    //if (dataStoreRead(this, "recorderServiceIntentRunning", "false").equals("false")) {
-                    if (logging) { logMessage(TAG, "Recording intent has not been called...");}
-                        KeyguardManager myKM = (KeyguardManager) this.getSystemService(Context.KEYGUARD_SERVICE);
-
-                        // TODO - the recording status desyncs from the fragmentmain toggle when this safeguard turns off - there should be a closer sync strategy between both features
-                        if(myKM.inKeyguardRestrictedInputMode()) {
-                            if (logging) { logMessage(TAG, "Averting screen recording as screen is locked...");}
-                        } else {
-                            // Not currently recording...
-                            if (logging) { logMessage(TAG, "r - Getting recordingStatus: "+ dataStoreRead( this, "recordingStatus", "false"));}
-                            //if (dataStoreRead(this, "recordingStatus", "false").equals("false")) {
-                            if (logging) { logMessage(TAG, "No current recording...");}
-                                // Not currently in cooldown...
-                                String recorderServiceIntentLastCall = dataStoreRead(this, "recorderServiceIntentLastCall", "NULL");
-                            if (logging) { logMessage(TAG, "recorderServiceIntentLastCall: " + recorderServiceIntentLastCall);}
-                                boolean isWithinCooldown = ((!recorderServiceIntentLastCall.equals("NULL")) && withinCooldown(recorderServiceIntentLastCall,currentMillis()));
-                            if (logging) { logMessage(TAG, String.valueOf(isWithinCooldown));}
-                                if (!isWithinCooldown) {
-
-                                    if (!isServiceRunningA()) { // TODO - this is a temporary fix
-                                        if (logging) { logMessage(TAG, "Not currently in cooldown...");}
-                                        dataStoreWrite(this, "recorderServiceIntentLastCall", currentMillis());
-                                        startActivity(new Intent(this, RecorderServiceIntentActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                                    }
-                                }
-                            //}
-                        }
-                    //}
-                }
-
-
-                // TODO - applying the trigger for entering or exiting the target apps
-                File rootDirectoryPath = MainActivity.getMainDir(this);
-                File withinTargetApplicationFile = new File(rootDirectoryPath, "withinTargetApplication");
-                String withinTargetApplicationValuePrevious = readStringFromFile(withinTargetApplicationFile).trim();
-                String thisPackageName = (accessibilityEvent.getPackageName().toString());
-                String withinTargetApplicationValueCurrent = isTargetPlatform(thisPackageName);
-                if (!withinTargetApplicationValuePrevious.equals(withinTargetApplicationValueCurrent)) {
-                    String thisPlatform = platformAliases.get(thisPackageName);
-                    if (!Objects.equals(withinTargetApplicationValueCurrent, "NULL")) {
-                        addALog(this, thisPlatform+"-BGN");
-                    } else {
-                        addALog(this, "TGT-END");
-                    }
-
-                    // Updated in both entering and exiting target apps...
-                    if (!accessibilityEvent.getPackageName().toString().contains("australianmobileadtoolkit")) {
-                        writeToFile(withinTargetApplicationFile, withinTargetApplicationValueCurrent);
-                    }
-                }
-
-
-
-
+        if (triggerableEvents.contains(accessibilityEvent.getEventType())) {
+            if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
+                if (logging) { logMessage(TAG, "AccessibilityEvent.TYPE_WINDOWS_CHANGED"); }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+
+            if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                if (logging) { logMessage(TAG, "AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED"); }
+            }
+
+            if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+                if (logging) { logMessage(TAG, "AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED"); }
+            }
+
+            if (logging) { logMessage(TAG,accessibilityEvent.getPackageName().toString()); }
+            // Within target platform...
+            if (isTargetPlatformBoolean(accessibilityEvent.getPackageName().toString())) {
+                if (logging) { logMessage(TAG, "Within target platform..."); }
+                dataStoreWrite(this, "recorderServiceIntentTargetPlatform", accessibilityEvent.getPackageName().toString());
+                dataStoreWrite(this, "recorderServiceIntentTargetPlatform_CALL_TIME", String.valueOf(System.currentTimeMillis()));
+                // Recording intent hasn't opened...
+                //if (dataStoreRead(this, "recorderServiceIntentRunning", "false").equals("false")) {
+                if (logging) { logMessage(TAG, "Recording intent has not been called...");}
+                    KeyguardManager myKM = (KeyguardManager) this.getSystemService(Context.KEYGUARD_SERVICE);
+
+                    // TODO - the recording status desyncs from the fragmentmain toggle when this safeguard turns off - there should be a closer sync strategy between both features
+                    if(myKM.inKeyguardRestrictedInputMode()) {
+                        if (logging) { logMessage(TAG, "Averting screen recording as screen is locked...");}
+                    } else {
+                        // Not currently recording...
+                        if (logging) { logMessage(TAG, "r - Getting recordingStatus: "+ dataStoreRead( this, "recordingStatus", "false"));}
+                        //if (dataStoreRead(this, "recordingStatus", "false").equals("false")) {
+                        if (logging) { logMessage(TAG, "No current recording...");}
+                            // Not currently in cooldown...
+                            String recorderServiceIntentLastCall = dataStoreRead(this, "recorderServiceIntentLastCall", "NULL");
+                        if (logging) { logMessage(TAG, "recorderServiceIntentLastCall: " + recorderServiceIntentLastCall);}
+                            boolean isWithinCooldown = ((!recorderServiceIntentLastCall.equals("NULL")) && withinCooldown(recorderServiceIntentLastCall,currentMillis()));
+                        if (logging) { logMessage(TAG, String.valueOf(isWithinCooldown));}
+                            if (!isWithinCooldown) {
+
+                                if (!isServiceRunningA()) { // TODO - this is a temporary fix
+                                    if (logging) { logMessage(TAG, "Not currently in cooldown...");}
+                                    dataStoreWrite(this, "recorderServiceIntentLastCall", currentMillis());
+                                    startActivity(new Intent(this, RecorderServiceIntentActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                                }
+                            }
+                        //}
+                    }
+                //}
+            }
+
+
+            // TODO - applying the trigger for entering or exiting the target apps
+            File rootDirectoryPath = MainActivity.getMainDir(this);
+            File withinTargetApplicationFile = new File(rootDirectoryPath, "withinTargetApplication");
+            String withinTargetApplicationValuePrevious = readStringFromFile(withinTargetApplicationFile).trim();
+            String thisPackageName = (accessibilityEvent.getPackageName().toString());
+            String withinTargetApplicationValueCurrent = isTargetPlatform(thisPackageName);
+            if (!withinTargetApplicationValuePrevious.equals(withinTargetApplicationValueCurrent)) {
+                String thisPlatform = platformAliases.get(thisPackageName);
+                if (!Objects.equals(withinTargetApplicationValueCurrent, "NULL")) {
+                    addALog(this, thisPlatform+"-BGN");
+                } else {
+                    addALog(this, "TGT-END");
+                }
+
+                // Updated in both entering and exiting target apps...
+                if (!accessibilityEvent.getPackageName().toString().contains("australianmobileadtoolkit")) {
+                    writeToFile(withinTargetApplicationFile, withinTargetApplicationValueCurrent);
+                }
+            }
         }
     }
 
@@ -172,11 +164,7 @@ public class AccessibilityService extends android.accessibilityservice.Accessibi
 
     @Override
     protected void onServiceConnected() {
-        try {
-            super.onServiceConnected();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        super.onServiceConnected();
     }
 
     public static boolean isTargetPlatformBoolean(String packageName) {

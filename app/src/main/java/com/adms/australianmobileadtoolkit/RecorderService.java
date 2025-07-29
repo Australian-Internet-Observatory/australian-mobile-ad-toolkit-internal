@@ -390,7 +390,7 @@ public final class RecorderService extends Service {
 
     private boolean configureMediaRecorder() {
 
-        final Integer lowerBoundOnWidth = (android.os.Build.VERSION.SDK_INT < 28) ? 2000 : 500;
+        final Integer lowerBoundOnWidth = (android.os.Build.VERSION.SDK_INT < 28) ? 2000 : 600;
 
         DisplayMetrics metrics = new DisplayMetrics();
         WindowManager wm = (WindowManager) getApplicationContext().getSystemService(WINDOW_SERVICE);
@@ -400,12 +400,30 @@ public final class RecorderService extends Service {
         displayWidth = 0;
         displayHeight = 0;
 
+        // This code block only initiates when a new stream of recordings is started (originally, we had hoped to have
+        // it execute in the 'configuration change' event (such as when changing orientation of the device), although it
+        // was found that it would cause the screen recordings to drop off and then re-request permission, and so we avoided in said case.
+        //
+        // What this left us with was a configuration of the recording dimensions to be set when the screen recordings' stream initiates
+        // and not at the start of each individual recording. So then, if a user was to consent screen recordings while their device was in landscape
+        // mode, all subsequent recordings in that stream would be configured to landscape as well, even if they weren't.
+        //
+        // This is especially problematic as it can cause the on-device ML capabilities to neglect advertisements if viewed in portrait-mode
+        // after giving consent while in landscape mode.
+        //
+        // Consequently, attempting to override the anticipated dimensions (small-width on big-height vs. small-height on big-width) causes the screen
+        // recorder not to initiate
+        //
+        // The Fix: Hereafter, all recordings will be assigned in the orientation in the stream for which they begin. Then, during sampling, the sampler
+        // will pinpoint the orientation at the point in time that the recording was undertaken, through means of the logs - if a mismatch is observed
+        // between the orientation of the screen-recording, and the one provided in the logs, a cropping will then be warranted on the frame.
+
         if (metrics.widthPixels < metrics.heightPixels) {
             displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
             displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
         } else {
-            displayHeight = Math.max((int)Math.round(metrics.heightPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
-            displayWidth = (int)Math.round(displayHeight*((double)metrics.widthPixels/(double)metrics.heightPixels));
+            displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
+            displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
         }
 
         String finalOrientationAdjusted = ((displayWidth < displayHeight) ? "portrait" : "landscape");

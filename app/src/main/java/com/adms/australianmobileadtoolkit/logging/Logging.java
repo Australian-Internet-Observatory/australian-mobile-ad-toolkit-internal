@@ -213,7 +213,8 @@ public class Logging {
         Integer maxLogGroupsToDispatch = 10;
         File logGroupDirectory = logGroupDirectory(context);
         List<File> logGroups = getFilesInDirectory(logGroupDirectory);
-        List<File> appendableLogGroups = logGroups.stream().filter(x -> (!x.getName().contains("-rfd"))).collect(Collectors.toList());
+        // Retrieve only logs that are neither ready for dispatch nor deletion
+        List<File> appendableLogGroups = logGroups.stream().filter(x -> ((!x.getName().contains("-rfd")) && (!x.getName().contains("-del")))).collect(Collectors.toList());
 
         // Firstly prepare the appendable log groups that have expired
         for (File thisLogGroup : appendableLogGroups) {
@@ -237,8 +238,20 @@ public class Logging {
                 success = false;
             }
             logMessage(TAG, "Dispatching log: "+thisLogGroup.getName());
+            // After dispatch, logs are prepared for deletion
+            thisLogGroup.renameTo(new File(thisLogGroup.getParentFile(), thisLogGroup.getName().replace("-rfd.log", "") + "-del.log" ));
+        }
+
+        // As a final action, flag logs that are exceptionally old and delete them
+        int maxHoldingTimeAsUnixTimestamp = Math.round(System.currentTimeMillis() / 1000) - (3 * 60 * 60 * 24); // 3 days
+        List<File> deletableLogGroups = logGroups.stream().filter(x -> ((x.getName().contains("-del"))
+                && (Integer.parseInt(x.getName().replace("logGroup-","").replace("-del.log", "")) < maxHoldingTimeAsUnixTimestamp)) ).collect(Collectors.toList());
+
+        // Delete 'deletable' log groups
+        for (File thisLogGroup : deletableLogGroups) {
             thisLogGroup.delete();
         }
+
         return success;
     }
 }

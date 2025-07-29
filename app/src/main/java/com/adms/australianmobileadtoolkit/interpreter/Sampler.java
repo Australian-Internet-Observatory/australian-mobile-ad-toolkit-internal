@@ -1,5 +1,6 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
+import static android.content.Context.WINDOW_SERVICE;
 import static com.adms.australianmobileadtoolkit.Common.makeDirectory;
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 import static com.adms.australianmobileadtoolkit.appSettings.prescribedMinVideoWidth;
@@ -8,9 +9,12 @@ import static com.adms.australianmobileadtoolkit.interpreter.Platform.saveBitmap
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.WindowManager;
 
 import com.adms.australianmobileadtoolkit.JSONXObject;
+import com.adms.australianmobileadtoolkit.appSettings;
 
 import org.json.JSONObject;
 
@@ -180,6 +184,17 @@ public class Sampler {
                                            File rootDirectory, File screenRecordingAnalysisDirectory, File thisScreenRecordingFile, Function<JSONXObject, JSONXObject> videoMetadataFunction,
                                            Function<JSONXObject, Bitmap> frameGrabFunction, Boolean applyingQuantizedModels) throws Exception {
         //checkPoint checkPoint = new checkPoint(thisScreenRecordingFile.getName(), (new File(screenRecordingAnalysisDirectory, "checkpoint")));
+
+
+        // Retrieve the device dimensions TODO
+        // DisplayMetrics metrics = new DisplayMetrics();
+        // WindowManager wm = (WindowManager) context.getSystemService(WINDOW_SERVICE);
+        // wm.getDefaultDisplay().getRealMetrics(metrics);
+        // int displayWidth = metrics.widthPixels;
+        // int displayHeight = metrics.heightPixels;
+
+        // From the logs, retrieve the fine-grained indication of the device's orientation
+
 
         //if (checkPoint.container.has("comprehensiveReading")) {
         //    return new JSONXObject((JSONObject) checkPoint.container.get("comprehensiveReading"), true);
