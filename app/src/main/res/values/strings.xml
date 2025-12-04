@@ -1,96 +1,41 @@
 <resources>
     <string name="app_name">Australian Mobile Ad Toolkit</string>
-    <string name="app_descr">This app records you phone\'s screen to detect advertisement content served to you within various third-party apps.</string>
+
+
+    <string name="activation_code_short_prefix">YOUR UNIQUE ACTIVATION CODE:</string>
+    <string name="fragment_main_app_preface">This app records your device\'s screen to detect advertisement content served to you within various third-party apps.</string>
     <string name="app_preface_registered">When the switch above is flipped on, this app will detect advertisements.</string>
-    <string name="recordingStatus">Recording Status</string>
-    <string name="recording_descr">When active, your screen is being recorded.</string>
-    <string name="dialog_loading">Loading...</string>
-
-    <string name="dialog_registration_error_title">REGISTRATION FAILED</string>
-    <string name="dialog_registration_error_description">Unfortunately, there was an error with the registration process. Please check that you are connected to the internet, and then try again.</string>
-    <string name="dialog_registration_error_back_text">BACK</string>
-
-    <string name="dialog_registration_success_title">REGISTRATION COMPLETE</string>
-    <string name="dialog_registration_success_description">Thank you for choosing to participate. The registration process is now complete.</string>
-    <string name="dialog_registration_success_back_text">CONTINUE</string>
-
-    <string name="fragment_dashboard_title">AD DASHBOARD</string>
-    <string name="fragment_dashboard_activation_code_text">My Activation Code: Loading...</string>
-    <string name="fragment_dashboard_back_text">BACK TO MAIN</string>
-
-    <string name="fragment_main_app_status_unregistered">APP STATUS: UNREGISTERED</string>
-    <string name="fragment_main_app_preface">This app records you device\'s screen to detect advertisement content served to you within various third-party apps.</string>
-    <string name="fragment_main_app_preface_unregistered">To begin detecting advertisements, you will need to register. This can be done below:</string>
-    <string name="fragment_main_register_text">Register</string>
-    <string name="fragment_main_footer_learn_more">To learn more about our research project, you can visit the official ADM+S website, by clicking <a href="https://www.admscentre.org.au/adobservatory/">here</a></string>
-    <string name="fragment_main_footer_privacy_policy"><a href="https://www.admscentre.org.au/the-australian-mobile-ad-toolkit-privacy-policy/">Read Our Privacy Policy</a></string>
-
-    <string name="fragment_main_app_status_registered">APP STATUS: REGISTERED</string>
     <string name="fragment_main_app_dashboard_tooltip">Advertisements that you have already observed can be viewed at your personal dashboard.</string>
     <string name="fragment_main_app_dashboard_text">GO TO MY DASHBOARD</string>
     <string name="fragment_main_process_ad_digest_text">PROCESS MY ADS</string>
-
-    <string name="dashboard_observed_prefix">Observed on </string>
-    <string name="notification_screen_lock_title">Ads stop being observed after locking your device</string>
-    <string name="notification_screen_lock_description">Tap to continue observing ads</string>
-
-
-    <string name="notification_reboot_title">Ad observations stop after a reboot</string>
-    <string name="notification_reboot_description">Tap to start observing ads again</string>
-    <string name="notification_periodic_title">Ads are not being observed</string>
-    <string name="notification_periodic_title_unregistered">The app is not registered</string>
-    <string name="notification_periodic_description">Tap to start observing ads</string>
-    <string name="notification_periodic_description_unregistered">Tap to register the app</string>
-    <string name="demographic_failsafe_string">One or more fields need to be entered before you can continue</string>
-    <string name="demographic_failsafe_country">Research participation is not available to users outside Australia at this point.</string>
-    <string name="activation_code_not_applicable">N/A</string>
-    <string name="activation_code_prefix">My Activation Code: </string>
-    <string name="activation_code_short_prefix">YOUR UNIQUE ACTIVATION CODE:</string>
-    <string name="activation_code_short_default"><font color="@color/yellow_primary">LOADING...</font></string>
-
-
-
-
-    <string name="notification_periodic_channel_id_name">Inactivity Reminders</string>
-    <string name="notification_periodic_channel_description">This app is designed to stop collecting ads whenever your device restarts. When this happens, we\'ll need your permission to re-enable it</string>
-    <string name="notification_recording_channel_id_name">Recording Reminders</string>
-    <string name="notification_recording_channel_description">Be informed of when our app has started collecting ads</string>
-    <string name="notification_recording_title">Ads are being observed</string>
-    <string name="notification_recording_description">The app is now collecting ads that have been served to you</string>
-    <string name="app_underscore_code">adms_mobile_ad_observatory</string>
-    <string name="app_child_directory_name">australianmobileadobservatory</string>
-    <string name="app_titled_code">AustralianMobileAdObservatory</string>
-
-
-    <string name="dialog_accessibility_launch_title">ACCESSIBILITY SERVICES</string>
-    <string name="dialog_accessibility_launch_description">This app uses accessibility services for necessary functionality that is not related to accessibility.</string>
-    <string name="dialog_accessibility_launch_text">ENABLE IN SETTINGS</string>
-    <string name="dialog_accessibility_learn_more">LEARN MORE</string>
-    <string name="dialog_accessibility_dismiss">DISMISS</string>
-    <string name="dialog_accessibility_revoke_text">REVOKE IN SETTINGS</string>
-
-
-
-    <string name="dialog_logs_error_title">LOG SUBMISSION FAILED</string>
-    <string name="dialog_logs_error_description">Unfortunately there was an error when attempting to submit your logs. Please try again later.</string>
-    <string name="dialog_logs_error_back">BACK</string>
-
-    <string name="dialog_logs_success_title">LOGS SUBMITTED</string>
-    <string name="dialog_logs_success_description">Your logs have now been submitted.</string>
-    <string name="dialog_logs_success_back">CLOSE</string>
-
-    <string name="dialog_outcome_template_title">TITLE GOES HERE</string>
-    <string name="dialog_outcome_template_description">Desciption goes here.</string>
-    <string name="dialog_outcome_template_dismiss">DISMISS</string>
-
-
-
-
-
-
+    <string name="fragment_main_footer_learn_more">To learn more about our research project, you can visit the official ADM+S website, by clicking <a href="https://www.admscentre.org.au/adobservatory/">here</a></string>
     <string name="fragment_main_accessibility_title">Important Notice</string>
     <string name="fragment_main_accessibility_description">This app uses accessibility services for necessary functionality not relating to accessibility.</string>
     <string name="fragment_main_accessibility_services">LEARN MORE</string>
+    <string name="fragment_settings_title">APP SETTINGS</string>
+
+
+    <string name="fragment_dashboard_title">AD DASHBOARD</string>
+    <string name="fragment_dashboard_back_text">BACK TO MAIN</string>
+    <string name="fragment_dashboard_note_to_hide">Note: You can disinclude an ad from your data donations by clicking the \'Hide\' icon.</string>
+
+    <string name="fragment_dashboard_button_previous">Previous</string>
+    <string name="fragment_dashboard_button_next">Next</string>
+    <string name="fragment_dashboard_empty_title">There are no ads in your dashboard</string>
+    <string name="fragment_dashboard_empty_note">Note: Ads may take some time to appear within your dashboard.</string>
+
+
+    <string name="fragment_settings_ad_detection_override_title">Override default ad detection settings</string>
+    <string name="fragment_settings_ad_detection_override_note">Note: This option can resolve app crashes caused by incorrect ad detector configurations.</string>
+    <string name="fragment_settings_manual_log_submission_title">Manually submit log information</string>
+    <string name="fragment_settings_manual_log_submission_description">While the app is designed to periodically send log information about the ads you see on your mobile device, you can also manually initiate this process by clicking the button below.</string>
+    <string name="fragment_settings_process_logs_button">Process Your Logs</string>
+
+
+    <string name="dialog_logs_success_title">LOGS SUBMITTED</string>
+    <string name="dialog_logs_success_description">Your logs have now been submitted.</string>
+    <string name="dialog_logs_error_title">LOG SUBMISSION FAILED</string>
+    <string name="dialog_logs_error_description">Unfortunately there was an error when attempting to submit your logs. Please try again later.</string>
 
 
     <string name="fragment_accessibility_disclosure_title">USAGE OF ACCESSIBILITY SERVICES</string>
@@ -104,19 +49,132 @@
     <string name="fragment_accessibility_disclosure_description_overview_3a">An application can apply the Android Accessibility Services API to get a better idea of when to collect data, and when to discard it.\n\nConsider the scenario of advertisements posted on social media platforms. The Android Accessibility Services API can be used in this situation to determine that the device is within the applications that serve these advertisements - it can then relay this information to the screen-recording service, advising it to either retain or discard data that will be processed further down the line.</string>
 
     <string name="fragment_accessibility_disclosure_description_overview_3b">Note: It is stressed that while the software logic checks whether the user is within said apps, that no data is retained conveying the explicit app names that a person visits on their device in any of this app\'s functionality.</string>
+
     <string name="fragment_accessibility_disclosure_description_overview_3c">In separate functionality of the app, social media advertisements advertised through the relevant social media platforms are collected through the screen-recording capabilities of the app, although this forms part of a disclosure that has been described in the privacy policy, and that is distinct to the contents of this \'Prominent Disclosure\'.</string>
 
     <string name="fragment_accessibility_disclosure_subtitle_data">DATA ACCESS, COLLECTION AND USAGE</string>
 
     <string name="fragment_accessibility_disclosure_data_1">This app accesses data about event changes in the system windows shown on the screen, as well as changes to a visually distinct section of the user interface.\n\nUpon reading data from these events, the app accesses the application package name of the mobile application in question that the user is currently interacting with; it then checks the package name to determine whether it coincides with an app currently being examined by the Australian Mobile Ad Toolkit.\n\nPartial to the screen-recording functionality of the app, this process is done to enable the app to discard screen-recordings of apps that are not relevant to the Australian Mobile Ad Toolkit, which reduces processing requirements and consequently improves the user experience of the app.</string>
 
+    <string name="dialog_accessibility_launch_title">ACCESSIBILITY SERVICES</string>
+    <string name="dialog_accessibility_launch_description">This app uses accessibility services for necessary functionality that is not related to accessibility.</string>
+    <string name="dialog_accessibility_launch_text">ENABLE IN SETTINGS</string>
+    <string name="dialog_accessibility_learn_more">LEARN MORE</string>
+    <string name="dialog_accessibility_dismiss">DISMISS</string>
+    <string name="dialog_accessibility_revoke_text">REVOKE IN SETTINGS</string>
+
+
+
+    <string name="dialog_submit_ads_title">PROCESS ADS</string>
+    <string name="dialog_submit_ads_button_launch">PROCESS ADS</string>
+    <string name="dialog_submit_ads_description">While the app is designed to intermittently process ads you\'ve seen, you can also manually fast-track this routine.</string>
+    <string name="dialog_submit_ads_processing_text">Your ads are now processing…</string>
+    <string name="fragment_dialog_submit_ads_processing_annotation_text">Your ads are now processing…</string>
+    <string name="dialog_submit_ads_processing_status_loading">STATUS: LOADING</string>
+    <string name="dialog_submit_ads_processing_progress_analyzed">ANALYSED: 0%</string>
+    <string name="dialog_submit_ads_button_cancel">CANCEL</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_starting">STARTING: 0%</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_status_appendage">STATUS: </string>
+    <string name="fragment_dialog_submit_ads_processing_progress_colon">: </string>
+    <string name="fragment_dialog_submit_ads_processing_progress_percentage">%</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_status_complete">STATUS: COMPLETE</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_100_percent">100%</string>
+    <string name="fragment_dialog_submit_ads_processing_summary_total_of">A total of </string>
+    <string name="fragment_dialog_submit_ads_processing_summary_have_been_processed"> files have been processed.</string>
+
+    <string name="fragment_main_footer_privacy_policy"><a href="https://www.admscentre.org.au/the-australian-mobile-ad-toolkit-privacy-policy/">Read Our Privacy Policy</a></string>
 
     <string name="fragment_accessibility_disclosure_subtitle_overview_4">ACCESSIBILITY SERVICES REQUIRED</string>
-
     <string name="fragment_accessibility_disclosure_description_overview_4">To begin observing ads, you must firstly enable accessibility services.\n\nThis app uses accessibility services for necessary functionality that is not related to accessibility.</string>
 
 
-    <string name="fragment_settings_title">APP SETTINGS</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <string name="notification_screen_lock_title">Ads stop being observed after locking your device</string>
+    <string name="notification_screen_lock_description">Tap to continue observing ads</string>
+
+
+    <string name="notification_reboot_title">Ad observations stop after a reboot</string>
+    <string name="notification_reboot_description">Tap to start observing ads again</string>
+
+    <string name="notification_periodic_channel_id_name">Inactivity Reminders</string>
+    <string name="notification_periodic_channel_description">This app is designed to stop collecting ads whenever your device restarts. When this happens, we\'ll need your permission to re-enable it</string>
+
+
+
+
+
+
+    <string name="notification_recording_channel_id_name">Recording Reminders</string>
+    <string name="notification_recording_channel_description">Be informed of when our app has started collecting ads</string>
+
+    <string name="notification_recording_title">Ads are being observed</string>
+    <string name="notification_recording_description">The app is now collecting ads that have been served to you</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <string name="app_underscore_code">adms_mobile_ad_observatory</string>
+    <string name="app_child_directory_name">australianmobileadobservatory</string>
+    <string name="app_titled_code">AustralianMobileAdObservatory</string>
+
+
+    <string name="dialog_outcome_template_title">TITLE GOES HERE</string>
+    <string name="dialog_outcome_template_description">Desciption goes here.</string>
+    <string name="dialog_outcome_template_dismiss">DISMISS</string>
+
+
+
+    <string name="dialog_logs_error_back">CLOSE</string>
+    <string name="dialog_logs_success_back">CLOSE</string>
+
+
+
+    <string name="fragment_accessibility_disclosure_button_exit">GO BACK</string>
+    <string name="dialog_submit_ads_button_exit">GO BACK</string>
+
+
+    <string name="dialog_loading">Loading...</string>
+    <string name="fragment_dashboard_card_loading">Loading…</string>
+    <string name="activation_code_short_default"><font color="@color/yellow_primary">LOADING...</font></string>
+
+
 
 </resources>
 

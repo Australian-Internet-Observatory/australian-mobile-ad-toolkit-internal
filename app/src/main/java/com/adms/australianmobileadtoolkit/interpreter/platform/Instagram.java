@@ -167,9 +167,8 @@ public class Instagram {
                     }
 
                     if (Objects.equals(tentativeAdType, "FEED_BASED")) {
-                        boolean hello = true;
                         try {
-                            if (((Double) boundingBoxSponsored.get("confidence")) > 0.4) {
+                            if (((Double) boundingBoxSponsored.get("confidence")) > 0.3) {
                                 // Identify the FEED_POST_HEADER that intersects the SPONSORED_TEXT - we are going
                                 // to make an assumption that this always exists
                                 upperMostY = (Double) boundingBoxesDeep.stream()

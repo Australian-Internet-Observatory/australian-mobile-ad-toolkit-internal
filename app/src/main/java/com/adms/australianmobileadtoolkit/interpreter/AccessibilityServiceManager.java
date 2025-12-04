@@ -1,20 +1,11 @@
 package com.adms.australianmobileadtoolkit.interpreter;
 
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
-import static com.arthenica.ffmpegkit.Packages.getPackageName;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.ServiceInfo;
-import android.provider.Settings;
-import android.text.TextUtils;
-import android.util.Log;
 import android.view.accessibility.AccessibilityManager;
-
-import com.adms.australianmobileadtoolkit.ui.dialogs.DialogEnableAccessibilityService;
-import com.adms.australianmobileadtoolkit.ui.dialogs.DialogFailedRegistration;
 
 import java.util.List;
 

@@ -131,7 +131,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:id="@+id/buttonBackToMain"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Go Back"
+            android:text="@string/fragment_accessibility_disclosure_button_exit"
             android:theme="@style/SecondaryButton" />
 
         <TextView

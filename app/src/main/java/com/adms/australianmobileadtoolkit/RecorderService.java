@@ -68,7 +68,9 @@ import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -105,9 +107,6 @@ public final class RecorderService extends Service {
 
     private static Intent recorderIntent;
     private MediaProjectionManager projectionManager;
-
-    private int displayWidth = 0;
-    private int displayHeight = 0;
     private int screenDensity = 0;
 
     /*
@@ -328,13 +327,11 @@ public final class RecorderService extends Service {
 
     public static String getCurrentAppPackageName(Context context) {
         String appPackageName = "unclassified";
-        String tentativeAppPackageName = "unclassified";
-        try { tentativeAppPackageName = readStringFromFile(new File(MainActivity.getMainDir(context), "withinTargetApplication")); } catch (Exception ignored) {
-            ignored.printStackTrace();
-        }
-        String finalTentativeAppPackageName = tentativeAppPackageName;
-        if (triggerableAppPackageNames.stream().anyMatch(x -> finalTentativeAppPackageName.contains(x))) {
-            appPackageName = augmentAppPackageName(tentativeAppPackageName);
+        String finalTentativeAppPackageName = dataStoreRead(context, "recorderServiceIntentTargetPlatform", null);
+        if (finalTentativeAppPackageName != null) {
+            if (triggerableAppPackageNames.stream().anyMatch(finalTentativeAppPackageName::contains)) {
+                appPackageName = augmentAppPackageName(finalTentativeAppPackageName);
+            }
         }
         return appPackageName;
     }
@@ -388,17 +385,36 @@ public final class RecorderService extends Service {
         }
     }
 
-    private boolean configureMediaRecorder() {
-
-        final Integer lowerBoundOnWidth = (android.os.Build.VERSION.SDK_INT < 28) ? 2000 : 600;
-
+    private Map<String, Integer> getReappliedDimensions() {
+        int lowerBoundOnWidth = (android.os.Build.VERSION.SDK_INT < 28) ? 2000 : 600; // 500 works - 600 - not works - 700 works
         DisplayMetrics metrics = new DisplayMetrics();
         WindowManager wm = (WindowManager) getApplicationContext().getSystemService(WINDOW_SERVICE);
         wm.getDefaultDisplay().getRealMetrics(metrics);
         screenDensity = metrics.densityDpi;
 
-        displayWidth = 0;
-        displayHeight = 0;
+        int displayWidth = 0;
+        int displayHeight = 0;
+        // Fun fact : Android MediaRecorder will not 'prepare' if either supplied dimension is not a divisor of 2
+        while (!((displayWidth % 2 == 0) && (displayHeight % 2 == 0)) || (displayWidth == 0) || (displayHeight == 0)) {
+            lowerBoundOnWidth ++;
+            if (metrics.widthPixels < metrics.heightPixels) {
+                displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
+                displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
+            } else {
+                displayHeight = Math.max((int)Math.round(metrics.heightPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
+                displayWidth = (int)Math.round(displayHeight*((double)metrics.widthPixels/(double)metrics.heightPixels));
+            }
+        }
+        logMessage(TAG, "displayWidth: "+displayWidth );
+        logMessage(TAG, "displayHeight: "+displayHeight );
+        logMessage(TAG, "metrics.widthPixels: "+metrics.widthPixels );
+        logMessage(TAG, "metrics.heightPixels: "+metrics.heightPixels );
+
+        return Map.of("w", displayWidth,"h", displayHeight);
+
+    }
+
+    private boolean configureMediaRecorder() {
 
         // This code block only initiates when a new stream of recordings is started (originally, we had hoped to have
         // it execute in the 'configuration change' event (such as when changing orientation of the device), although it
@@ -418,13 +434,11 @@ public final class RecorderService extends Service {
         // will pinpoint the orientation at the point in time that the recording was undertaken, through means of the logs - if a mismatch is observed
         // between the orientation of the screen-recording, and the one provided in the logs, a cropping will then be warranted on the frame.
 
-        if (metrics.widthPixels < metrics.heightPixels) {
-            displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
-            displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
-        } else {
-            displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
-            displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
-        }
+        Map<String, Integer> reappliedDimensions = getReappliedDimensions();
+        Integer displayWidth = reappliedDimensions.get("w");
+        Integer displayHeight = reappliedDimensions.get("h");
+
+
 
         String finalOrientationAdjusted = ((displayWidth < displayHeight) ? "portrait" : "landscape");
 
@@ -436,8 +450,6 @@ public final class RecorderService extends Service {
 
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        logMessage(TAG, "displayWidthAdjusted:"+displayWidth );
-        logMessage(TAG, "displayHeightAdjusted:"+displayHeight);
         mMediaRecorder.setVideoSize(displayWidth, displayHeight);
         mMediaRecorder.setMaxFileSize(videoRecordingMaximumFileSize); // 5mb (4.7mb)
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
@@ -466,19 +478,16 @@ public final class RecorderService extends Service {
      *
      * */
     private void startRecording(int resultCode, Intent data) {
-        final Integer lowerBoundOnWidth = (android.os.Build.VERSION.SDK_INT < 28) ? 2000 : 500;
         // If the recording is not in progress
         if(!recordingInProgress) {
             projectionManager = (MediaProjectionManager)
                     getApplicationContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
             mMediaRecorder = new MediaRecorder();
 
-            DisplayMetrics metrics = new DisplayMetrics();
-            WindowManager wm = (WindowManager) getApplicationContext().getSystemService(WINDOW_SERVICE);
-            wm.getDefaultDisplay().getRealMetrics(metrics);
-            screenDensity = metrics.densityDpi;
-            displayWidth = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
-            displayHeight = (int)Math.round(displayWidth*((double)metrics.heightPixels/(double)metrics.widthPixels));
+
+            Map<String, Integer> reappliedDimensions = getReappliedDimensions();
+            Integer displayWidth = reappliedDimensions.get("w");
+            Integer displayHeight = reappliedDimensions.get("h");
 
             // Determine the orientation of the device
             String finalOrientation = ((displayWidth < displayHeight) ? "portrait" : "landscape");
@@ -549,23 +558,6 @@ public final class RecorderService extends Service {
                             + " been reached; setting new output file.");
 
                     // Change configuration of metrics
-                    /*
-                    int displayWidthAdjusted = 0;
-                    int displayHeightAdjusted = 0;
-
-                    if (metrics.widthPixels < metrics.heightPixels) {
-                        displayWidthAdjusted = Math.max((int)Math.round(metrics.widthPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
-                        displayHeightAdjusted = (int)Math.round(displayWidthAdjusted*((double)metrics.heightPixels/(double)metrics.widthPixels));
-                    } else {
-                        displayHeightAdjusted = Math.max((int)Math.round(metrics.heightPixels/ appSettings.recordScaleDivisor), lowerBoundOnWidth);
-                        displayWidthAdjusted = (int)Math.round(displayHeightAdjusted*((double)metrics.widthPixels/(double)metrics.heightPixels));
-                    }
-
-                    String finalOrientationAdjusted = ((displayWidthAdjusted < displayHeightAdjusted) ? "portrait" : "landscape");
-                    mMediaRecorder.setVideoSize(displayWidthAdjusted, displayHeightAdjusted);
-
-                     */
-
 
                     // Write out a new file
                     tentativeRecordingFilename = recordingFilename(videoDir, finalOrientation, this); // TODO - set to adjusted
@@ -622,11 +614,11 @@ public final class RecorderService extends Service {
 
             boolean didPrepare = configureMediaRecorder();
 
-            attemptToStartRecording(didPrepare, resultCode, data, true);
+            attemptToStartRecording(didPrepare, resultCode, data, true, displayWidth, displayHeight);
         }
     }
 
-    private void attemptToStartRecording(boolean didPrepare, int thisResultCode, Intent thisData, boolean firstPass) {
+    private void attemptToStartRecording(boolean didPrepare, int thisResultCode, Intent thisData, boolean firstPass, Integer displayWidth, Integer displayHeight) {
 
         // Set up a new MediaProjectionManager for the recording process
         boolean didStart = false;

@@ -87,17 +87,6 @@ public class appSettings {
    public static int maxNumberOfVideos = 60*3*2;// 60 * 3; // 60*3*5MB = 900MB
 
    /*
-    *
-    * This method retrieves the name of the application
-    *
-    * */
-   public static String getApplicationName(Context context) {
-      ApplicationInfo applicationInfo = context.getApplicationInfo();
-      int stringId = applicationInfo.labelRes;
-      return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : context.getString(stringId);
-   }
-
-   /*
    *
    * This method retrieves the title of the notification that is sent off whenever a reboot of the
    * device takes place
@@ -112,49 +101,10 @@ public class appSettings {
       return context.getString(R.string.notification_reboot_description);
    }
 
-   /*
-    *
-    * This method retrieves the title of the notification that is sent off periodically, when the device
-    * is not observing ads
-    *
-    * */
-   public static String get_NOTIFICATION_PERIODIC_TITLE(Context context) {
-      return context.getString(R.string.notification_periodic_title);
-   }
-
-   public static String get_NOTIFICATION_PERIODIC_TITLE_UNREGISTERED(Context context) {
-      return context.getString(R.string.notification_periodic_title_unregistered);
-   }
-
-   // The description of the notification that is sent off periodically, when the device is not observing ads
-   public static String get_NOTIFICATION_PERIODIC_DESCRIPTION(Context context) {
-      return context.getString(R.string.notification_periodic_description);
-   }
-
-   public static String get_DEMOGRAPHIC_FAILSAFE_STRING(Context context) {
-      return context.getString(R.string.demographic_failsafe_string);
-   };
-   public static String get_DEMOGRAPHIC_FAILSAFE_COUNTRY(Context context) {
-      return context.getString(R.string.demographic_failsafe_country);
-   };
-
-   public static String get_ACTIVATION_CODE_NOT_APPLICABLE_STRING(Context context) {
-      return context.getString(R.string.activation_code_not_applicable);
-   }
-   public static String get_ACTIVATION_CODE_PREFIX_STRING(Context context) {
-      return context.getString(R.string.activation_code_prefix);
-   }
-
    public static String get_ACTIVATION_CODE_SHORT_DEFAULT(Context context) {
       return context.getString(R.string.activation_code_short_default);
    }
 
-   public static String get_ACTIVATION_SHORT_CODE_PREFIX_STRING(Context context) {
-      return context.getString(R.string.activation_code_short_prefix);
-   }
-   public static String get_NOTIFICATION_PERIODIC_DESCRIPTION_UNREGISTERED(Context context) {
-      return context.getString(R.string.notification_periodic_description_unregistered);
-   }
    // The unique ID associated with the periodic notification channel
    public static String get_NOTIFICATION_PERIODIC_CHANNEL_ID(Context context) {
       return context.getString(R.string.app_underscore_code)+"_notification_periodic_channel";

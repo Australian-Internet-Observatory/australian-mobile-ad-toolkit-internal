@@ -49,7 +49,7 @@
                 android:paddingVertical="10dp"
                 android:textColor="@color/yellow_primary"
                 android:textStyle="italic"
-                android:text="Note: You can disinclude an ad from your data donations by clicking the 'Hide' icon."
+                android:text="@string/fragment_dashboard_note_to_hide"
                 />
         </RelativeLayout>
         <View
@@ -155,7 +155,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:theme="@style/PrimaryButton"
-                android:text="Previous"
+                android:text="@string/fragment_dashboard_button_previous"
                 />
         </LinearLayout>
 
@@ -172,7 +172,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:theme="@style/PrimaryButton"
-                android:text="Next"
+                android:text="@string/fragment_dashboard_button_next"
                 />
         </LinearLayout>
     </LinearLayout>

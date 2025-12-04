@@ -81,12 +81,13 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
         if (instance != null) {
             (new Thread(() -> {
                 instance.getOwnerActivity().runOnUiThread(()-> {
-                    ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_annotation)).setText("Your ads are now processing...");
+
+                    ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_annotation)).setText(R.string.fragment_dialog_submit_ads_processing_annotation_text);
                     ((RelativeLayout) instance.findViewById(R.id.loadingPanel)).setVisibility(View.VISIBLE);
                     ((Button) instance.findViewById(R.id.buttonExitProcessMyAdDigest)).setVisibility(View.VISIBLE);
                     ((ImageView) instance.findViewById(R.id.process_ad_digest_complete_icon)).setVisibility(View.GONE);
                     ((ProgressBar) instance.findViewById(R.id.progress_bar_processing)).setProgress(0);
-                    ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText("STARTING: 0%");
+                    ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText(R.string.fragment_dialog_submit_ads_processing_progress_starting);
 
                 });
 
@@ -148,7 +149,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
                         instance.getOwnerActivity().runOnUiThread(()-> {
 
-                            ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_status)).setText("STATUS: " + formalPlatformRoutineState);
+                            ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_status)).setText(R.string.fragment_dialog_submit_ads_processing_progress_status_appendage + formalPlatformRoutineState);
 
                             Integer progressReadingApplied = 0;
                             String progressReadingAnnotation = "ANALYSED";
@@ -164,7 +165,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
                             }
 
-                            ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText(progressReadingAnnotation+": " + progressReadingApplied.toString() + "%");
+                            ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText(progressReadingAnnotation + R.string.fragment_dialog_submit_ads_processing_progress_colon + progressReadingApplied.toString() + R.string.fragment_dialog_submit_ads_processing_progress_percentage);
                             ProgressBar progressBarAnalyzed = ((ProgressBar) instance.findViewById(R.id.progress_bar_processing));
                             progressBarAnalyzed.startAnimation((new ProgressBarAnimation(progressBarAnalyzed, progressBarAnalyzed.getProgress(), progressReadingApplied)));
 
@@ -179,8 +180,8 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
 
                 instance.getOwnerActivity().runOnUiThread(()-> {
-                    ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_status)).setText("STATUS: COMPLETE" );
-                    ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText("100%");
+                    ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_status)).setText(R.string.fragment_dialog_submit_ads_processing_progress_status_complete);
+                    ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText(R.string.fragment_dialog_submit_ads_processing_progress_100_percent);
                     ProgressBar progressBarAnalyzed = ((ProgressBar) instance.findViewById(R.id.progress_bar_processing));
                     progressBarAnalyzed.startAnimation((new ProgressBarAnimation(progressBarAnalyzed, progressBarAnalyzed.getProgress(), 100)));
                 });
@@ -196,7 +197,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
                 instance.getOwnerActivity().runOnUiThread(()-> {
                     //instance.refreshDialog(context);
-                    ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_annotation)).setText("A total of "+platformRoutineToAnalyzeFinal+" files have been processed.");
+                    ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_annotation)).setText(R.string.fragment_dialog_submit_ads_processing_summary_total_of + platformRoutineToAnalyzeFinal + R.string.fragment_dialog_submit_ads_processing_summary_have_been_processed);
                     ((Button) instance.findViewById(R.id.buttonExitProcessMyAdDigest)).setVisibility(View.GONE);
                     ((RelativeLayout) instance.findViewById(R.id.loadingPanel)).setVisibility(View.GONE);
                     ((ImageView) instance.findViewById(R.id.process_ad_digest_complete_icon)).setVisibility(View.VISIBLE);

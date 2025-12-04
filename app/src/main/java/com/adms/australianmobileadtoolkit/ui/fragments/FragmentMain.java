@@ -1,12 +1,9 @@
 package com.adms.australianmobileadtoolkit.ui.fragments;
 
-import static android.text.TextUtils.split;
-import static com.adms.australianmobileadtoolkit.Common.dataStoreRead;
 import static com.adms.australianmobileadtoolkit.MainActivity.retrieveShortActivationCode;
 import static com.adms.australianmobileadtoolkit.MainActivity.safelySetToggleInViewModel;
 import static com.adms.australianmobileadtoolkit.RecorderService.createIntentForScreenRecording;
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
-import static com.adms.australianmobileadtoolkit.appSettings.observerRegisteredDefaultValue;
 import static com.adms.australianmobileadtoolkit.interpreter.AccessibilityServiceManager.isAccessibilityServiceEnabled;
 
 import android.content.Context;
@@ -14,7 +11,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,30 +45,12 @@ public class FragmentMain extends Fragment {
    // The SwitchCompat toggler used with screen-recording
    private static Switch mToggleButton;
    // TODO - comment
-   private Button mregisterButton;
    // De-bouncer variable on toggler
    private static boolean mToggleButtonDebouncerActivated;
 
    private static ItemViewModel viewModel;
 
    private boolean actionedLatestIntent = false;
-
-
-
-   public void goToRegistration() {
-      Fragment fragment = new FragmentRegistration1();
-
-      FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-      transaction.setCustomAnimations(
-              R.anim.enter_from_right,  // enter
-              R.anim.exit_to_left,  // exit
-              R.anim.enter_from_left,   // popEnter
-              R.anim.exit_to_right  // popExit
-      );
-      transaction.replace(R.id.fragmentContainerView, fragment);
-      transaction.addToBackStack(null);
-      transaction.commit();
-   }
 
    private View view;
 
@@ -85,8 +63,6 @@ public class FragmentMain extends Fragment {
 
       // Attach the variable mToggleButton to the control within the view
       mToggleButton = (Switch) view.findViewById(R.id.simpleSwitch);
-      // TODO // - comment
-      mregisterButton = (Button) view.findViewById(R.id.buttonRegister);
 
       // Initialise the de-bouncer on the mToggleButton control
       mToggleButtonDebouncerActivated = false;
@@ -112,21 +88,14 @@ public class FragmentMain extends Fragment {
          }
          mToggleButtonDebouncerActivated = true;
       });
-      // TODO - comment
-      mregisterButton.setOnClickListener(v ->{
-         goToRegistration();
-         //startActivity(new Intent(this, RegistrationActivity.class));
-      });
 
       ((TextView)view.findViewById(R.id.fragment_main_learn_more)).setMovementMethod(LinkMovementMethod.getInstance());
       ((TextView)view.findViewById(R.id.fragment_main_privacy_policy)).setMovementMethod(LinkMovementMethod.getInstance());
-      ((TextView)view.findViewById(R.id.fragment_main_learn_more_unregistered)).setMovementMethod(LinkMovementMethod.getInstance());
       ((TextView)view.findViewById(R.id.fragment_main_privacy_policy_unregistered)).setMovementMethod(LinkMovementMethod.getInstance());
 
       // If the device is registeredc
       //if (THIS_REGISTRATION_STATUS) { // NB: This can be inverted for testing purposes - default is (!THIS_REGISTRATION_STATUS)
          // Hide the 'unregistered' screen
-         view.findViewById(R.id.fragment_main_unregistered).setVisibility(View.GONE);
 
          Button buttonDashboard = (Button) view.findViewById(R.id.buttonDashboard);
          buttonDashboard.setOnClickListener(v ->{
@@ -185,9 +154,6 @@ public class FragmentMain extends Fragment {
          transaction.commit();
       });
 
-      Button buttonAccessibilityDisclosureA = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureA);
-      buttonAccessibilityDisclosureA.setOnClickListener(commonAccessibilityServicesProminentDisclosureRoutine);
-
       Button buttonAccessibilityDisclosureB = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureB);
       buttonAccessibilityDisclosureB.setOnClickListener(commonAccessibilityServicesProminentDisclosureRoutine);
 
@@ -211,8 +177,6 @@ public class FragmentMain extends Fragment {
 
 
       // TODO - check accessibility permissions status and then relay to button design
-
-      Button buttonAccessibilityDisclosureAER = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureAER);
       Button buttonAccessibilityDisclosureBER = (Button) view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureBER);
 
       updateAccessibilityServicesButtonText(requireContext(), view);
@@ -220,7 +184,6 @@ public class FragmentMain extends Fragment {
       View.OnClickListener commonLaunchAccessibilityPermissionsRoutine = (v -> {
          requireContext().startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
       });
-      buttonAccessibilityDisclosureAER.setOnClickListener(commonLaunchAccessibilityPermissionsRoutine);
       buttonAccessibilityDisclosureBER.setOnClickListener(commonLaunchAccessibilityPermissionsRoutine);
 
       startAccessibilityService();
@@ -232,13 +195,10 @@ public class FragmentMain extends Fragment {
    }
 
    public static void updateAccessibilityServicesButtonText(Context context, View view) {
-      Button buttonAccessibilityDisclosureAER = view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureAER);
       Button buttonAccessibilityDisclosureBER = view.findViewById(R.id.buttonAccessibilityServicesProminentDisclosureBER);
       if (!isAccessibilityServiceEnabled(context, AccessibilityService.class)) {
-         buttonAccessibilityDisclosureAER.setText(R.string.dialog_accessibility_launch_text);
          buttonAccessibilityDisclosureBER.setText(R.string.dialog_accessibility_launch_text);
       } else {
-         buttonAccessibilityDisclosureAER.setText(R.string.dialog_accessibility_revoke_text);
          buttonAccessibilityDisclosureBER.setText(R.string.dialog_accessibility_revoke_text);
       }
    }
@@ -290,7 +250,7 @@ public class FragmentMain extends Fragment {
          switch (intentOfMainActivity) {
             case "REGISTER" :
                actionedLatestIntent = true;
-               ; break ;
+               break ;
             case "TURN_ON_SCREEN_RECORDER" :
 
                if (!Boolean.TRUE.equals(viewModel.getToggleStatusInViewModel().getValue()))  {
@@ -300,7 +260,7 @@ public class FragmentMain extends Fragment {
                   //setToggle(thisValue);
                }
                actionedLatestIntent = true;
-               ; break ;
+               break ;
             default : break ;
          }
          MainActivity.intentOfMainActivity = "NONE";

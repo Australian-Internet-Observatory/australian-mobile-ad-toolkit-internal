@@ -4,10 +4,6 @@ import static android.view.View.TEXT_ALIGNMENT_CENTER;
 import static android.widget.LinearLayout.VERTICAL;
 import static androidx.core.content.ContentProviderCompat.requireContext;
 import static com.adms.australianmobileadtoolkit.MainActivity.THIS_OBSERVER_ID;
-import static com.adms.australianmobileadtoolkit.MainActivity.retrieveShortActivationCode;
-import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_NOT_APPLICABLE_STRING;
-import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_CODE_PREFIX_STRING;
-import static com.adms.australianmobileadtoolkit.appSettings.get_ACTIVATION_SHORT_CODE_PREFIX_STRING;
 import static com.adms.australianmobileadtoolkit.appSettings.logMessage;
 
 import android.annotation.SuppressLint;

@@ -41,7 +41,7 @@
                 android:letterSpacing="0.1"
                 android:paddingHorizontal="0dp"
                 android:paddingVertical="10dp"
-                android:text="PROCESS ADS"
+                android:text="@string/dialog_submit_ads_title"
                 android:textAlignment="center"
                 android:textColor="@color/yellow_primary"
                 android:textSize="17sp" />
@@ -49,7 +49,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="While the app is designed to intermittently process ads you've seen, you can also manually fast-track this routine."
+                android:text="@string/dialog_submit_ads_description"
                 android:textAlignment="center"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -61,7 +61,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="10dp"
                 android:gravity="center"
-                android:text="PROCESS ADS"
+                android:text="@string/dialog_submit_ads_button_launch"
                 android:theme="@style/PrimaryButton" />
 
             <Button
@@ -71,7 +71,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="10dp"
                 android:gravity="center"
-                android:text="GO BACK"
+                android:text="@string/dialog_submit_ads_button_exit"
                 android:theme="@style/SecondaryButton" />
         </LinearLayout>
 
@@ -118,7 +118,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textStyle="italic"
-                android:text="Your ads are now processing..."
+                android:text="@string/dialog_submit_ads_processing_text"
                 android:textAlignment="center"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -134,7 +134,7 @@
                 android:letterSpacing="0.15"
                 android:paddingHorizontal="15dp"
                 android:paddingVertical="10dp"
-                android:text="STATUS: LOADING"
+                android:text="@string/dialog_submit_ads_processing_status_loading"
                 android:textAlignment="center"
                 android:textColor="@color/yellow_primary"
                 android:textSize="13.5sp" />
@@ -171,7 +171,7 @@
                         android:gravity="center"
                         android:letterSpacing="0.1"
                         android:paddingTop="2.5dp"
-                        android:text="ANALYSED: 0%"
+                        android:text="@string/dialog_submit_ads_processing_progress_analyzed"
                         android:textAlignment="center"
                         android:textColor="@color/black"
                         android:textSize="15sp" />
@@ -195,7 +195,7 @@
                     android:layout_marginTop="5dp"
                     android:layout_marginRight="5dp"
                     android:gravity="center"
-                    android:text="CANCEL"
+                    android:text="@string/dialog_submit_ads_button_cancel"
                     android:theme="@style/PrimaryButton" />
 
                 <Button
@@ -208,7 +208,7 @@
                     android:layout_marginLeft="5dp"
                     android:layout_marginTop="5dp"
                     android:gravity="center"
-                    android:text="GO BACK"
+                    android:text="@string/dialog_submit_ads_button_exit"
                     android:theme="@style/SecondaryButton" />
 
             </GridLayout>

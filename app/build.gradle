@@ -4,7 +4,7 @@ plugins {
 }
 android {
     namespace 'com.adms.australianmobileadtoolkit'
-    compileSdk 34
+    compileSdk 35
     packagingOptions {
         resources.excludes.add("META-INF/*")
     }
@@ -18,9 +18,9 @@ android {
         applicationId 'com.adms.australianmobileadtoolkit'
         multiDexEnabled  true
         minSdk 26
-        targetSdk 34
-        versionCode 1041
-        versionName "1.041"
+        targetSdk 35
+        versionCode 1048
+        versionName "1.048"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets {

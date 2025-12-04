@@ -56,7 +56,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
                 android:layout_weight="2"
                 android:textStyle="bold"
                 android:textColor="@color/yellow_primary"
-                android:text="Override default ad detection settings" />
+                android:text="@string/fragment_settings_ad_detection_override_title" />
 
             <CheckBox
                 android:id="@+id/checkboxOverrideDefaultAdDetectionSettings"
@@ -70,7 +70,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_height="wrap_content"
             android:textStyle="italic"
             android:textSize="5pt"
-            android:text="Note: This option can resolve app crashes caused by incorrect ad detector configurations."
+            android:text="@string/fragment_settings_ad_detection_override_note"
             android:paddingBottom="10dp" />
 
 
@@ -89,7 +89,7 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_weight="2"
             android:textStyle="bold"
             android:textColor="@color/yellow_primary"
-            android:text="Manually submit log information"
+            android:text="@string/fragment_settings_manual_log_submission_title"
             android:paddingBottom="10dp"
             />
         <TextView
@@ -97,14 +97,14 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_height="wrap_content"
             android:textStyle="italic"
             android:textSize="5pt"
-            android:text="While the app is designed to periodically send log information about the ads you see on your mobile device, you can also manually initiate this process by clicking the button below."
+            android:text="@string/fragment_settings_manual_log_submission_description"
             android:paddingBottom="10dp" />
 
         <Button
             android:id="@+id/buttonProcessLogs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Process Your Logs"
+            android:text="@string/fragment_settings_process_logs_button"
             android:theme="@style/PrimaryButton"/>
 
         <View

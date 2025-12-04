@@ -86,7 +86,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="Loading..."
+                android:text="@string/fragment_dashboard_card_loading"
                 android:textAlignment="center"
                 android:textColor="@color/yellow_primary"
                 android:textSize="10dp"
