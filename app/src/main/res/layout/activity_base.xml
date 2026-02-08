@@ -17,7 +17,7 @@
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/fragmentContainerView"
-            android:name="com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain"
+            android:name="com.adms.australianmobileadtoolkit.ui.fragments.FragmentSetupLanguage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
     </LinearLayout>

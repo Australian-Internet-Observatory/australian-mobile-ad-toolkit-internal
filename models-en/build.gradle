@@ -4,8 +4,8 @@ plugins {
 }
 
 assetPack {
-    packName = "modelsquantized" // Directory name for the asset pack
+    packName = "models-en" // Directory name for the asset pack
     dynamicDelivery {
-        deliveryType = "install-time"
+        deliveryType = "on-demand"
     }
 }

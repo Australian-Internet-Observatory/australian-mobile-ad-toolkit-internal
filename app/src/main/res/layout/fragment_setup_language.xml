@@ -1,0 +1,69 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/fragment_main"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.adms.australianmobileadtoolkit.MainActivity">
+
+    <LinearLayout
+        android:id="@+id/fragment_main_registered"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="15dp"
+        android:fillViewport="true"
+        tools:ignore="UseSwitchCompatOrMaterialXml">
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center">
+
+
+                <!-- Centering wrapper -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:paddingHorizontal="48dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxWidth="600dp"
+                        android:orientation="vertical">
+
+                        <Button
+                            android:id="@+id/buttonSetLanguageEnglish"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/fragment_setup_language_english"
+                            android:layout_marginBottom="10dp"
+                            android:theme="@style/PrimaryButton"/>
+                        <Button
+                            android:id="@+id/buttonSetLanguagePortuguese"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/fragment_setup_language_portuguese"
+                            android:layout_marginBottom="10dp"
+                            android:theme="@style/PrimaryButton"/>
+                        <Button
+                            android:id="@+id/buttonSetLanguageVietnamese"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/fragment_setup_language_vietnamese"
+                            android:theme="@style/PrimaryButton"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+    </LinearLayout>
+</LinearLayout>
