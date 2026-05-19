@@ -19,8 +19,8 @@ android {
         multiDexEnabled  true
         minSdk 26
         targetSdk 35
-        versionCode 1048
-        versionName "1.048"
+        versionCode 1053
+        versionName "1.053"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets {
@@ -33,6 +33,11 @@ android {
             java {
                 sourceSets.main.res.filter.exclude '**/testVideosAlias'
             }
+        }
+    }
+    bundle {
+        language {
+            enableSplit = false //!project.hasProperty("NO_LANG_SPLIT")
         }
     }
     buildTypes {
@@ -52,7 +57,7 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
-    assetPacks = [":models", ":modelsquantized"]
+    assetPacks = [":modelsEN", ":modelsquantizedEN", ":modelsPT", ":modelsquantizedPT", ":modelsVI", ":modelsquantizedVI"]
 }
 
 dependencies {
@@ -78,7 +83,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.9.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    implementation 'com.arthenica:ffmpeg-kit-full:6.0-2'
+    implementation "com.mrljdx:ffmpeg-kit-full:6.1.4"
     implementation group: 'com.github.dpaukov', name: 'combinatoricslib3', version: '3.4.0'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
     implementation 'org.apache.commons:commons-collections4:4.5.0-M2'
@@ -128,3 +133,6 @@ dependencies {
     // testImplementation group: 'org.bytedeco.gradle-javacpp-platform', name: 'org.bytedeco.gradle-javacpp-platform.gradle.plugin', version: '1.5.10', ext: 'pom'
 
 }
+
+
+

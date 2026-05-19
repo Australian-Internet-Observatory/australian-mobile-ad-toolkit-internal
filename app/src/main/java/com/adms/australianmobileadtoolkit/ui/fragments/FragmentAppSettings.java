@@ -66,6 +66,23 @@ public class FragmentAppSettings extends Fragment {
             transaction.commit();
         });
 
+
+
+
+        Button mbuttonSetLanguage = (Button) view.findViewById(R.id.buttonSetLanguage);
+        mbuttonSetLanguage.setOnClickListener(v ->{
+            FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+            transaction.setCustomAnimations(
+                    R.anim.enter_from_left,  // enter
+                    R.anim.exit_to_right,  // exit
+                    R.anim.enter_from_right,   // popEnter
+                    R.anim.exit_to_left  // popExit
+            );
+            transaction.replace(R.id.fragmentContainerView, FragmentSetupLanguage.newInstance("SETTINGS"));
+            transaction.addToBackStack(null);
+            transaction.commit();
+        });
+
         Button mbuttonProcessLogs = (Button) view.findViewById(R.id.buttonProcessLogs);
         mbuttonProcessLogs.setOnClickListener(v ->{
             processLogsLoading = new DialogLoading(requireContext());

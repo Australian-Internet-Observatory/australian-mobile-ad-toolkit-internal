@@ -27,7 +27,13 @@
         android:theme="@style/Theme.AustralianMobileAdToolkit"
         android:grantUriPermissions="true"
         android:requestLegacyExternalStorage="true"
-        tools:targetApi="31">
+        android:localeConfig="@xml/locales_config"
+        tools:targetApi="33">
+
+        <provider
+            android:name=".SettingsProvider"
+            android:authorities="${applicationId}.settings"
+            android:exported="false" />
 
         <!-- No other component of the app should have a process - otherwise, the recorder service will be discarded when the app is closed.  -->
         <service

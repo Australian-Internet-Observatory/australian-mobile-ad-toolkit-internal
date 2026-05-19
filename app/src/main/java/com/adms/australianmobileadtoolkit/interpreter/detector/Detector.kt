@@ -4,21 +4,26 @@ package com.adms.australianmobileadtoolkit.interpreter.detector
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
-import androidx.core.content.ContentProviderCompat.requireContext
 import com.adms.australianmobileadtoolkit.Common
+import com.adms.australianmobileadtoolkit.Common.dataStoreRead
 import com.adms.australianmobileadtoolkit.appSettings.logMessage
 import com.adms.australianmobileadtoolkit.interpreter.detector.MetaData.extractNamesFromLabelFile
 import com.adms.australianmobileadtoolkit.interpreter.detector.MetaData.extractNamesFromMetadata
+import com.google.android.play.core.assetpacks.AssetPackManagerFactory
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.gpu.GpuDelegate
-import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.CastOp
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import java.io.File
+import java.io.FileInputStream
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
+
 
 class Detector(
     private val context: Context,
@@ -41,6 +46,14 @@ class Detector(
         .add(CastOp(INPUT_IMAGE_TYPE))
         .build()
 
+    fun mmapFile(f: File): MappedByteBuffer {
+        require(f.exists()) { "File does not exist: ${f.absolutePath}" }
+        FileInputStream(f).use { fis ->
+            val ch = fis.channel
+            return ch.map(FileChannel.MapMode.READ_ONLY, 0, ch.size())
+        }
+    }
+
     init {
         val compatList = CompatibilityList()
 
@@ -56,11 +69,32 @@ class Detector(
         }
 
 
-        //val model = FileUtil.loadMappedFile(context, "float32_facebook_sponsored_int8.tflite")
+        val languageCode = dataStoreRead(context, "appLanguage", "EN")
 
-        val model = FileUtil.loadMappedFile(context, modelPath)
-        //val model = FileUtil.loadMappedFile(context, "float16_facebook_sponsored.tflite")
-        //interpreter = Interpreter(model, options)
+        val packName = "models" + (if (modelPath.startsWith("float32")) "quantized" else "") + languageCode
+        val apm = AssetPackManagerFactory.getInstance(context)
+        val loc = apm.getPackLocation(packName)
+
+        requireNotNull(loc) { "PAD pack not installed or not mounted yet: $packName" }
+
+        android.util.Log.d("PAD", "packName=$packName")
+        android.util.Log.d("PAD", "storageMethod=${loc.packStorageMethod()}")
+        android.util.Log.d("PAD", "assetsPath=${loc.assetsPath()}")
+        android.util.Log.d("PAD", "path=${loc.path()}")
+        android.util.Log.d("PAD", "modelPath=$modelPath")
+
+
+        val assetsRoot = File(File(requireNotNull(loc.assetsPath())), languageCode.lowercase())
+        android.util.Log.d("PAD", "assetsRoot.exists=${assetsRoot.exists()} dir=${assetsRoot.isDirectory}")
+
+        assetsRoot.listFiles()?.forEach { child ->
+            android.util.Log.d("PAD", "assets child: ${child.name} dir=${child.isDirectory}")
+        }
+
+        val f = File(assetsRoot, modelPath)
+        android.util.Log.d("PAD", "candidate=${f.absolutePath} exists=${f.exists()} len=${f.length()}")
+
+        val model: MappedByteBuffer = mmapFile(f)//FileUtil.loadMappedFile(context, f.path)
         interpreter = Interpreter(model, options)
 
         val inputShape = interpreter.getInputTensor(0)?.shape()
@@ -90,29 +124,6 @@ class Detector(
             numChannel = outputShape[1]
             numElements = outputShape[2]
         }
-    }
-
-    fun restart(isGpu: Boolean) {
-        interpreter.close()
-
-        val options = if (isGpu) {
-            val compatList = CompatibilityList()
-            Interpreter.Options().apply{
-                if(compatList.isDelegateSupportedOnThisDevice){
-                    val delegateOptions = compatList.bestOptionsForThisDevice
-                    this.addDelegate(GpuDelegate(delegateOptions))
-                } else {
-                    this.setNumThreads(4)
-                }
-            }
-        } else {
-            Interpreter.Options().apply{
-                this.setNumThreads(4)
-            }
-        }
-
-        val model = FileUtil.loadMappedFile(context, modelPath)
-        interpreter = Interpreter(model, options)
     }
 
     fun close() {

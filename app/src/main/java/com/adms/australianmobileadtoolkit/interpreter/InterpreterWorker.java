@@ -17,6 +17,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.adms.australianmobileadtoolkit.MainActivity;
+import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.appSettings;
 
 import org.json.JSONObject;
@@ -40,7 +41,7 @@ public class InterpreterWorker extends Worker {
 
    public static void platformInterpretationRoutineInterruption(Context context) {
       logMessage(TAG, "Perhaps thread related?...");
-      dataStoreWrite(context, "platformRoutineState", "COMPLETE");
+      dataStoreWrite(context, "platformRoutineState", context.getResources().getString(R.string.general_term_complete));
       dataStoreWrite(context, "platformRoutineToAnalyze", "0");
       dataStoreWrite(context, "platformRoutineAnalyzed", "0");
    }

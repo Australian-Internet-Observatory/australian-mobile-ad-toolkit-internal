@@ -1,12 +1,164 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+import org.gradle.internal.os.OperatingSystem
+
+
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+task ds_store_wipe(type: Delete) {
+    delete(
+            project(":app").buildDir,
+            project(":modelsPT").buildDir,
+            project(":modelsquantizedPT").buildDir,
+            project(":modelsEN").buildDir,
+            project(":modelsquantizedEN").buildDir,
+            project(":modelsVI").buildDir,
+            project(":modelsquantizedVI").buildDir
+    )
+}
+
+
+project(":app") {
+    tasks.register("padLocalInstallDebug") {
+        group = "pad"
+        description = "Build debug AAB, build APKS with --local-testing, install to connected device"
+        dependsOn(":app:bundleDebug")
+
+        doLast {
+            def aab = project(":app").layout.buildDirectory.file("outputs/bundle/debug/app-debug.aab").get().asFile
+            if (!aab.exists()) {
+                throw new GradleException("AAB not found: " + aab + " (run :app:bundleDebug first)")
+            }
+
+            def bundletoolJar = file("${rootDir}/tools/bundletool.jar")
+            if (!bundletoolJar.exists()) {
+                throw new GradleException("bundletool.jar not found at: " + bundletoolJar)
+            }
+
+            def outApks = layout.buildDirectory.file("pad/app-debug-local.apks").get().asFile
+            outApks.parentFile.mkdirs()
+
+            if (outApks.exists()) {
+                if (!outApks.delete()) {
+                    throw new GradleException("Couldn't delete existing APKS: " + outApks)
+                }
+            }
+
+            def isWindows = OperatingSystem.current().isWindows()
+            def javaExe = isWindows ? "java.exe" : "java"
+
+            // Debug keystore defaults
+            def ks = file(System.getProperty("user.home") + "/.android/debug.keystore")
+            def ksAlias = "androiddebugkey"
+            def ksPass = "android"
+            def keyPass = "android"
+
+            exec {
+                commandLine javaExe, "-jar", bundletoolJar.absolutePath, "build-apks",
+                        "--bundle=${aab.absolutePath}",
+                        "--output=${outApks.absolutePath}",
+                        "--ks=${ks.absolutePath}",
+                        "--ks-key-alias=${ksAlias}",
+                        "--ks-pass=pass:${ksPass}",
+                        "--key-pass=pass:${keyPass}",
+                        "--local-testing"
+            }
+
+            exec {
+                commandLine javaExe, "-jar", bundletoolJar.absolutePath, "install-apks",
+                        "--apks=${outApks.absolutePath}"
+            }
+
+            println("Installed local-testing APKS: " + outApks)
+        }
+    }
+
+    tasks.register("padLocalInstallDebugNoLangSplit") {
+        group = "pad"
+        description = "Clean, bundleDebug with -PNO_LANG_SPLIT, build local-testing APKS, uninstall existing app, install to device"
+
+        dependsOn(":clean", ":app:bundleDebug")
+
+        doFirst {
+            delete fileTree(rootDir) {
+                include "**/.DS_Store"
+            }
+        }
+
+
+        doLast {
+            def appId = "com.adms.australianmobileadtoolkit"
+
+            // Find the debug AAB dynamically (works with flavors/baseName changes)
+            def bundleDir = file("build/outputs/bundle/debug")
+            if (!bundleDir.exists()) {
+                throw new GradleException("Bundle output dir not found: " + bundleDir.absolutePath)
+            }
+
+            def aabs = bundleDir.listFiles()?.findAll { it.name.toLowerCase().endsWith(".aab") } ?: []
+            if (aabs.isEmpty()) {
+                throw new GradleException("No .aab found in: " + bundleDir.absolutePath)
+            }
+            // If multiple, pick the newest
+            def aab = aabs.sort { a, b -> b.lastModified() <=> a.lastModified() }.first()
+
+            def bundletoolJar = rootProject.file("tools/bundletool.jar")
+            if (!bundletoolJar.exists()) {
+                throw new GradleException("bundletool.jar not found at: " + bundletoolJar.absolutePath)
+            }
+
+            def outApks = file("build/pad/app-debug-local.apks")
+            outApks.parentFile.mkdirs()
+
+            def javaExe = OperatingSystem.current().isWindows() ? "java.exe" : "java"
+            def adbExe = OperatingSystem.current().isWindows() ? "adb.exe" : "adb"
+
+            logger.lifecycle("Using AAB: " + aab.absolutePath)
+
+            // Build APKS
+            exec {
+                commandLine javaExe, "-jar", bundletoolJar.absolutePath,
+                        "build-apks",
+                        "--bundle=" + aab.absolutePath,
+                        "--output=" + outApks.absolutePath,
+                        "--local-testing",
+                        "--overwrite"
+            }
+
+            // Uninstall (non-fatal if not installed)
+            exec {
+                ignoreExitValue = true
+                commandLine adbExe, "uninstall", appId
+            }
+
+            // Install APKS
+            exec {
+                commandLine javaExe, "-jar", bundletoolJar.absolutePath,
+                        "install-apks",
+                        "--apks=" + outApks.absolutePath
+            }
+
+            logger.lifecycle("Installed APKS: " + outApks.absolutePath)
+        }
+    }
+}
+
 buildscript {
     ext {
         kotlin_version = '1.9.24'
     }
     repositories {
         google()
-        jcenter()
         mavenCentral()
     }
     dependencies {
@@ -15,14 +167,6 @@ buildscript {
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        jcenter()
-        mavenCentral()
-    }
-}
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
+gradle.projectsEvaluated {
+    println("Root tasks include padLocalInstallDebug=" + tasks.findByName("padLocalInstallDebug"))
 }

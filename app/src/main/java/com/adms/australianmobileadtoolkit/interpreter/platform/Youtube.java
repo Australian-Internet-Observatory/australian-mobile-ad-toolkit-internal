@@ -113,9 +113,9 @@ public class Youtube {
                             }
                         }
 
-                        if (Objects.equals(thisInterpretation.get("orientation"), "landscape") && elementIn("SPONSORED_TEXT_HORIZONTAL", boundingBoxesShallow)) {
+                        /*if (Objects.equals(thisInterpretation.get("orientation"), "landscape") && elementIn("SPONSORED_TEXT_HORIZONTAL", boundingBoxesShallow)) {
                             tentativeAdTypesForFrame.add("PREVIEW_LANDSCAPE_BASED");
-                        }
+                        }*/
 
                         if (elementIn("APP_STYLE_ELEMENT", boundingBoxesDeep)) {
                             tentativeAdTypesForFrame.add("APP_FEED_BASED");
@@ -137,9 +137,9 @@ public class Youtube {
                             }
                         }
 
-                        if (elementIn("SPONSORED_TEXT", boundingBoxesShallow)) {
+                        /*if (elementIn("SPONSORED_TEXT", boundingBoxesShallow)) {
                             tentativeAdTypesForFrame.add("PREVIEW_PORTRAIT_BASED");
-                        }
+                        }*/
                     }
 
                     //Guarding logic (against overloads)
@@ -154,13 +154,13 @@ public class Youtube {
                                 .filter(x -> !Arrays.asList("PREVIEW_PORTRAIT_BASED", "PREVIEW_LANDSCAPE_BASED").contains(x)).collect(Collectors.toList());
                     }
 
-                    if (tentativeAdTypesForFrame.contains("PREVIEW_LANDSCAPE_BASED")) {
+                    /*if (tentativeAdTypesForFrame.contains("PREVIEW_LANDSCAPE_BASED")) {
                         tentativeAdTypesForFrame = Arrays.asList("PREVIEW_LANDSCAPE_BASED");
-                    }
+                    }*/
 
-                    if (tentativeAdTypesForFrame.contains("PREVIEW_PORTRAIT_BASED")) {
+                    /*if (tentativeAdTypesForFrame.contains("PREVIEW_PORTRAIT_BASED")) {
                         tentativeAdTypesForFrame = Arrays.asList("PREVIEW_PORTRAIT_BASED");
-                    }
+                    }*/
 
                     adTypesForGroup.set(adFrame, tentativeAdTypesForFrame);
                 }));

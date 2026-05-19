@@ -5,7 +5,20 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
 rootProject.name = "Australian Mobile Ad Toolkit"
 include ':app'
-include ':models-en'
-include ':modelsquantized-en'
+include ':modelsEN'
+include ':modelsquantizedEN'
+include ':modelsPT'
+include ':modelsquantizedPT'
+include ':modelsVI'
+include ':modelsquantizedVI'

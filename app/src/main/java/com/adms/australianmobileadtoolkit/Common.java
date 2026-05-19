@@ -1,7 +1,7 @@
 package com.adms.australianmobileadtoolkit;
 
 import static com.adms.australianmobileadtoolkit.MainActivity.dataStore;
-import static com.adms.australianmobileadtoolkit.MainActivity.initiateDataStore;
+//import static com.adms.australianmobileadtoolkit.MainActivity.initiateDataStore;
 import static com.adms.australianmobileadtoolkit.interpreter.Platform.createDirectory;
 import static java.util.Collections.frequency;
 
@@ -125,6 +125,8 @@ public class Common {
 
 
    public static void dataStoreWrite(Context context, String key, String value) {
+      SettingsClient.putString(context, key, value);
+      /*
       initiateDataStore(context);
       String appliedValue = value;
       if (appliedValue == null) {
@@ -135,11 +137,11 @@ public class Common {
          MutablePreferences mutablePreferences = prefsIn.toMutablePreferences();
          mutablePreferences.set(PreferencesKeys.stringKey(key), appliedValueFinal);
          return Single.just(mutablePreferences);
-      });
+      });*/
    }
 
    public static void dataStoreWriteToCorrupt(Context context, String key) {
-      initiateDataStore(context);
+      //initiateDataStore(context);
       Single<Preferences> updateResult = dataStore.updateDataAsync(prefsIn -> {
          MutablePreferences mutablePreferences = prefsIn.toMutablePreferences();
          mutablePreferences.set(PreferencesKeys.stringKey(key), new String(new byte[0]));
@@ -148,6 +150,9 @@ public class Common {
    }
 
    public static String dataStoreRead(Context context, String key, String defaultValue) {
+
+      return SettingsClient.getString(context, key, defaultValue);
+      /*
       initiateDataStore(context);
       try {
          String retrievedValue = dataStore.data().map(prefs -> prefs.get(PreferencesKeys.stringKey(key))).blockingFirst();
@@ -160,7 +165,7 @@ public class Common {
          return defaultValue;
       } catch (java.lang.RuntimeException e2) { // Typically caused by corruption
          return defaultValue;
-      }
+      }*/
    }
 
    public static <T> List<T> safeSublist(List<T> list, int fromIndex, int toIndex) {

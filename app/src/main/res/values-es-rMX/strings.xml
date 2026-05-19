@@ -1,0 +1,188 @@
+<resources>
+    <string name="app_name">Mobile Observation Ad Toolkit</string>
+
+
+    <string name="activation_code_short_prefix">CÓDIGO DE ACTIVACIÓN UNICO:</string>
+    <string name="fragment_main_app_preface">Esta aplicación registra la pantalla de tu dispositivo móvil para detectar publicidad compartida en diferentes aplicaciones de redes sociales.</string>
+    <string name="app_preface_registered">La aplicación detectará los anuncios publicitarios cuando el interruptor de arriba esté activado.</string>
+    <string name="fragment_main_app_dashboard_tooltip">La publicidad que ya hayas visto, la podrás consultar en tu panel de control personal.</string>
+    <string name="fragment_main_app_dashboard_text">IR A MI PANEL DE CONTROL</string>
+    <string name="fragment_main_process_ad_digest_text">PROCESAR MIS ANUNCIOS</string>
+    <string name="fragment_main_footer_learn_more">Para saber más sobre nuestra investigación, puede visitar el sitio web oficial de ADM+S, dando clic <a href="https://www.admscentre.org.au/adobservatory/">aquí</a></string>
+    <string name="fragment_main_accessibility_title">Aviso importante</string>
+    <string name="fragment_main_accessibility_description">Esta aplicación utiliza servicios de accesibilidad para funcionar adecuadamente,que no están relacionadas con la accesibilidad a tus otras aplicaciones.</string>
+    <string name="fragment_main_accessibility_services">CONOCE UN POCO MÁS</string>
+    <string name="fragment_settings_title">CONFIGURACIÓN</string>
+    <string name="fragment_main_footer_privacy_policy"><a href="https://www.admscentre.org.au/the-australian-mobile-ad-toolkit-privacy-policy/">Nuestra política de privacidad</a></string>
+    <string name="fragment_dashboard_title">PANEL DE CONTROL DE ANUNCIOS PUBLICITARIOS</string>
+    <string name="fragment_dashboard_note_to_hide">Nota: puedes omitir anuncios de tu donación de datos dando clic en el ícono \'Ocultar\'</string>
+    <string name="fragment_dashboard_button_previous">ANTERIOR</string>
+    <string name="fragment_dashboard_button_next">SIGUIENTE</string>
+
+    <string name="fragment_dashboard_empty_title">No hay anuncios en tu panel</string>
+    <string name="fragment_dashboard_empty_note">Nota: algunos anuncios pueden tardar un poco en aparecer en el panel de control</string>
+    <string name="fragment_settings_ad_detection_override_title">Anular la configuración predeterminada de detección de anuncios</string>
+    <string name="fragment_settings_ad_detection_override_note">Nota: Esta opción puede resolver fallas de la aplicación causadas por configuraciones incorrectas del detector de anuncios.</string>
+    <string name="fragment_settings_manual_log_submission_title">Enviar manualmente la información registrada</string>
+
+    <string name="fragment_settings_manual_log_submission_description">La aplicación está diseñada para enviar periódicamente los anuncios que ves en tu dispositivo móvil, sin embargo, puedes iniciar este proceso manualmente dando clic en el siguiente botón.</string>
+
+    <string name="fragment_settings_process_logs_button">PROCESA TU INFORMACIÓN REGISTRADA</string>
+
+    <string name="dialog_logs_success_title">INFORMACIÓN ENVIADA</string>
+
+    <string name="dialog_logs_success_description">Tu información ha sido enviada.</string>
+
+    <string name="dialog_logs_error_title">ERROR AL ENVIAR INFORMACIÓN</string>
+
+
+    <string name="dialog_logs_error_description">Se produjo un error al intentar enviar suinformación. Vuelva a intentarlo más tarde.</string>
+
+    <string name="dialog_logs_error_back">CERRAR</string>
+    <string name="dialog_logs_success_back">CERRAR</string>
+
+    <string name="fragment_accessibility_disclosure_title">USO DE SERVICIOS DE ACCESIBILIDAD</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_1">DESCRIPCIÓN GENERAL DEL FUNCIONAMIENTO DE LA APLICACIÓN</string>
+
+
+    <string name="fragment_accessibility_disclosure_description_overview_1">El Mobile Observation Ad Toolkit  es una aplicación que permite enviar una imagen de los anuncios que has visto en tu dispositivo móvil, que permite a los investigadores estudiar  prácticas de publicidad digital. La aplicación está diseñada para identificar en redes sociales de tu dispositivo móvil, anuncios publicitarios, registrarlo con una imagen de la pantalla, recopilarlos y almacenarlos</string>
+
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_2">ANÁLISIS DE LAS IMÁGENES</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_2">El análisis de las imágenes implica el procesamiento digital de los registros de la pantalla que se obtienen a través de tu dispositivo. Dado que las aplicaciones de redes sociales por sí solas no constituyen la experiencia visual completa de un dispositivo móvil, resulta problemático que la aplicación dedique tiempo y recursos computacionales al procesamiento de grabaciones de pantalla que no aportan datos valiosos.</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_3">SERVICIOS DE ACCESIBILIDAD</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_3a">Algunas aplicaciones pueden requerir activar la interfaz de programación de aplicaciones de los Servicios de Accesibilidad de Android para saber cuándo recopilar datos y cuándo descartarlos. Tenlo en cuneta para los anuncios publicitarios en redes sociales. La interfaz de programación de aplicaciones de los Servicios de Accesibilidad de Android puede utilizarse en esta situación para determinar si el dispositivo se encuentra dentro de las aplicaciones que muestran estos anuncios. Posteriormente, puede transmitir esta información al servicio de grabación de pantalla, indicándole que conserve o descarte los datos que se procesarán posteriormente.</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_3b">Nota: hacemos énfasis en que, si bien la lógica del software verifica si el usuario se encuentra dentro de dichas aplicaciones, no se registra ningún dato que transmita los nombres explícitos de las aplicaciones que el usuario usa en su dispositivo en ninguna de las funciones de esta aplicación.</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_3c">Como funcionalidad separada de la aplicación, los anuncios publicitarios en redes sociales relevantes se recopilan mediante las capacidades de grabación de pantalla de la aplicación, aunque esto forma parte de una divulgación que se ha descrito en la política de privacidad, es distinta al contenido de esta \'Revelación destacada\', que es mostrar a los usuarios la información sobre la recopilación de datos personales de manera clara y antes de que la aplicación recopile la información, asegurando que el usuario pueda dar su consentimiento de manera informada.</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_data">ACCESO, RECOPILACIÓN Y USO DE DATOS</string>
+
+    <string name="fragment_accessibility_disclosure_data_1">Esta aplicación accede a los datos a partir de los cambios que detecta en el sistema de ventanas que se ven en la pantalla y a cambios en una sección visualmente distinta de la interfaz de usuario. Al leer los datos de estos cambios, la aplicación accede al nombre del paquete de la aplicación móvil con la que el usuario está interactuando,  verifica el nombre del sistema para determinar que coincida únicamente con las aplicaciones de redes sociales  que interesan ser examinadas por el Mobile Observation Ad Toolkit. Como parte de la función de registro de pantalla, este proceso permite que la aplicación descarte el registro de la pantalla de aplicaciones que no están registradas en el Mobile Observation Ad Toolkit, reduciendo el procesamiento de datos y mejora la experiencia del usuario y mantiene seguros sus datos</string>
+
+
+    <string name="dialog_accessibility_launch_title">SERVICIOS DE ACCESIBILIDAD</string>
+
+
+
+
+    <string name="dialog_accessibility_launch_description">Esta aplicación utiliza servicios de accesibilidad para funcionar adecuadamente,que no están relacionadas con la accesibilidad a tus otras aplicaciones</string>
+
+    <string name="dialog_accessibility_launch_text">CONFIGURACIÓN</string>
+
+    <string name="dialog_accessibility_learn_more">CONOCE UN POCO MÁS</string>
+
+
+
+
+    <string name="dialog_outcome_template_dismiss">DESCARTAR</string>
+    <string name="dialog_accessibility_dismiss">DESCARTAR</string>
+
+    <string name="dialog_accessibility_revoke_text">RESTABLECER LA CONFIGURACIÓN</string>
+
+
+
+
+
+
+
+    <string name="dialog_submit_ads_title">PROCESAMIENTO DE ANUNCIOS PUBLICITARIOS</string>
+    <string name="dialog_submit_ads_button_launch">PROCESAMIENTO DE ANUNCIOS PUBLICITARIOS</string>
+
+    <string name="dialog_submit_ads_description">La aplicación está diseñada para procesar de forma intermitente los anuncios que has visto, sin embargo, puedes acelerar este patrón manualmente</string>
+
+
+    <string name="fragment_dialog_submit_ads_processing_annotation_text">Tus anuncios se están procesando…</string>
+    <string name="dialog_submit_ads_processing_text">Tus anuncios se están procesando…</string>
+
+    <string name="dialog_submit_ads_processing_status_loading">ESTADO: CARGANDO</string>
+
+    <string name="dialog_submit_ads_processing_progress_analyzed">ANALIZADO: 0%</string>
+
+    <string name="dialog_submit_ads_button_cancel">CANCELAR</string>
+
+    <string name="fragment_dialog_submit_ads_processing_progress_starting">INICIANDO: 0%</string>
+
+    <string name="fragment_dialog_submit_ads_processing_progress_status_appendage">ESTADO: </string>
+
+    <string name="fragment_dialog_submit_ads_processing_progress_status_complete">ESTADO: COMPLETADO</string>
+
+
+    <string name="fragment_dialog_submit_ads_processing_progress_colon">: </string>
+    <string name="fragment_dialog_submit_ads_processing_progress_percentage">%</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_100_percent">100%</string>
+    <string name="fragment_dialog_submit_ads_processing_summary_total_of">Un total de </string>
+    <string name="fragment_dialog_submit_ads_processing_summary_have_been_processed"> archivos han sido procesados</string>
+
+    <string name="general_term_sampling_imagery">IMAGEN DE MUESTRA</string>
+    <string name="general_term_performing_analysis">REALIZANDO ANÁLISIS</string>
+    <string name="general_term_relaying_data">TRANSMITIENDO DATOS</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_4">SERVICIOS DE ACCESIBILIDAD REQUERIDOS</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_4">Para empezar a ver anuncios, primero debes habilitar los servicios de accesibilidad. Esta aplicación utiliza estos servicios para funciones necesarias que no están relacionadas con la accesibilidad de tu dispositivo</string>
+
+
+
+
+
+
+
+
+
+    <string name="notification_recording_channel_id_name">Recordatorios de registro</string>
+    <string name="notification_recording_channel_description">Aviso de cuando la aplicación está iniciando el registro de anuncios publicitarios</string>
+    <string name="notification_recording_title">La publicidad está siendo observada</string>
+    <string name="notification_recording_description">La aplicación está recolectando los anuncios que se te han mostrado.</string>
+
+    <string name="fragment_dashboard_back_text">VOLVER AL MENÚ PRINCIPAL</string>
+
+    <string name="fragment_accessibility_disclosure_button_exit">VOLVER</string>
+    <string name="dialog_submit_ads_button_exit">VOLVER</string>
+
+    <string name="fragment_dashboard_card_loading">Cargando…</string>
+    <string name="activation_code_short_default"><font color="@color/yellow_primary">CARGANDO...</font></string>
+    <string name="general_term_loading">CARGANDO</string>
+
+
+
+
+
+
+
+
+
+    <string name="notification_screen_lock_title">Los anuncios dejan de ser observados al bloquear tu dispositivo</string>
+    <string name="notification_screen_lock_description">Toca para continuar observando anuncios</string>
+    <string name="notification_reboot_title">Las observaciones de anuncios se detienen después de reiniciar el dispositivo</string>
+    <string name="notification_reboot_description">Toca para volver a observar anuncios</string>
+    <string name="notification_periodic_channel_id_name">Recordatorios de inactividad</string>
+    <string name="notification_periodic_channel_description">Esta aplicación está diseñada para dejar de recopilar anuncios cada vez que tu dispositivo se reinicia. Cuando esto ocurra, necesitaremos tu permiso para volver a habilitarla</string>
+    <string name="app_underscore_code">adms_mobile_ad_observatory</string>
+    <string name="app_child_directory_name">australianmobileadobservatory</string>
+    <string name="app_titled_code">AustralianMobileAdObservatory</string>
+    <string name="dialog_outcome_template_title">XXX</string>
+    <string name="dialog_outcome_template_description">XXX</string>
+    <string name="dialog_loading">Cargando...</string>
+    <string name="general_term_complete">COMPLETADO</string>
+    <string name="general_term_relayed">RELAYED</string>
+    <string name="general_term_analysed">ANALYSED</string>
+    <string name="general_term_starting">STARTING</string>
+    <string name="fragment_setup_language_button">SELECCIONA TU IDIOMA</string>
+    <string name="fragment_setup_language_intro">Por favor, selecciona tu idioma para continuar:</string>
+
+
+
+    <string name="fragment_setup_language_english">Inglés</string>
+    <string name="fragment_setup_language_portuguese">Português</string>
+    <string name="fragment_setup_language_vietnamese">Tiếng Việt</string>
+    <string name="fragment_setup_language_filipino">Filipino</string>
+    <string name="fragment_setup_language_spanish_mexico">Español (México)</string>
+
+</resources>
+

@@ -1,0 +1,121 @@
+<resources>
+    <string name="app_name">Mobile Observation Ad Toolkit</string>
+
+
+    <string name="activation_code_short_prefix">MÃ KÍCH HOẠT CÁ NHÂN CỦA BẠN</string>
+
+
+    <string name="fragment_main_app_preface">Ứng dụng này sẽ ghi lại màn hình thiết bị để nhận biết các quảng cáo xuất hiện trong những ứng dụng khác.</string>
+    <string name="app_preface_registered">Khi bạn bật nút ở trên, ứng dụng sẽ bắt đầu nhận diện quảng cáo.</string>
+    <string name="fragment_main_app_dashboard_tooltip">Bạn có thể xem lại các quảng cáo mình đã gặp trong mục “Bảng tổng quan”.</string>
+    <string name="fragment_main_app_dashboard_text">MỞ BẢNG TỔNG QUAN CỦA TÔI</string>
+    <string name="fragment_main_process_ad_digest_text">PHÂN TÍCH QUẢNG CÁO CỦA TÔI</string>
+    <string name="fragment_main_footer_learn_more">Để tìm hiểu thêm về dự án nghiên cứu của chúng tôi, bạn có thể truy cập trang web chính thức của ADM+S bằng cách nhấn vào đây.</string>
+    <string name="fragment_main_accessibility_title">Thông báo quan trọng</string>
+    <string name="fragment_main_accessibility_description">Ứng dụng này sử dụng dịch vụ Trợ năng để thực hiện các chức năng cần thiết, không liên quan đến hỗ trợ người khuyết tật.</string>
+    <string name="fragment_main_accessibility_services">TÌM HIỂU THÊM</string>
+    <string name="fragment_settings_title">CÀI ĐẶT ỨNG DỤNG</string>
+    <string name="fragment_dashboard_title">BẢNG TỔNG QUAN QUẢNG CÁO</string>
+    <string name="fragment_dashboard_back_text">QUAY LẠI TRANG CHỦ</string>
+    <string name="fragment_dashboard_note_to_hide">Lưu ý: Bạn có thể loại bỏ một quảng cáo khỏi dữ liệu đóng góp của mình bằng cách nhấn vào biểu tượng “Ẩn”.</string>
+    <string name="fragment_dashboard_button_previous">TRƯỚC</string>
+    <string name="fragment_dashboard_button_next">TIẾP</string>
+    <string name="fragment_dashboard_empty_title">Không có quảng cáo nào trong bảng điều khiển của bạn</string>
+    <string name="fragment_dashboard_empty_note">Lưu ý: Quảng cáo có thể mất một thời gian để hiển thị trong bảng điều khiển của bạn.</string>
+    <string name="fragment_settings_ad_detection_override_title">Ghi đè cài đặt phát hiện quảng cáo mặc định</string>
+    <string name="fragment_settings_ad_detection_override_note">Lưu ý: Tùy chọn này có thể giúp khắc phục sự cố ứng dụng bị treo do cấu hình bộ phát hiện quảng cáo không chính xác.</string>
+    <string name="fragment_settings_manual_log_submission_title">Gửi nhật ký thủ công</string>
+    <string name="fragment_settings_manual_log_submission_description">Mặc dù ứng dụng được thiết kế để tự động gửi thông tin nhật ký về các quảng cáo bạn nhìn thấy trên thiết bị di động, bạn cũng có thể khởi động quá trình này thủ công bằng cách nhấn nút bên dưới.</string>
+    <string name="fragment_settings_process_logs_button">XỬ LÝ NHẬT KÝ CỦA BẠN</string>
+    <string name="dialog_logs_success_title">NHẬT KÝ ĐÃ ĐƯỢC GỬI</string>
+    <string name="dialog_logs_success_description">Nhật ký của bạn đã được gửi thành công.</string>
+    <string name="dialog_logs_error_title">GỬI NHẬT KÝ THẤT BẠI</string>
+    <string name="dialog_logs_error_description">Rất tiếc, đã xảy ra lỗi khi gửi nhật ký của bạn. Vui lòng thử lại sau.</string>
+    <string name="fragment_accessibility_disclosure_title">SỬ DỤNG CÁC DỊCH VỤ HỖ TRỢ TRUY CẬP</string>
+    <string name="fragment_accessibility_disclosure_subtitle_overview_1">TỔNG QUAN VỀ CHỨC NĂNG ỨNG DỤNG</string>
+    <string name="fragment_accessibility_disclosure_description_overview_1">Mobile Observation Ad Toolkit là một ứng dụng di động cho phép người dùng gửi các quảng cáo mà họ nhìn thấy trên thiết bị của mình, phục vụ nghiên cứu của các nhà nghiên cứu về hoạt động quảng cáo số. Ứng dụng hoạt động bằng cách ghi lại màn hình thiết bị của người dùng và sử dụng các phương pháp phân tích hình ảnh để tách và thu thập các quảng cáo xuất hiện trên các ứng dụng mạng xã hội.</string>
+    <string name="fragment_accessibility_disclosure_subtitle_overview_2">PHÂN TÍCH HÌNH ẢNH</string>
+    <string name="fragment_accessibility_disclosure_description_overview_2">Một phần của quá trình phân tích hình ảnh là xử lý kỹ thuật số các video ghi màn hình thu được từ thiết bị. Vì các ứng dụng mạng xã hội không đại diện cho toàn bộ trải nghiệm sử dụng thiết bị di động, nên ứng dụng sẽ tốn thời gian và tài nguyên tính toán để xử lý những video ghi màn hình không chứa dữ liệu có giá trị.</string>
+    <string name="fragment_accessibility_disclosure_subtitle_overview_3">CÁC DỊCH VỤ HỖ TRỢ TRUY CẬP</string>
+    <string name="fragment_accessibility_disclosure_description_overview_3a">Một ứng dụng có thể sử dụng Android Accessibility Services API để biết khi nào cần thu thập dữ liệu và khi nào nên loại bỏ dữ liệu. Ví dụ, đối với quảng cáo trên các nền tảng mạng xã hội, Android Accessibility Services API có thể xác định khi thiết bị đang ở trong các ứng dụng hiển thị quảng cáo này. Thông tin này sau đó được chuyển đến dịch vụ ghi màn hình, hướng dẫn giữ lại hoặc loại bỏ dữ liệu để xử lý tiếp theo.</string>
+    <string name="fragment_accessibility_disclosure_description_overview_3b">Lưu ý: Mặc dù phần logic của ứng dụng kiểm tra xem người dùng có đang ở trong các ứng dụng nói trên hay không, nhưng không dữ liệu nào lưu giữ tên cụ thể của các ứng dụng mà người dùng truy cập trên thiết bị.</string>
+    <string name="fragment_accessibility_disclosure_description_overview_3c">Trong một chức năng riêng biệt của ứng dụng, các quảng cáo trên mạng xã hội được thu thập thông qua khả năng ghi màn hình của ứng dụng, nhưng điều này đã được mô tả trong chính sách quyền riêng tư và khác với nội dung của “Tuyên bố Công khai Nổi bật” này.</string>
+    <string name="fragment_accessibility_disclosure_subtitle_data">TRUY CẬP, THU THẬP VÀ SỬ DỤNG DỮ LIỆU</string>
+    <string name="fragment_accessibility_disclosure_data_1">Ứng dụng này truy cập dữ liệu về các thay đổi sự kiện trên cửa sổ hệ thống hiển thị trên màn hình, cũng như các thay đổi ở phần giao diện người dùng dễ nhận biết. Khi đọc dữ liệu từ các sự kiện này, ứng dụng xác định tên gói của ứng dụng mà người dùng đang tương tác; sau đó kiểm tra xem tên gói này có trùng với ứng dụng đang được Mobile Observation Ad Toolkit theo dõi hay không. Quá trình này, gắn liền với chức năng ghi màn hình của ứng dụng, giúp loại bỏ các video ghi màn hình từ các ứng dụng không liên quan, giảm yêu cầu xử lý và cải thiện trải nghiệm người dùng.</string>
+    <string name="dialog_accessibility_launch_title">DỊCH VỤ HỖ TRỢ TRUY CẬP</string>
+    <string name="dialog_accessibility_launch_description">Ứng dụng này sử dụng dịch vụ hỗ trợ truy cập cho các chức năng cần thiết, không liên quan đến khả năng truy cập.</string>
+    <string name="dialog_accessibility_launch_text">BẬT TRONG CÀI ĐẶT</string>
+    <string name="dialog_accessibility_learn_more">TÌM HIỂU THÊM</string>
+    <string name="dialog_accessibility_dismiss">ĐÓNG</string>
+    <string name="dialog_accessibility_revoke_text">HỦY TRONG CÀI ĐẶT</string>
+    <string name="dialog_submit_ads_title">XỬ LÝ QUẢNG CÁO</string>
+    <string name="dialog_submit_ads_button_launch">XỬ LÝ QUẢNG CÁO</string>
+    <string name="dialog_submit_ads_description">Mặc dù ứng dụng được thiết kế để xử lý quảng cáo bạn nhìn thấy một cách định kỳ, bạn cũng có thể thực hiện thao tác này thủ công để tăng tốc quá trình.</string>
+    <string name="dialog_submit_ads_processing_text">Quảng cáo của bạn đang được xử lý…</string>
+    <string name="fragment_dialog_submit_ads_processing_annotation_text">Quảng cáo của bạn đang được xử lý…</string>
+    <string name="dialog_submit_ads_processing_status_loading">TRẠNG THÁI: ĐANG TẢI</string>
+    <string name="dialog_submit_ads_processing_progress_analyzed">ĐÃ PHÂN TÍCH: 0%</string>
+    <string name="dialog_submit_ads_button_cancel">HỦY</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_starting">BẮT ĐẦU: 0%</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_status_appendage">TRẠNG THÁI:</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_colon">: </string>
+    <string name="fragment_dialog_submit_ads_processing_progress_percentage">%</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_status_complete">TRẠNG THÁI: HOÀN THÀNH</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_100_percent">100%</string>
+
+    <string name="fragment_dialog_submit_ads_processing_summary_total_of">"Tổng cộng "</string>
+    <string name="fragment_dialog_submit_ads_processing_summary_have_been_processed">" file đã được xử lý."</string>
+    <string name="fragment_main_footer_privacy_policy"><a href="https://www.admscentre.org.au/the-australian-mobile-ad-toolkit-privacy-policy/">Đọc Chính sách Quyền riêng tư của chúng tôi</a></string>
+
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_4">CẦN DỊCH VỤ HỖ TRỢ TRUY CẬP</string>
+    <string name="fragment_accessibility_disclosure_description_overview_4">Để bắt đầu quan sát quảng cáo, trước tiên bạn phải bật dịch vụ hỗ trợ truy cập. Ứng dụng này sử dụng dịch vụ hỗ trợ truy cập cho các chức năng cần thiết, không liên quan đến khả năng truy cập.</string>
+    <string name="notification_screen_lock_title">Quảng cáo sẽ ngừng được theo dõi sau khi bạn khóa thiết bị</string>
+    <string name="notification_screen_lock_description">Chạm để tiếp tục theo dõi quảng cáo</string>
+    <string name="notification_reboot_title">Việc theo dõi quảng cáo sẽ dừng lại sau khi khởi động lại thiết bị</string>
+    <string name="notification_reboot_description">Chạm để bắt đầu theo dõi quảng cáo lại</string>
+    <string name="notification_periodic_channel_id_name">Nhắc nhở khi không hoạt động</string>
+    <string name="notification_periodic_channel_description">Ứng dụng này được thiết kế để ngừng thu thập quảng cáo mỗi khi thiết bị của bạn khởi động lại. Khi điều này xảy ra, chúng tôi sẽ cần sự cho phép của bạn để kích hoạt lại.</string>
+    <string name="notification_recording_channel_id_name">Nhắc nhở ghi màn hình</string>
+    <string name="notification_recording_channel_description">Được thông báo khi ứng dụng bắt đầu thu thập quảng cáo</string>
+    <string name="notification_recording_title">Quảng cáo đang được quan sát</string>
+    <string name="notification_recording_description">Ứng dụng hiện đang thu thập các quảng cáo đã hiển thị cho bạn”</string>
+    <string name="app_underscore_code">adms_mobile_ad_observatory</string>
+    <string name="app_child_directory_name">australianmobileadobservatory</string>
+    <string name="app_titled_code">AustralianMobileAdObservatory</string>
+
+
+    <string name="dialog_outcome_template_title">XXX</string>
+    <string name="dialog_outcome_template_description">XXX</string>
+
+
+    <string name="dialog_outcome_template_dismiss">ĐÓNG</string>
+    <string name="dialog_logs_error_back">ĐÓNG</string>
+    <string name="dialog_logs_success_back">ĐÓNG</string>
+    <string name="fragment_accessibility_disclosure_button_exit">QUAY LẠI</string>
+    <string name="dialog_submit_ads_button_exit">QUAY LẠI</string>
+    <string name="dialog_loading">Đang tải…</string>
+    <string name="fragment_dashboard_card_loading">Đang tải…</string>
+    <string name="activation_code_short_default"><font color="@color/yellow_primary">ĐANG TẢI…</font></string>
+
+
+    <string name="fragment_setup_language_button">ĐẶT NGÔN NGỮ CỦA BẠN</string>
+    <string name="general_term_loading">ĐANG TẢI</string>
+    <string name="general_term_complete">HOÀN THÀNH</string>
+    <string name="general_term_relayed">ĐÃ TRUYỀN</string>
+    <string name="general_term_relaying_data">TRUYỀN DỮ LIỆU</string>
+    <string name="general_term_analysed">ĐÃ PHÂN TÍCH</string>
+    <string name="general_term_starting">BẮT ĐẦU</string>
+    <string name="general_term_sampling_imagery">LẤY MẪU HÌNH ẢNH</string>
+    <string name="general_term_performing_analysis">THỰC HIỆN PHÂN TÍCH</string>
+    <string name="fragment_setup_language_intro">Please set your language to continue:</string>
+    <string name="fragment_setup_language_english">English</string>
+    <string name="fragment_setup_language_portuguese">Português</string>
+    <string name="fragment_setup_language_vietnamese">Tiếng Việt</string>
+    <string name="fragment_setup_language_filipino">Filipino</string>
+    <string name="fragment_setup_language_spanish_mexico">Español (México)</string>
+
+
+
+</resources>
+

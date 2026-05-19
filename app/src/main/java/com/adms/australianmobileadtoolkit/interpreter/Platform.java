@@ -25,6 +25,7 @@ import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
 import com.adms.australianmobileadtoolkit.JSONXObject;
+import com.adms.australianmobileadtoolkit.R;
 import com.adms.australianmobileadtoolkit.appSettings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -52,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
@@ -63,6 +65,7 @@ public class Platform {
 
 
     private static String TAG = "Platform";
+    // In production, all of these values should be true
     private static boolean deleteOnCompletion = true;
     private static boolean deleteOnMaxHeld = true;
     private static boolean deleteOnUnclassified = true;
@@ -581,7 +584,7 @@ public class Platform {
     public static JSONXObject inferencePassthrough(Context context, Function<JSONXObject, JSONXObject> objectDetectorFunction,
                String modelIdentifier, JSONXObject groupedAdsObject, File screenRecordingFile, File screenRecordingAnalysisDirectory, Boolean applyingQuantizedModels) throws Exception {
 
-        dataStoreWrite(context, "platformRoutineState", "PERFORMING ANALYSIS");
+        dataStoreWrite(context, "platformRoutineState", context.getResources().getString(R.string.general_term_performing_analysis));
         String thisModelIdentifier = "";
         if ((applyingQuantizedModels) && (allowQuantization)) {
             logMessage(TAG, "Applying quantized models");
@@ -698,6 +701,7 @@ public class Platform {
                         .set("observedAt", thisInterpretation.get("timestamp"))
                         .set("preparedAt", ((int) Math.floor(System.currentTimeMillis() / (double) 1000)))
                         .set("platform", platform)
+                        .set("locale", context.getResources().getConfiguration().getLocales().get(0).toLanguageTag())
                         .set("systemInformation", getSystemInformation()
                                 .set("screenDimensions", (new JSONXObject())
                                         .set("w", w.toString())
@@ -792,7 +796,7 @@ public class Platform {
         // When the app opens, a periodic worker is triggered. When the app is cleanly exited - reopening
         // it triggers a new periodic worker that can (and will) overlap the previous periodic worker
 
-        dataStoreWrite(context, "platformRoutineState", "STARTING");
+        dataStoreWrite(context, "platformRoutineState", context.getResources().getString(R.string.general_term_starting));
         dataStoreWrite(context, "platformRoutineToAnalyze", "0");
         dataStoreWrite(context, "platformRoutineToRelay", "0");
         dataStoreWrite(context, "platformRoutineRelayed", "0");
@@ -819,7 +823,7 @@ public class Platform {
         }
 
         try {
-            dataStoreWrite(context, "platformRoutineState", "RELAYING DATA");
+            dataStoreWrite(context, "platformRoutineState", context.getResources().getString(R.string.general_term_relaying_data));
             if (dispatchOnBeginAnalysis) {
                 dispatchAdsV2(context, observerID, dispatchDirectory);
             }
@@ -873,7 +877,7 @@ public class Platform {
             if (targetedPlatforms.contains(thisInterpretation.get("tags"))) {
                 File screenRecordingFile = (new File(appStorageRecordingsDirectory, thisInterpretation.get("filename")));
                 JSONXObject thisComprehensiveReading = new JSONXObject();
-                dataStoreWrite(context, "platformRoutineState", "SAMPLING IMAGERY");
+                dataStoreWrite(context, "platformRoutineState", context.getResources().getString(R.string.general_term_sampling_imagery));
                 if ((screenRecordingFile.length() < 2000) && (deleteOnCompletion)) {
                     screenRecordingFile.delete(); // TODO - Due to empty file size - make more stringent
                 } else {
@@ -920,7 +924,7 @@ public class Platform {
         // Do again at end of process
         try {
             if (implementedOnAndroid) {
-                dataStoreWrite(context, "platformRoutineState", "RELAYING DATA");
+                dataStoreWrite(context, "platformRoutineState", context.getResources().getString(R.string.general_term_relaying_data));
                 if (dispatchOnCompleteAnalysis) {
                     dispatchAdsV2(context, observerID, dispatchDirectory);
                 }
@@ -929,7 +933,7 @@ public class Platform {
             e.printStackTrace(); // TODO
         }
         logMessage(TAG, "Completed routine!");
-        dataStoreWrite(context, "platformRoutineState", "COMPLETE");
+        dataStoreWrite(context, "platformRoutineState", context.getResources().getString(R.string.general_term_complete));
         dataStoreWrite(context, "platformRoutineToAnalyze", "0");
         dataStoreWrite(context, "platformRoutineAnalyzed", "0");
     }

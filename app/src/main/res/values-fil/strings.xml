@@ -1,0 +1,180 @@
+<resources>
+    <string name="app_name">Mobile Observation Ad Toolkit</string>
+
+
+    <string name="activation_code_short_prefix">ANG IYONG ACTIVATION CODE:</string>
+    <string name="fragment_main_app_preface">Ang app na ito ay nagrerecord ng screen ng iyong device upang matukoy ang mga ads na ipinapakita sa iyo sa iba\'t ibang third-party na app.</string>
+    <string name="app_preface_registered">Kapag naka-on ang switch sa itaas, ang app ay magsisimula sa pagtukoy ng mga ads.</string>
+    <string name="fragment_main_app_dashboard_tooltip">Maaari mong tingnan ang mga ads na nakita mo na sa iyong personal dashboard.</string>
+    <string name="fragment_main_app_dashboard_text">PUMUNTA SA AKING DASHBOARD</string>
+    <string name="fragment_main_process_ad_digest_text">IPROSESO ANG AKING MGA ADS</string>
+    <string name="fragment_main_footer_learn_more">Para sa karagdagang impormasyon tungkol sa aming research project, maaari mong bisitahin ang opisyal na ADM+S website sa pamamagitan ng pag-click <a href="https://www.admscentre.org.au/adobservatory/">dito</a></string>
+    <string name="fragment_main_accessibility_title">Mahalagang Paalala</string>
+    <string name="fragment_main_accessibility_description">Ang app na ito ay ginagamit ng accessibility services para sa kinakailangang functionality na hindi kaugnay ng accessibility.</string>
+    <string name="fragment_main_accessibility_services">DAGDAG NA IMPORMASYON</string>
+    <string name="fragment_settings_title">MGA SETTING NG APP</string>
+
+    <string name="fragment_main_footer_privacy_policy"><a href="https://www.admscentre.org.au/the-australian-mobile-ad-toolkit-privacy-policy/">Basahin ang aming Privacy Policy</a></string>
+    <string name="fragment_dashboard_title">AD DASHBOARD</string>
+
+    <string name="fragment_dashboard_note_to_hide">Paunawa: Maari mong alisin ang isang ad mula sa iyong data donation sa pamamagitan ng pag-click sa \'Hide\' icon.</string>
+
+    <string name="fragment_dashboard_button_previous">NAKARAAN</string>
+    <string name="fragment_dashboard_button_next">SUSUNOD</string>
+    <string name="fragment_dashboard_empty_title">Walang ads sa iyong dashboard</string>
+    <string name="fragment_dashboard_empty_note">Paunawa: Maaaring tumagal ng kaunting oras bago lumabas ang mga ad sa iyong dashboard.</string>
+
+
+
+
+
+
+    <string name="fragment_settings_ad_detection_override_title">I-override ang default na ad detection settings</string>
+    <string name="fragment_settings_ad_detection_override_note">Paunawa: Maaaring makatulong ang opsyong ito upang maayos ang pag-crash ng app dulot ng maling configuration ng ad detector.</string>
+
+    <string name="fragment_settings_manual_log_submission_title">Manu-manong isumite ang log information</string>
+    <string name="fragment_settings_manual_log_submission_description">Bagama\'t awtomatikong nagpapadala ang app ng log information tungkol sa mga ads na nakikita mo sa iyong mobile device, maaari mo ring manu-manong simulan ang prosesong ito sa pamamagitan ng pag-click sa button sa ibaba.</string>
+
+
+    <string name="fragment_settings_process_logs_button">IPROSESO ANG IYONG MGA LOG</string>
+
+
+    <string name="dialog_logs_success_title">NAISUMITE NA ANG MGA LOG</string>
+
+    <string name="dialog_logs_success_description">Naisumite na ang iyong mga log.</string>
+
+    <string name="dialog_logs_error_title">HINDI NAISUMITE ANG MGA LOG</string>
+
+    <string name="dialog_logs_error_description">Nagkaroon ng error habang sinusubukang isumite ang iyong mga log. Pakisubukang muli mamaya.</string>
+
+    <string name="dialog_logs_error_back">ISARA</string>
+    <string name="dialog_logs_success_back">ISARA</string>
+
+
+
+
+
+
+
+
+    <string name="fragment_accessibility_disclosure_title">PAGGAMIT NG ACCESSIBILITY SERVICES</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_1">PAGLALARAWAN NG APP FUNCTIONALITY</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_1">Ang Mobile Observation Ad Toolkit ay isang mobile app na nagbibigay-daan sa mga miyembro ng publiko na magsumite ng mga ads na nakita nila sa kanilang device, para sa kapakinabangan ng mga mananaliksik na nag-aaral ng digital advertising practices. Gumagana ang app sa pamamagitan ng pagre-record ng screen ng device at paggamit ng pamamaraan ng pagsusuri ng imahe upang matukoy at makolekta ang mga ads na nakita sa mga social media apps.</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_2">IMAGE ANALYSIS</string>
+    <string name="fragment_accessibility_disclosure_description_overview_2">Bahagi ng pagsusuri ng imahe ang digital na pagproseso ng mga na-record na screen mula sa device. Dahil hindi lamang ang mga social media app ang bumubuo sa kabuuang karanasan sa paggamit ng mobile device, nagiging isyu ang paggugol ng oras at computational resources sa pagproseso ng mga screen recording na hindi nagbubunga ng mahalagang datos.</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_3">ACCESSIBILITY SERVICES</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_3a">Maaaring gumamit ang isang application ng Android Accessibility Services API upang mas matukoy kung kailan dapat mangolekta ng data at kung kailan ito dapat itapon. Isaalang-alang ang mga ads na ipinapakita sa mga social media platforms. Maaaring gamitin ang Android Accessibility Services API upang matukoy na ang device ay kasalukuyang nasa loob ng mga application na nagpapakita ng mga ads na ito. Pagkatapos, maaari nitong ipasa ang impormasyong ito sa screen-recording service upang alamin kung dapat panatilihin o itapon ang data para sa susunod na pagproseso.</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_3b">Paunawa: Bagaman sinusuri ng software logic kung ang user ay nasa loob ng mga nasabing app, walang iniimbak na data na naglalaman ng eksaktong pangalan ng mga app na binibisita ng isang tao sa kanilang device sa anumang bahagi ng functionality ng app na ito.</string>
+
+    <string name="fragment_accessibility_disclosure_description_overview_3c">Sa hiwalay na bahagi ng functionality ng app, kinokolekta ang mga ads sa social media platforms sa pamamagitan ng kakayahan ng app sa pag-record ng screen. Bagaman bahagi ito ng pagsisiwalat na inilarawan sa Privacy Policy, iba ito sa nilalaman ng \'Prominent Disclosure\' na ito.</string>
+
+
+    <string name="fragment_accessibility_disclosure_subtitle_data">PAG-ACCESS, PAGKOLEKTA AT PAGGAMIT NG DATA</string>
+
+    <string name="fragment_accessibility_disclosure_data_1">Ang app na ito ay nag-a-access ng data tungkol sa mga pagbabago sa system windows na ipinapakita sa screen, pati na rin sa mga pagbabago sa isang biswal na natatanging bahagi ng user interface. Sa pagbasa ng data mula sa mga kaganapang ito, ina-access ng app ang application package name ng mobile application na kasalukuyang ginagamit ng user. Pagkatapos, tinutukoy nito kung ito ay kabilang sa mga app na sinusuri ng Mobile Observation Ad Toolkit Mobile Observation Ad Toolkit. Bilang bahagi ng screen-recording functionality ng app, isinasagawa ang prosesong ito upang maalis ang mga screen recording ng mga app na hindi kaugnay ng Mobile Observation Ad Toolkit. Sa ganitong paraan, nababawasan ang pangangailangan sa pagproseso at dahil dito ay napapabuti ang user experience ng app.</string>
+
+    <string name="dialog_accessibility_launch_title">ACCESSIBILITY SERVICES</string>
+
+    <string name="dialog_accessibility_launch_description">Ginagamit ng app na ito ang accessibility services para sa kinakailangang functionality na hindi kaugnay ng accessibility.</string>
+
+    <string name="dialog_accessibility_launch_text">I-ENABLE SA SETTINGS</string>
+
+
+    <string name="dialog_accessibility_learn_more">DAGDAG NA IMPORMASYON</string>
+
+    <string name="dialog_accessibility_dismiss">ISARA</string>
+    <string name="dialog_outcome_template_dismiss">ISARA</string>
+
+    <string name="dialog_accessibility_revoke_text">ALISIN SA SETTINGS</string>
+
+    <string name="dialog_submit_ads_title">IPROSESO ANG MGA ADS</string>
+    <string name="dialog_submit_ads_button_launch">IPROSESO ANG MGA ADS</string>
+
+    <string name="dialog_submit_ads_description">Bagama\'t awtomatikong pinoproseso ng app ang mga ads na nakita mo, maaari mo ring pabilisin ang prosesong ito nang manu-mano.</string>
+
+
+    <string name="dialog_submit_ads_processing_text">Pinoproseso na ang iyong mga ads…</string>
+
+    <string name="fragment_dialog_submit_ads_processing_annotation_text">Pinoproseso na ang iyong mga ads…</string>
+    <string name="dialog_submit_ads_processing_status_loading">STATUS: LOADING</string>
+    <string name="dialog_submit_ads_processing_progress_analyzed">NASURI: 0%</string>
+    <string name="dialog_submit_ads_button_cancel">KANSELAHIN</string>
+
+
+    <string name="fragment_dialog_submit_ads_processing_progress_starting">NAGSISIMULA: 0%</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_status_appendage">STATUS: </string>
+    <string name="fragment_dialog_submit_ads_processing_progress_colon">: </string>
+    <string name="fragment_dialog_submit_ads_processing_progress_percentage">%</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_status_complete">STATUS: KOMPLETO</string>
+    <string name="general_term_complete">KOMPLETO</string>
+    <string name="fragment_dialog_submit_ads_processing_progress_100_percent">100%</string>
+    <string name="fragment_dialog_submit_ads_processing_summary_total_of"></string>
+    <string name="fragment_dialog_submit_ads_processing_summary_have_been_processed"> mga file ang naproseso</string>
+    <string name="general_term_sampling_imagery">KUMUKUHA NG LARAWAN</string>
+    <string name="general_term_performing_analysis">NAGSUSURI</string>
+    <string name="general_term_relaying_data">IPINAPASA ANG DATA</string>
+
+    <string name="fragment_accessibility_disclosure_subtitle_overview_4">KINAKAILANGAN ANG ACCESSIBILITY SERVICES</string>
+    <string name="fragment_accessibility_disclosure_description_overview_4">Upang masimulan ang pag-obserba ng mga ads, kailangan mo munang i-enable ang accessibility services. Ginagamit ng app na ito ang accessibility services para sa kinakailangang functionality na hindi kaugnay ng accessibility.</string>
+
+    <string name="notification_recording_channel_id_name">Mga Paalala sa Pagre-record</string>
+    <string name="notification_recording_channel_description">Maabisuhan kapag nagsimulang mangolekta ng mga ads ang aming app.</string>
+
+    <string name="notification_recording_title">Kasalukuyang inoobserbahan ang mga ads</string>
+
+    <string name="notification_recording_description">Kasalukuyang kinokolekta ng app ang mga ads na ipinakita sa iyo.</string>
+
+    <string name="fragment_dashboard_back_text">BUMALIK SA MAIN</string>
+
+
+    <string name="notification_screen_lock_title">Tumitigil ang pag-obserba ng mga ads kapag na-lock ang device</string>
+    <string name="notification_screen_lock_description">Pindutin upang ipagpatuloy ang pag-obserba ng mga ads</string>
+
+
+    <string name="notification_reboot_title">Tumitigil ang pag-obserba ng ads pagkatapos mag-reboot</string>
+    <string name="notification_reboot_description">Pindutin upang muling simulan ang pagobserba ng ads</string>
+
+    <string name="notification_periodic_channel_id_name">Paalala sa hindi paggamit</string>
+    <string name="notification_periodic_channel_description">Tumitigil ang pag-obserba ng ads pagkatapos mag-reboot</string>
+
+    <string name="fragment_accessibility_disclosure_button_exit">BUMALIK</string>
+    <string name="dialog_submit_ads_button_exit">BUMALIK</string>
+
+    <string name="dialog_loading">Loading...</string>
+    <string name="fragment_dashboard_card_loading">Loading…</string>
+    <string name="activation_code_short_default"><font color="@color/yellow_primary">LOADING...</font></string>
+    <string name="general_term_loading">LOADING</string>
+
+
+
+    <string name="app_underscore_code">adms_mobile_ad_observatory</string>
+    <string name="app_child_directory_name">australianmobileadobservatory</string>
+    <string name="app_titled_code">AustralianMobileAdObservatory</string>
+
+
+    <string name="dialog_outcome_template_title">XXX</string>
+    <string name="dialog_outcome_template_description">XXX</string>
+
+
+    <string name="general_term_relayed">IPINAPASA</string>
+    <string name="general_term_analysed">NASURI</string>
+    <string name="general_term_starting">NAGSISIMULA</string>
+
+
+    <string name="fragment_setup_language_button">ITAKDA ANG IYONG WIKA</string>
+    <string name="fragment_setup_language_intro">Pakilagay ang iyong wika upang magpatuloy:</string>
+
+    <string name="fragment_setup_language_english">Ingles</string>
+    <string name="fragment_setup_language_portuguese">Portuges</string>
+    <string name="fragment_setup_language_vietnamese">Biyetnames</string>
+    <string name="fragment_setup_language_filipino">Filipino</string>
+    <string name="fragment_setup_language_spanish_mexico">Español (México)</string>
+
+</resources>
+

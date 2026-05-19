@@ -111,6 +111,20 @@ tools:context="com.adms.australianmobileadtoolkit.MainActivity">
             android:layout_width="match_parent"
             android:layout_height="2dp"
             android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp"
+            android:background="@color/yellow_primary" />
+
+        <Button
+            android:id="@+id/buttonSetLanguage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/fragment_setup_language_button"
+            android:theme="@style/PrimaryButton"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginTop="15dp"
             android:background="@color/yellow_primary" />
 
         <TextView

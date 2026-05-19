@@ -5,3 +5,10 @@ app/logs/*
 app/release/*
 models/*
 modelsquantized/*
+modelsEN/*
+modelsPT/*
+modelsVI/*
+modelsquantizedEN/*
+modelsquantizedPT/*
+modelsquantizedVI/*
+tools/*

@@ -31,7 +31,7 @@ import java.util.List;
 
 public class DialogSubmitAds extends Dialog implements android.view.View.OnClickListener {
 
-    private static String TAG = "DialogSubmitAds";
+    private static final String TAG = "DialogSubmitAds";
 
     private DialogLoading loadKillAdDigest;
 
@@ -46,7 +46,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
     public void runThis() {
         getOwnerActivity().getParent().runOnUiThread(()-> {
-            logMessage(TAG, "Hellop");
+            logMessage(TAG, "Hello");
         });
     }
 
@@ -104,7 +104,7 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
                     try {
                         logMessage(TAG, "Sleeping on adDigestProcess...");
 
-                        String tentativePlatformRoutineState = dataStoreRead(context, "platformRoutineState", "LOADING");
+                        String tentativePlatformRoutineState = dataStoreRead(context, "platformRoutineState", context.getString(R.string.general_term_loading));
 
                         platformRoutineToAnalyze = safeIntegerRead(context, "platformRoutineToAnalyze");
                         platformRoutineAnalyzed = safeIntegerRead(context, "platformRoutineAnalyzed");
@@ -138,34 +138,43 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
                         }
 
                         String formalPlatformRoutineState;
-                        if ((!(tentativePlatformRoutineState == null)) && (!(tentativePlatformRoutineState.equals("COMPLETE")))) {
+                        if (!(tentativePlatformRoutineState == null)) {
                             formalPlatformRoutineState = tentativePlatformRoutineState;
                         } else {
-                            formalPlatformRoutineState = "LOADING";
+                            formalPlatformRoutineState = context.getString(R.string.general_term_loading);
                         }
 
                         final Integer progressReadingAnalyzedF = progressReadingAnalyzed;
                         final Integer progressReadingRelayedF = progressReadingRelayed;
 
+                        String finalFormalPlatformRoutineState = formalPlatformRoutineState;
                         instance.getOwnerActivity().runOnUiThread(()-> {
 
-                            ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_status)).setText(R.string.fragment_dialog_submit_ads_processing_progress_status_appendage + formalPlatformRoutineState);
+                            ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_status)).setText(context.getString(R.string.fragment_dialog_submit_ads_processing_progress_status_appendage) + finalFormalPlatformRoutineState);
 
                             Integer progressReadingApplied = 0;
-                            String progressReadingAnnotation = "ANALYSED";
-                            if (Arrays.asList("STARTING", "SAMPLING IMAGERY", "PERFORMING ANALYSIS").contains(formalPlatformRoutineState)) {
+                            String progressReadingAnnotation = context.getString(R.string.general_term_analysed);
+                            if (Arrays.asList(
+                                    context.getString(R.string.general_term_starting),
+                                    context.getString(R.string.general_term_sampling_imagery),
+                                    context.getString(R.string.general_term_performing_analysis)
+                                ).contains(finalFormalPlatformRoutineState)) {
                                 progressReadingApplied = progressReadingAnalyzedF;
-                                progressReadingAnnotation = "ANALYSED";
+                                progressReadingAnnotation = context.getString(R.string.general_term_analysed);
 
 
                             } else
-                            if (Arrays.asList("RELAYING DATA", "COMPLETE").contains(formalPlatformRoutineState)) {
+                            if (Arrays.asList(context.getString(R.string.general_term_relaying_data),
+                                                context.getString(R.string.general_term_complete)).contains(finalFormalPlatformRoutineState)) {
                                 progressReadingApplied = progressReadingRelayedF;
-                                progressReadingAnnotation = "RELAYED";
+                                progressReadingAnnotation = context.getString(R.string.general_term_relayed);
 
                             }
 
-                            ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText(progressReadingAnnotation + R.string.fragment_dialog_submit_ads_processing_progress_colon + progressReadingApplied.toString() + R.string.fragment_dialog_submit_ads_processing_progress_percentage);
+                            ((TextView) instance.findViewById(R.id.progress_bar_processing_text)).setText(progressReadingAnnotation
+                                    + context.getString(R.string.fragment_dialog_submit_ads_processing_progress_colon)
+                                    + progressReadingApplied.toString()
+                                    + context.getString(R.string.fragment_dialog_submit_ads_processing_progress_percentage));
                             ProgressBar progressBarAnalyzed = ((ProgressBar) instance.findViewById(R.id.progress_bar_processing));
                             progressBarAnalyzed.startAnimation((new ProgressBarAnimation(progressBarAnalyzed, progressBarAnalyzed.getProgress(), progressReadingApplied)));
 
@@ -197,7 +206,11 @@ public class DialogSubmitAds extends Dialog implements android.view.View.OnClick
 
                 instance.getOwnerActivity().runOnUiThread(()-> {
                     //instance.refreshDialog(context);
-                    ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_annotation)).setText(R.string.fragment_dialog_submit_ads_processing_summary_total_of + platformRoutineToAnalyzeFinal + R.string.fragment_dialog_submit_ads_processing_summary_have_been_processed);
+                    try {
+                        ((TextView) instance.findViewById(R.id.dialog_submit_ads_processing_annotation)).setText(R.string.fragment_dialog_submit_ads_processing_summary_total_of + platformRoutineToAnalyzeFinal + R.string.fragment_dialog_submit_ads_processing_summary_have_been_processed);
+                    } catch (Exception e) {
+                        // The text view has probably been deleted...
+                    }
                     ((Button) instance.findViewById(R.id.buttonExitProcessMyAdDigest)).setVisibility(View.GONE);
                     ((RelativeLayout) instance.findViewById(R.id.loadingPanel)).setVisibility(View.GONE);
                     ((ImageView) instance.findViewById(R.id.process_ad_digest_complete_icon)).setVisibility(View.VISIBLE);

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Australian Mobile Ad Toolkit</string>
+    <string name="app_name">Mobile Observation Ad Toolkit</string>
 
 
     <string name="activation_code_short_prefix">YOUR UNIQUE ACTIVATION CODE:</string>
@@ -19,8 +19,8 @@
     <string name="fragment_dashboard_back_text">BACK TO MAIN</string>
     <string name="fragment_dashboard_note_to_hide">Note: You can disinclude an ad from your data donations by clicking the \'Hide\' icon.</string>
 
-    <string name="fragment_dashboard_button_previous">Previous</string>
-    <string name="fragment_dashboard_button_next">Next</string>
+    <string name="fragment_dashboard_button_previous">PREVIOUS</string>
+    <string name="fragment_dashboard_button_next">NEXT</string>
     <string name="fragment_dashboard_empty_title">There are no ads in your dashboard</string>
     <string name="fragment_dashboard_empty_note">Note: Ads may take some time to appear within your dashboard.</string>
 
@@ -29,7 +29,7 @@
     <string name="fragment_settings_ad_detection_override_note">Note: This option can resolve app crashes caused by incorrect ad detector configurations.</string>
     <string name="fragment_settings_manual_log_submission_title">Manually submit log information</string>
     <string name="fragment_settings_manual_log_submission_description">While the app is designed to periodically send log information about the ads you see on your mobile device, you can also manually initiate this process by clicking the button below.</string>
-    <string name="fragment_settings_process_logs_button">Process Your Logs</string>
+    <string name="fragment_settings_process_logs_button">PROCESS YOUR LOGS</string>
 
 
     <string name="dialog_logs_success_title">LOGS SUBMITTED</string>
@@ -40,7 +40,7 @@
 
     <string name="fragment_accessibility_disclosure_title">USAGE OF ACCESSIBILITY SERVICES</string>
     <string name="fragment_accessibility_disclosure_subtitle_overview_1">AN OVERVIEW OF APP FUNCTIONALITY</string>
-    <string name="fragment_accessibility_disclosure_description_overview_1">The Australian Mobile Ad Toolkit is a mobile app that enables members of the public to submit advertisements they\'ve seen on their device, for the benefit of researchers studying digital advertising practises.\n\nThe app works by screen-recording the individual\'s device screen, using image analysis methods to isolate and collect advertisements seen on social media apps.</string>
+    <string name="fragment_accessibility_disclosure_description_overview_1">The Mobile Observation Ad Toolkit is a mobile app that enables members of the public to submit advertisements they\'ve seen on their device, for the benefit of researchers studying digital advertising practises.  The app works by screen-recording the individual\'s device screen, using image analysis methods to isolate and collect advertisements seen on social media apps.</string>
 
     <string name="fragment_accessibility_disclosure_subtitle_overview_2">IMAGE ANALYSIS</string>
     <string name="fragment_accessibility_disclosure_description_overview_2">Part of the image analysis involves digitally processing the screen recordings that come through the device. As social media apps alone do not constitute the entire viewing experience of a mobile device\'s usage, it becomes an issue that the app then spends time and computational resources processing screen-recordings that yield no valuable data.</string>
@@ -155,8 +155,8 @@
     <string name="app_titled_code">AustralianMobileAdObservatory</string>
 
 
-    <string name="dialog_outcome_template_title">TITLE GOES HERE</string>
-    <string name="dialog_outcome_template_description">Desciption goes here.</string>
+    <string name="dialog_outcome_template_title">XXX</string>
+    <string name="dialog_outcome_template_description">XXX</string>
     <string name="dialog_outcome_template_dismiss">DISMISS</string>
 
 
@@ -173,13 +173,24 @@
     <string name="dialog_loading">Loading...</string>
     <string name="fragment_dashboard_card_loading">Loading…</string>
     <string name="activation_code_short_default"><font color="@color/yellow_primary">LOADING...</font></string>
+    <string name="general_term_loading">LOADING</string>
+    <string name="general_term_complete">COMPLETE</string>
+    <string name="general_term_relayed">RELAYED</string>
+    <string name="general_term_relaying_data">RELAYING DATA</string>
+    <string name="general_term_analysed">ANALYSED</string>
+    <string name="general_term_starting">STARTING</string>
+    <string name="general_term_sampling_imagery">SAMPLING IMAGERY</string>
+    <string name="general_term_performing_analysis">PERFORMING ANALYSIS</string>
 
+
+
+    <string name="fragment_setup_language_button">SET YOUR LANGUAGE</string>
     <string name="fragment_setup_language_intro">Please set your language to continue:</string>
     <string name="fragment_setup_language_english">English</string>
     <string name="fragment_setup_language_portuguese">Português</string>
     <string name="fragment_setup_language_vietnamese">Tiếng Việt</string>
-
-
+    <string name="fragment_setup_language_filipino">Filipino</string>
+    <string name="fragment_setup_language_spanish_mexico">Español (México)</string>
 
 </resources>
 

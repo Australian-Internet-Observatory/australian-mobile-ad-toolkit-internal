@@ -41,16 +41,21 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.os.LocaleListCompat;
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler;
 import androidx.datastore.preferences.core.Preferences;
 import androidx.datastore.preferences.rxjava3.RxPreferenceDataStoreBuilder;
 import androidx.datastore.rxjava3.RxDataStore;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
@@ -64,6 +69,7 @@ import com.adms.australianmobileadtoolkit.ui.fragments.FragmentMain;
 
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -100,7 +106,7 @@ public class MainActivity extends BaseActivity {
                         return yieldEmptyPreferences(); //
                     }
             );
-            dataStore = new RxPreferenceDataStoreBuilder(context, /*name=*/ "settings").setCorruptionHandler(corruptionHandler).build();
+            dataStore = new RxPreferenceDataStoreBuilder(context.getApplicationContext(), /*name=*/ "settings").setCorruptionHandler(corruptionHandler).build();
         }
     }
 
@@ -117,7 +123,7 @@ public class MainActivity extends BaseActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initiateDataStore(this);
+        //initiateDataStore(this);
 
             // TODO - apply loading dialog to start of recording event
 
@@ -402,6 +408,34 @@ public class MainActivity extends BaseActivity {
     public void onPause() {
         super.onPause();
         addALog(this, "APP-END");
+    }
+
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
+
+        Locale ui = getResources().getConfiguration().getLocales().get(0);
+        Log.d(TAG, "UI locale: " + ui.toLanguageTag());
+        Log.d(TAG, "AppCompat locales: " + AppCompatDelegate.getApplicationLocales());
+
+        Log.d(TAG, "probe string: " + getString(R.string.activation_code_short_prefix));
+        Log.d(TAG, "ui locale: " + getResources().getConfiguration().getLocales().get(0).toLanguageTag());
+
+
+
+        if (dataStoreRead(this, "pendingMainRecreate", "NULL").equals("NULL")) {
+            dataStoreWrite(this, "pendingMainRecreate", "NULL");
+            return;
+        }
+
+
+        // This block does not execute on a standard post-resume
+        Fragment fragment = new FragmentMain();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.setCustomAnimations(0, 0, 0, 0);
+        transaction.replace(R.id.fragmentContainerView, fragment);
+        getSupportFragmentManager().popBackStack(null, getSupportFragmentManager().POP_BACK_STACK_INCLUSIVE);
+        transaction.commit();
     }
 
     /*
